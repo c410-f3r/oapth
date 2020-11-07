@@ -1,8 +1,5 @@
-use crate::{
-  Backend, BoxFut, DbMigration, Migration,
-  MigrationGroup,
-};
-use alloc::vec::Vec;
+use crate::{Backend, BoxFut, DbMigration, Migration, MigrationGroup};
+use alloc::{boxed::Box, vec::Vec};
 
 impl Backend for () {
   #[inline]

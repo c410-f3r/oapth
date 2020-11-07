@@ -7,73 +7,87 @@ on:
       - master
 
 jobs:
-  postgres:
-    name: Integration tests - PostgreSQL
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        scripts: ["integration-tests-mysql", "integration-tests-postgres", "integration-tests-sqlite"]
-    needs: check
+  fuzz:
+    name: Fuzz tests
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions-rs/toolchain@v1
         with:
           override: true
           profile: minimal
-          toolchain: stable-1.47
+          toolchain: nightly-2020-09-11
 
-      - name: Cache cargo directories
-        uses: actions/cache@v2
+      - uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-fuzz
+          use-tool-cache: true
+
+      - run: cargo fuzz run parse_migration -- -max_len=8 -runs=10000
+      - run: cargo fuzz run validate -- -runs=10000
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scripts: [
+          "integration-tests-mariadb",
+          "integration-tests-mysql",
+          "integration-tests-postgres",
+          "integration-tests-sqlite"
+        ]
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          override: true
+          profile: minimal
+          toolchain: stable
+
+      - uses: actions/cache@v2
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Cache cargo target dir
-        uses: actions/cache@v2
+      - uses: actions/cache@v2
         with:
           path: target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Spin-up databases
-        run: docker-compose -f tests/docker-compose.yml run -d
+      - run: docker-compose -f oapth-test-utils/docker-compose.yml up -d
 
-      - name: Await databases
-        run: sleep 10
+      - run: sleep 60
 
-      - name: Tests
-        run: ./scripts/${{ matrix.scripts }}.sh
+      - run: ./scripts/${{ matrix.scripts }}.sh
 
-  tests:
+  internal:
     name: Internal tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions-rs/toolchain@v1
         with:
           components: clippy, rustfmt
           override: true
           profile: minimal
-          toolchain: stable-1.48
+          toolchain: stable
 
-      - name: Cache cargo directories
-        uses: actions/cache@v2
+      - uses: actions/cache@v2
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Cache cargo target dir
-        uses: actions/cache@v2
+      - uses: actions/cache@v2
         with:
           path: target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Tests
-        run: ./scripts/tests.sh
+      - run: ./scripts/internal-tests.sh
