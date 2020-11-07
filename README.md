@@ -1,10 +1,10 @@
 # Oapth 
 
-[![CI](https://github.com/c410-f3r/oapth/workflows/CI/badge.svg)](https://github.com/c410-f3r/oapth/actions?query=workflow%3ACI)
+[![CI](https://github.com/c410-f3r/oapth/workflows/Tests/badge.svg)](https://github.com/c410-f3r/oapth/actions?query=workflow%3ATests)
 [![crates.io](https://img.shields.io/crates/v/oapth.svg)](https://crates.io/crates/oapth)
 [![Documentation](https://docs.rs/oapth/badge.svg)](https://docs.rs/oapth)
 [![License](https://img.shields.io/badge/license-APACHE2-blue.svg)](./LICENSE)
-[![Rustc](https://img.shields.io/badge/rustc-1.48-lightgray")](https://blog.rust-lang.org/2020/03/12/Rust-1.48.html)
+[![Rustc](https://img.shields.io/badge/rustc-stable-lightgray")](https://blog.rust-lang.org/2020/03/12/Rust-stable.html)
 
 Flexible version control for databases through SQL migrations. Supports embedded and CLI workflows for MS-SQL, MariaDB, MySQL, PostgreSQL and SQLite.
 
