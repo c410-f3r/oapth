@@ -59,7 +59,7 @@ pub const _CREATE_MIGRATION_TABLES_MSSQL: &str = concat!(
   BEGIN
   CREATE TABLE _oapth._oapth_migration (
   id INT NOT NULL IDENTITY PRIMARY KEY,
-  created_on TIMESTAMP NOT NULL DEFAULT CONVERT(int, CURRENT_TIMESTAMP),",
+  created_on DATETIME NOT NULL DEFAULT CONVERT(int, CURRENT_TIMESTAMP),",
   oapth_migration_columns!(),
   ");
   END"

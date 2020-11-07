@@ -13,6 +13,18 @@ services:
         ports:
             - 3306:3306
 
+    # Mssql
+
+    mssql_2019:
+        build:
+            context: .
+            dockerfile: mssql/Dockerfile
+        environment:
+            ACCEPT_EULA: 'Y'
+            SA_PASSWORD: yourStrong_Password
+        ports:
+          - 1433:1433
+
     # MySQL
 
     mysql_8:

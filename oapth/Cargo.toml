@@ -3,9 +3,9 @@ arrayvec = { default-features = false, version = "0.5" }
 chrono = { default-features = false, version = "0.4" }
 futures = { default-features = false, optional = true, version = "0.3" }
 mysql_async = { default-features = false, optional = true, version = "0.25" }
-rusqlite = { default-features = false, features = ["chrono", "trace"], optional = true, version = "0.23" }
+rusqlite = { default-features = false, features = ["chrono", "trace"], optional = true, version = "0.24" }
 siphasher = { default-features = false, version = "0.3" }
-sqlx-core = { default-features = false, features = ["chrono"], optional = true, version = "0.4.0-beta.1" }
+sqlx-core = { branch = "date", default-features = false, features = ["chrono"], git = "https://github.com/c410-f3r/sqlx", optional = true }
 tokio = { default-features = false, features = ["rt-core"], optional = true, version = "0.2" }
 tokio-postgres = { default-features = false, features = ["runtime", "with-chrono-0_4"], optional = true, version = "0.5" }
 

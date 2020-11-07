@@ -73,8 +73,20 @@ impl core::convert::TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
 
   #[allow(clippy::panic)]
   #[inline]
-  fn try_from(_: sqlx_core::mssql::MssqlRow) -> Result<Self, Self::Error> {
-    panic!("SQLx doesn't support date formats for MS-SQL")
+  fn try_from(from: sqlx_core::mssql::MssqlRow) -> Result<Self, Self::Error> {
+    use sqlx_core::row::Row;
+    Ok(Self {
+      common: MigrationCommon {
+        checksum: from.try_get("checksum")?,
+        name: from.try_get("name")?,
+        version: from.try_get("version")?,
+      },
+      created_on: from.try_get("created_on")?,
+      group: MigrationGroup {
+        version: from.try_get("group_version")?,
+        name: from.try_get("group_name")?,
+      },
+    })
   }
 }
 
