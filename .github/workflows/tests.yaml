@@ -1,0 +1,79 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  postgres:
+    name: Integration tests - PostgreSQL
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        scripts: ["integration-tests-mysql", "integration-tests-postgres", "integration-tests-sqlite"]
+    needs: check
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          override: true
+          profile: minimal
+          toolchain: stable-1.47
+
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo target dir
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Spin-up databases
+        run: docker-compose -f tests/docker-compose.yml run -d
+
+      - name: Await databases
+        run: sleep 10
+
+      - name: Tests
+        run: ./scripts/${{ matrix.scripts }}.sh
+
+  tests:
+    name: Internal tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          components: clippy, rustfmt
+          override: true
+          profile: minimal
+          toolchain: stable-1.48
+
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo target dir
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Tests
+        run: ./scripts/tests.sh

@@ -1,0 +1,24 @@
+[dependencies]
+clap = { default-features = false, features = ["derive", "std"], version = "3.0.0-beta.2" }
+oapth = { default-features = false, features = ["std"], path = "../oapth", version = "0.1" }
+tokio = { default-features = false, features = ["macros", "rt-core"], version = "0.2" }
+
+[features]
+default = []
+dev-tools = ["oapth/dev-tools"]
+mssql = ["oapth/with-sqlx-mssql", "oapth/with-sqlx-runtime-tokio"]
+mysql = ["oapth/with-mysql_async"]
+postgres = ["oapth/with-tokio-postgres"]
+sqlite = ["oapth/with-rusqlite"]
+
+[package]
+authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
+categories = ["command-line-utilities", "database"]
+description = "Oapth CLI"
+edition = "2018"
+keywords = ["cli", "database", "migration", "oapth", "sql"]
+license = "Apache-2.0"
+name = "oapth-cli"
+readme = "README.md"
+repository = "https://github.com/c410-f3r/oapth"
+version = "0.1.0"

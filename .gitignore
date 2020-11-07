@@ -1,0 +1,8 @@
+.vscode
+**/*.rs.bk
+**/artifacts
+**/Cargo.lock
+**/corpus
+**/target
+
+!/Cargo.lock
