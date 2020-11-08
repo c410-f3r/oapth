@@ -1,6 +1,7 @@
 use crate::{
   fixed_sql_commands::{
-    _insert_migrations, _migrations_by_group_version_query, _CREATE_MIGRATION_TABLES_POSTGRESQL,
+    _delete_migrations, _insert_migrations, _migrations_by_group_version_query,
+    _CREATE_MIGRATION_TABLES_POSTGRESQL,
   },
   Backend, BoxFut, DbMigration, Migration, MigrationGroup, _OAPTH_SCHEMA,
 };
@@ -42,6 +43,15 @@ impl Backend for TokioPostgres {
   #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
     self.execute(_CREATE_MIGRATION_TABLES_POSTGRESQL)
+  }
+
+  #[inline]
+  fn delete_migrations<'a>(
+    &'a mut self,
+    version: i32,
+    mg: &'a MigrationGroup,
+  ) -> BoxFut<'a, crate::Result<()>> {
+    Box::pin(async move { Ok(_delete_migrations(self, mg, _OAPTH_SCHEMA, version).await?) })
   }
 
   #[inline]

@@ -99,10 +99,10 @@ Or when installing the CLI binary:
 cargo install oapth-cli --features "postgres"
 ```
 
-- mssql
-- mysql
-- postgres
-- sqlite
+- `mssql`
+- `mysql`
+- `postgres`
+- `sqlite`
 
 ## Namespaces/Schemas
 

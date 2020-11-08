@@ -21,6 +21,13 @@ pub trait Backend {
   /// Creates the necessary internal tables
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>>;
 
+  /// Removes every migration of a given group `mg` that is greater than `version`.
+  fn delete_migrations<'a>(
+    &'a mut self,
+    version: i32,
+    mg: &'a MigrationGroup,
+  ) -> BoxFut<'a, crate::Result<()>>;
+
   /// Executes arbitrary DDL or DML
   fn execute<'a>(&'a mut self, command: &'a str) -> BoxFut<'a, crate::Result<()>>;
 

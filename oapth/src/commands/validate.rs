@@ -41,7 +41,7 @@ where
         continue;
       };
 
-      if migration.common() != &db_migration.common {
+      if migration.common() != db_migration.common() {
         return Err(crate::Error::ValidationDivergentMigrations(version));
       }
 

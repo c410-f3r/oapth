@@ -7,4 +7,4 @@ INSERT INTO post(id, author_id, title, description, content) VALUES
 
 -- oapth DOWN
 
-DELETE FROM posts;
+DELETE FROM post;

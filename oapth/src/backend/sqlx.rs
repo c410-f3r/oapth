@@ -1,5 +1,7 @@
 use crate::{
-  fixed_sql_commands::{_insert_migrations, _migrations_by_group_version_query},
+  fixed_sql_commands::{
+    _delete_migrations, _insert_migrations, _migrations_by_group_version_query,
+  },
   Backend, BoxFut, Config, DbMigration, Migration, MigrationGroup,
 };
 use core::convert::TryFrom;
@@ -31,6 +33,15 @@ macro_rules! create_sqlx_backend {
       #[inline]
       fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
         self.execute($create_oapth_tables)
+      }
+
+      #[inline]
+      fn delete_migrations<'a>(
+        &'a mut self,
+        version: i32,
+        mg: &'a MigrationGroup,
+      ) -> BoxFut<'a, crate::Result<()>> {
+        Box::pin(async move { Ok(_delete_migrations(self, mg, $schema, version).await?) })
       }
 
       #[inline]

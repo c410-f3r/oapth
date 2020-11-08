@@ -1,6 +1,4 @@
 use crate::{Backend, Commands, Migration, MigrationGroup};
-use arrayvec::ArrayString;
-use core::fmt::Write;
 
 impl<B> Commands<B>
 where
@@ -22,15 +20,8 @@ where
     let db_migrations = self.backend.migrations(mg).await?;
     Self::do_validate(&db_migrations, migrations.clone())?;
     let reverts_iter = migrations.map(|el| el.sql_down());
-    let mut buffer = ArrayString::<[u8; 128]>::new();
-    buffer.write_fmt(format_args!(
-      "DELETE FROM migrations WHERE _oapth_migration_group_version = {} && mg > {}",
-      mg.version(),
-      version
-    ))?;
-    let delete_sql = [buffer];
-    let delete_sql_iter = delete_sql.iter().map(|el| el.as_str());
-    self.backend.transaction(reverts_iter.chain(delete_sql_iter)).await?;
+    self.backend.transaction(reverts_iter).await?;
+    self.backend.delete_migrations(version, mg).await?;
     Ok(())
   }
 }

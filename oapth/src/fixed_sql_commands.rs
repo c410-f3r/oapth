@@ -104,6 +104,27 @@ pub const _CREATE_MIGRATION_TABLES_SQLITE: &str = concat!(
 );
 
 #[inline]
+pub async fn _delete_migrations<B>(
+  backend: &mut B,
+  mg: &crate::MigrationGroup,
+  schema: &str,
+  version: i32,
+) -> crate::Result<()>
+where
+  B: Backend,
+{
+  let mut buffer = ArrayString::<[u8; 128]>::new();
+  buffer.write_fmt(format_args!(
+    "DELETE FROM {schema}_oapth_migration WHERE _oapth_migration_group_version = {mg_version} AND version > {m_version}",
+    m_version = version,
+    mg_version = mg.version(),
+    schema = schema,
+  ))?;
+  backend.execute(&buffer).await?;
+  Ok(())
+}
+
+#[inline]
 pub async fn _insert_migrations<'a, B, I>(
   backend: &'a mut B,
   mg: &'a crate::MigrationGroup,

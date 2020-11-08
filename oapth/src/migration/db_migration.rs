@@ -4,9 +4,36 @@ use core::fmt;
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct DbMigration {
-  pub(crate) common: MigrationCommon,
-  pub(crate) created_on: NaiveDateTime,
-  pub(crate) group: MigrationGroup,
+  common: MigrationCommon,
+  created_on: NaiveDateTime,
+  group: MigrationGroup,
+}
+
+impl DbMigration {
+  #[inline]
+  pub fn checksum(&self) -> &str {
+    &self.common.checksum
+  }
+
+  #[inline]
+  pub fn common(&self) -> &MigrationCommon {
+    &self.common
+  }
+
+  #[inline]
+  pub fn group(&self) -> &MigrationGroup {
+    &self.group
+  }
+
+  #[inline]
+  pub fn name(&self) -> &str {
+    &self.common.name
+  }
+
+  #[inline]
+  pub fn version(&self) -> i32 {
+    self.common.version
+  }
 }
 
 impl MigrationParams for DbMigration {
