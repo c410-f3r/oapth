@@ -28,17 +28,57 @@ where
   }
 }
 
+#[cfg(all(feature = "_integration_tests", test))]
+macro_rules! create_integration_test {
+  ($backend:ident, $($fun:ident),+) => {
+    #[allow(non_snake_case)]
+    mod $backend {
+      $(
+        #[tokio::test]
+        async fn $fun() {
+          let _ = env_logger::builder().is_test(true).try_init();
+          let c = crate::Config::with_url_from_default_var().unwrap();
+          let backend = crate::$backend::new(&c).await.unwrap();
+          let commands = crate::Commands::new(backend);
+          super::$fun(commands).await;
+        }
+      )+
+    }
+  };
+}
+
+#[cfg(all(feature = "_integration_tests", test))]
+macro_rules! create_integration_tests {
+  ($($fun:ident),+) => {
+    #[cfg(feature = "with-mysql_async")]
+    create_integration_test!(MysqlAsync, $($fun),+);
+    #[cfg(feature = "with-rusqlite")]
+    create_integration_test!(Rusqlite, $($fun),+);
+    #[cfg(feature = "with-sqlx-mssql")]
+    create_integration_test!(SqlxMssql, $($fun),+);
+    #[cfg(feature = "with-sqlx-mysql")]
+    create_integration_test!(SqlxMysql, $($fun),+);
+    #[cfg(feature = "with-sqlx-postgres")]
+    create_integration_test!(SqlxPostgres, $($fun),+);
+    #[cfg(feature = "with-sqlx-sqlite")]
+    create_integration_test!(SqlxSqlite, $($fun),+);
+    #[cfg(feature = "with-tokio-postgres")]
+    create_integration_test!(TokioPostgres, $($fun),+);
+  };
+}
+
 #[cfg(feature = "std")]
 #[inline]
 pub fn files(dir: &Path) -> crate::Result<impl Iterator<Item = crate::Result<DirEntry>>> {
-  read_dir_with_cb(dir, |entry| {
+  Ok(read_dir_with_cb(dir)?.filter_map(|entry_rslt| {
+    let entry = entry_rslt.ok()?;
     let path = entry.path();
     if path.is_file() {
       Some(Ok(entry))
     } else {
       None
     }
-  })
+  }))
 }
 
 #[inline]
@@ -96,7 +136,9 @@ pub fn _migration_file_name_parts(s: &str) -> Option<(i32, String)> {
 pub fn scan_canonical_migrations_dir(
   dir: &Path,
 ) -> crate::Result<Vec<(crate::MigrationGroup, Vec<PathBuf>)>> {
-  let iter = read_dir_with_cb(dir, |entry| {
+  let iter = read_dir_with_cb(dir)?.filter_map(|entry_rslt| {
+    let entry = entry_rslt.ok()?;
+
     let path = entry.path();
     if !path.is_dir() {
       return None;
@@ -115,17 +157,14 @@ pub fn scan_canonical_migrations_dir(
       }),
     };
 
-    let mut migration_paths = match files_rslts.collect::<crate::Result<Vec<_>>>() {
+    let migration_paths = match files_rslts.collect::<crate::Result<Vec<_>>>() {
       Err(e) => return Some(Err(e)),
       Ok(rslt) => rslt,
     };
-    migration_paths.sort();
 
     Some(Ok((crate::MigrationGroup::new(group_version, group_name), migration_paths)))
-  })?;
-  let mut vec = iter.collect::<crate::Result<Vec<_>>>()?;
-  vec.sort();
-  Ok(vec)
+  });
+  iter.collect::<crate::Result<Vec<_>>>()
 }
 
 #[cfg(feature = "std")]
@@ -157,20 +196,6 @@ fn _group_dir_name_parts(s: &str) -> Option<(i32, String)> {
 
 #[cfg(feature = "std")]
 #[inline]
-fn read_dir_with_cb<F, R>(
-  dir: &Path,
-  mut cb: F,
-) -> crate::Result<impl Iterator<Item = crate::Result<R>>>
-where
-  F: FnMut(DirEntry) -> Option<crate::Result<R>>,
-{
-  let mut entry_iter = std::fs::read_dir(dir)?;
-  Ok(from_fn(move || {
-    let entry_rslt = entry_iter.next()?;
-    let entry = match entry_rslt {
-      Err(e) => return Some(Err(crate::Error::Io(e))),
-      Ok(rslt) => rslt,
-    };
-    cb(entry)
-  }))
+fn read_dir_with_cb(dir: &Path) -> crate::Result<impl Iterator<Item = crate::Result<DirEntry>>> {
+  Ok(std::fs::read_dir(dir)?.map(|entry_rslt| entry_rslt.map_err(|e| e.into())))
 }

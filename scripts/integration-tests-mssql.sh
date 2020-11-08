@@ -4,4 +4,4 @@
 
 export DATABASE_URL='mssql://sa:yourStrong_Password@localhost:1433/oapth'
 
-test_package_with_feature "oapth" "_integration_tests,with-sqlx-mssql,with-sqlx-runtime-tokio"
+test_package_with_feature "oapth" "_integration_tests,dev-tools,with-sqlx-mssql,with-sqlx-runtime-tokio"

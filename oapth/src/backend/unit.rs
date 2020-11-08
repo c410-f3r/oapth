@@ -13,6 +13,15 @@ impl Backend for () {
   }
 
   #[inline]
+  fn delete_migrations<'a>(
+    &'a mut self,
+    _: i32,
+    _: &'a MigrationGroup,
+  ) -> BoxFut<'a, crate::Result<()>> {
+    Box::pin(async move { Ok(()) })
+  }
+
+  #[inline]
   fn insert_migrations<'a, I>(
     &'a mut self,
     _: I,

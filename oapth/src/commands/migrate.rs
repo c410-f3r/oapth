@@ -31,7 +31,7 @@ where
     let db_migrations = self.backend.migrations(mg).await?;
     Self::do_validate(&db_migrations, migrations.clone())?;
     if let Some(rslt) = db_migrations.last() {
-      let last_db_mig_version = rslt.common.version;
+      let last_db_mig_version = rslt.version();
       let to_apply = migrations.filter(move |el| el.version() > last_db_mig_version);
       self.backend.insert_migrations(to_apply, mg).await?;
     } else {

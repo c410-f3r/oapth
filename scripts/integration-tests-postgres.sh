@@ -4,5 +4,5 @@
 
 export DATABASE_URL='postgres://oapth:oapth@localhost:5432/oapth'
 
-test_package_with_feature "oapth" "_integration_tests,with-sqlx-postgres,with-sqlx-runtime-tokio"
-test_package_with_feature "oapth" "_integration_tests,with-tokio-postgres"
+test_package_with_feature "oapth" "_integration_tests,dev-tools,with-sqlx-postgres,with-sqlx-runtime-tokio"
+test_package_with_feature "oapth" "_integration_tests,dev-tools,with-tokio-postgres"

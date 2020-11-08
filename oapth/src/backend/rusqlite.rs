@@ -1,6 +1,7 @@
 use crate::{
   fixed_sql_commands::{
-    _insert_migrations, _migrations_by_group_version_query, _CREATE_MIGRATION_TABLES_SQLITE,
+    _delete_migrations, _insert_migrations, _migrations_by_group_version_query,
+    _CREATE_MIGRATION_TABLES_SQLITE,
   },
   Backend, BoxFut, Config, DbMigration, Migration, MigrationGroup,
 };
@@ -37,6 +38,15 @@ impl Backend for Rusqlite {
   #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
     self.execute(_CREATE_MIGRATION_TABLES_SQLITE)
+  }
+
+  #[inline]
+  fn delete_migrations<'a>(
+    &'a mut self,
+    version: i32,
+    mg: &'a MigrationGroup,
+  ) -> BoxFut<'a, crate::Result<()>> {
+    Box::pin(async move { Ok(_delete_migrations(self, mg, "", version).await?) })
   }
 
   #[inline]
