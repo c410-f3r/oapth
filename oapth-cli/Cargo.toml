@@ -6,7 +6,7 @@ tokio = { default-features = false, features = ["macros", "rt-core"], version = 
 [features]
 default = []
 dev-tools = ["oapth/dev-tools"]
-mssql = ["oapth/with-sqlx-mssql", "oapth/with-sqlx-runtime-tokio"]
+mssql = ["oapth/with-sqlx-mssql", "oapth/with-sqlx-runtime-tokio-rustls"]
 mysql = ["oapth/with-mysql_async"]
 postgres = ["oapth/with-tokio-postgres"]
 sqlite = ["oapth/with-rusqlite"]

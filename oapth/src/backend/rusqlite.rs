@@ -1,6 +1,6 @@
 use crate::{
   fixed_sql_commands::{
-    _delete_migrations, _insert_migrations, _migrations_by_group_version_query,
+    _delete_migrations, _insert_migrations, _migrations_by_mg_version_query,
     _CREATE_MIGRATION_TABLES_SQLITE,
   },
   Backend, BoxFut, Config, DbMigration, Migration, MigrationGroup,
@@ -82,7 +82,7 @@ impl Backend for Rusqlite {
       Ok(
         self
           .conn
-          .prepare(_migrations_by_group_version_query(mg.version(), "")?.as_str())?
+          .prepare(_migrations_by_mg_version_query(mg.version(), "")?.as_str())?
           .query_map(NO_PARAMS, |row| DbMigration::try_from(row).map_err(fun))?
           .into_iter()
           .collect::<Result<Vec<_>, _>>()?,

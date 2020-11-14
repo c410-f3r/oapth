@@ -10,9 +10,16 @@ Flexible version control for databases through SQL migrations. Supports embedded
 
 This project is fully documented, applies fuzz tests in some targets and doesn't make use of `expect`, `panic`, `unsafe` or `unwrap`.
 
-## Structure
- Just remember that the order of execution between migrations and migration groups is dictated by their numeric declaration order.
-Each provided migration must contain, among other things, an unique version, a type, a name and a group summarized by the following illustration:
+## CLI
+
+The CLI application expects a configuration file that contains a set of paths where each path is a directory with multiple migrations.
+
+```ini
+migrations/1__initial
+migrations/2__create_post
+```
+
+Each provided migration and group must contain an unique version and a name summarized by the following structure:
 
 ```txt
 migrations
@@ -47,18 +54,9 @@ DROP TABLE author;
 
 Execution order between migrations and migration groups is dictated by their numeric declaration order.
 
-## No features by default
+## Library
 
-It is necessary to specify a desired feature to actually run the transactions, otherwise you will get a bunch of code that won't do much. Take a look at [Supported back ends](oapth#supported-back-ends).
-
-```bash
-cargo install oapth-cli
-oapth migrate # Will do nothing
-```
-
-## Library example
-
-The library uses `arrayvec`, `chrono` and `siphash` as mandatory internal crates which brings a total of 6 dependencies into your application. If this behavior is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
+The library gives freedom to arrange groups and uses `arrayvec`, `chrono` and `siphash` as mandatory internal crates which brings a total of 6 dependencies into your application. If this behavior is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
 
 ```rust
 // oapth = { features = ["with-sqlx-postgres", "with-sqlx-runtime-async-std"], version = "SOME_VERSION" }
@@ -70,12 +68,21 @@ use std::path::Path;
 async fn main() -> oapth::Result<()> {
     let config = Config::with_url_from_default_var()?;
     let mut commands = Commands::new(SqlxPostgres::new(&config).await?);
-    commands.migrate_from_dir(Path::new("migrations"), 128).await?;
+    commands.migrate_from_dir(Path::new("my_custom_migration_group_path"), 128).await?;
     Ok(())
 }
 ```
 
 One thing worth noting is that these mandatory dependencies might already be part of your application as transients. In case of doubt, check your `Cargo.lock` file or type `cargo tree` for analysis.
+
+## No features by default
+
+It is necessary to specify a desired feature to actually run the transactions, otherwise you will get a bunch of code that won't do much. Take a look at [Supported back ends](oapth#supported-back-ends).
+
+```bash
+cargo install oapth-cli
+oapth migrate # Will do nothing
+```
 
 ## Supported back ends
 
@@ -85,12 +92,16 @@ Each back end has a feature that can be selected when using the library:
 oapth = { features = ["with-tokio-postgres"], version = "SOME_VERSION" }
 ```
 
+- Diesel (MariaDB/Mysql) - `with-diesel-mssql`
+- Diesel (PostgreSQL) - `with-diesel-mysql`
+- Diesel (SQlite) - `with-diesel-postgres`
 - mysql_async - `with-mysql_async`
 - rusqlite - `with-rusqlite`
-- Sqlx (MS-SQL) - `with-sqlx-mssql`
-- Sqlx (MariaDB/MySql) - `with-sqlx-mysq`
-- Sqlx (PostgreSQL) - `with-sqlx-postgres`
-- Sqlx (SQLite) - `with-sqlx-sqlite`
+- SQLx (MariaDB/MySql) - `with-sqlx-mysq`
+- SQLx (MS-SQL) - `with-sqlx-mssql`
+- SQLx (PostgreSQL) - `with-sqlx-postgres`
+- SQLx (SQLite) - `with-sqlx-sqlite`
+- tiberius - `with-tiberius`
 - tokio-postgres - `with-tokio-postgres`
 
 Or when installing the CLI binary:
@@ -104,9 +115,13 @@ cargo install oapth-cli --features "postgres"
 - `postgres`
 - `sqlite`
 
+## Diesel support
+
+Only migrations are supported and schema printing is still a work in progress. For any unsupported use-case, please use the official Diesel CLI binary.
+
 ## Namespaces/Schemas
 
-For supported databases, there is no direct user parameter that inserts migrations inside a single database schema but it is possible to specify the schema inside the SQL itself and arrange the migration groups structure in a way that most suits you.
+For supported databases, there is no direct user parameter that inserts migrations inside a single database schema but it is possible to specify the schema inside the SQL file and arrange the migration groups structure in a way that most suits you.
 
 ```sql
 -- oapth UP
@@ -123,3 +138,21 @@ CREATE TABLE cool_department_schema.author (
 DROP TABLE cool_department_schema.author;
 DROP SCHEMA cool_department_schema;
 ```
+
+##  Migration time zones
+
+For PostgreSQL (except Diesel), migration timestamps are stored and retrieved with the timezone declared in the database. For everything else, timestamps are UTC.
+
+| Backend                | Type             |
+| ---------------------- | ---------------- |
+| Diesel (MariaDB/Mysql) | UTC              |
+| Diesel (PostgreSQL)    | UTC              |
+| Diesel (SQlite)        | UTC              |
+| mysql_async            | UTC              |
+| rusqlite               | UTC              |
+| SQLx (MariaDB/MySql)   | UTC              |
+| SQLx (MS-SQL)          | UTC              |
+| SQLx (PostgreSQL)      | Fixed time zones |
+| SQLx (SQLite)          | UTC              |
+| tiberius               | UTC              |
+| tokio-postgres         | Fixed time zones |

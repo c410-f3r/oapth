@@ -5,12 +5,6 @@ pub struct Cli {
   #[clap(subcommand)]
   pub(crate) commands: Commands,
 
-  /// The migrations or seeds directory
-  ///
-  /// If seeding, defaults to "seeds", otherwise defaults to "migrations".
-  #[clap(long, short = 'd')]
-  pub(crate) dir: Option<std::path::PathBuf>,
-
   /// The environment variable name that contains the database URL.
   #[clap(default_value = "DATABASE_URL", long, short = 'e')]
   pub(crate) env_var: String,
@@ -19,6 +13,12 @@ pub struct Cli {
   /// single transaction.
   #[clap(default_value = "128", long, short = 'f')]
   pub(crate) files_num: usize,
+
+  /// The configuration file or seeds directory
+  ///
+  /// If seeding, defaults to "seeds", otherwise defaults to "oapth.cfg".
+  #[clap(long, short = 'p')]
+  pub(crate) path: Option<std::path::PathBuf>,
 }
 
 #[derive(Debug, clap::Clap)]
@@ -26,8 +26,8 @@ pub enum Commands {
   /// Migrates everything that is greater than the last migration version within the database
   Migrate,
   #[cfg(feature = "dev-tools")]
-  /// If existing, drops a given database and then re-creates it again.
-  Reset {
+  /// Attempts to drop a given database and then recreates it again.
+  Recreate {
     /// Database name
     name: String,
   },

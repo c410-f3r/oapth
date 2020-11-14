@@ -4,6 +4,13 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(any(
+  feature = "with-diesel-mysql",
+  feature = "with-diesel-postgres",
+  feature = "with-diesel-sqlite",
+))]
+#[macro_use]
+extern crate diesel;
 extern crate alloc;
 
 #[macro_use]
@@ -17,8 +24,14 @@ mod error;
 mod fixed_sql_commands;
 mod migration;
 #[cfg(feature = "std")]
-mod parse_sql_file;
+mod parsers;
 
+#[cfg(any(
+  feature = "with-diesel-mysql",
+  feature = "with-diesel-postgres",
+  feature = "with-diesel-sqlite",
+))]
+pub use backend::diesel::*;
 #[cfg(feature = "with-mysql_async")]
 pub use backend::mysql_async::*;
 #[cfg(feature = "with-rusqlite")]
@@ -30,6 +43,8 @@ pub use backend::rusqlite::*;
   feature = "with-sqlx-sqlite",
 ))]
 pub use backend::sqlx::*;
+#[cfg(feature = "with-tiberius")]
+pub use backend::tiberius::*;
 #[cfg(feature = "with-tokio-postgres")]
 pub use backend::tokio_postgres::*;
 pub use backend::*;
@@ -38,7 +53,7 @@ pub use config::*;
 pub use error::*;
 pub use migration::{migration_group::*, *};
 #[cfg(feature = "std")]
-pub use parse_sql_file::*;
+pub use parsers::*;
 
 use alloc::boxed::Box;
 use core::{future::Future, pin::Pin};

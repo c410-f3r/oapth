@@ -24,8 +24,8 @@ jobs:
           crate: cargo-fuzz
           use-tool-cache: true
 
-      - run: cargo fuzz run parse_migration -- -max_len=8 -runs=10000
-      - run: cargo fuzz run validate -- -runs=10000
+      - run: cargo fuzz run parsers -- -max_len=10 -runs=100000
+      - run: cargo fuzz run validate -- -runs=100000
 
   integration:
     name: Integration tests

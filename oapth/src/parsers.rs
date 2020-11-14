@@ -1,4 +1,39 @@
-use std::io::{BufRead, BufReader, Read};
+use crate::_group_dir_name_parts;
+use arrayvec::ArrayVec;
+use std::{
+  io::{BufRead, BufReader, Read},
+  path::{Path, PathBuf},
+};
+
+/// All paths to directories that contain migrations
+#[inline]
+pub fn parse_cfg<R>(read: R, root: &Path) -> crate::Result<ArrayVec<[PathBuf; 16]>>
+where
+  R: Read,
+{
+  let mut groups = ArrayVec::new();
+  let mut br = BufReader::new(read);
+  loop {
+    let mut group = String::new();
+    if br.read_line(&mut group)? == 0 {
+      break;
+    }
+    let path = root.join(group.trim());
+    let name_opt = || path.file_name()?.to_str();
+    let name = if let Some(rslt) = name_opt() {
+      rslt
+    } else {
+      continue;
+    };
+    if group.is_empty() || !path.is_dir() || _group_dir_name_parts(name).is_none() {
+      continue;
+    }
+    groups
+      .try_push(path)
+      .map_err(|_| crate::Error::Other("There can't be more than 16 groups in a configuration"))?;
+  }
+  Ok(groups)
+}
 
 /// Gets all information related to a migration from a reading source.
 #[inline]
@@ -50,11 +85,21 @@ where
 
 #[cfg(test)]
 mod tests {
-  use crate::parse_migration;
+  use crate::{parse_cfg, parse_migration};
   use std::{fs::File, path::Path};
 
   #[test]
-  fn check_parse_file_from_path() {
+  fn parse_cfg_works() {
+    let cfg = br#"
+      ../oapth-test-utils/migrations/1__initial
+      ../oapth-test-utils/migrations/2__more_stuff
+    "#;
+    let groups = parse_cfg(&cfg[..], Path::new("../oapth-test-utils")).unwrap();
+    assert_eq!(groups.len(), 2);
+  }
+
+  #[test]
+  fn parse_migration_works() {
     let path = Path::new("../oapth-test-utils/migrations/1__initial/1__create_author.sql");
     let file = File::open(path).unwrap();
     let (up, down) = parse_migration(file).unwrap();

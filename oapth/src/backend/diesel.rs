@@ -2,10 +2,12 @@ use crate::{
   fixed_sql_commands::{_delete_migrations, _insert_migrations, _migrations_by_mg_version_query},
   Backend, BoxFut, Config, DbMigration, Migration, MigrationGroup,
 };
-use core::convert::TryFrom;
-use sqlx_core::{connection::Connection, executor::Executor};
+use diesel::{
+  connection::{SimpleConnection, TransactionManager},
+  sql_query, Connection, RunQueryDsl,
+};
 
-macro_rules! create_sqlx_backend {
+macro_rules! create_diesel_backend {
   (
     $(#[$new_doc:meta])+
     $backend_name:ident,
@@ -13,8 +15,11 @@ macro_rules! create_sqlx_backend {
     $create_oapth_tables:expr,
     $insert_migrations:ident($schema:expr)
   ) => {
-    /// Wraps functionalities for the `sqlx` crate
-    #[derive(Debug)]
+    /// Wraps functionalities for the `diesel` crate
+    #[
+      // Diesel types doesn't implement Debug
+      allow(missing_debug_implementations)
+    ]
     pub struct $backend_name {
       conn: $conn_ty,
     }
@@ -23,7 +28,7 @@ macro_rules! create_sqlx_backend {
       $(#[$new_doc])+
       #[inline]
       pub async fn new(config: &Config) -> crate::Result<Self> {
-        let conn = <$conn_ty>::connect(config.url()).await?;
+        let conn = <$conn_ty>::establish(config.url())?;
         Ok(Self { conn })
       }
     }
@@ -45,7 +50,7 @@ macro_rules! create_sqlx_backend {
 
       #[inline]
       fn execute<'a>(&'a mut self, command: &'a str) -> BoxFut<'a, crate::Result<()>> {
-        Box::pin(async move { Ok(self.conn.execute(command).await.map(|_| {})?) })
+        Box::pin(async move { Ok(self.conn.batch_execute(command).map(|_| {})?) })
       }
 
       #[inline]
@@ -62,16 +67,10 @@ macro_rules! create_sqlx_backend {
 
       #[inline]
       fn migrations<'a>(&'a mut self, mg: &'a MigrationGroup,) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
-        use futures::{StreamExt, TryStreamExt};
         Box::pin(async move {
           let query = _migrations_by_mg_version_query(mg.version(), $schema)?;
-          let rows = sqlx_core::query::query(query.as_str()).fetch(&mut self.conn);
-          Ok(
-            rows
-              .map(|el| DbMigration::try_from(el.map_err(crate::Error::Sqlx)?))
-              .try_collect::<Vec<_>>()
-              .await?,
-          )
+          let migrations = sql_query(query.as_str()).load(&self.conn)?;
+          Ok(migrations)
         })
       }
 
@@ -82,11 +81,13 @@ macro_rules! create_sqlx_backend {
         S: AsRef<str>,
       {
         Box::pin(async move {
-          let mut transaction = self.conn.begin().await?;
+          let conn = &mut self.conn;
+          let transaction_manager = conn.transaction_manager();
+          transaction_manager.begin_transaction(conn)?;
           for command in commands {
-            transaction.execute(command.as_ref()).await?;
+            conn.batch_execute(command.as_ref())?;
           }
-          transaction.commit().await?;
+          transaction_manager.commit_transaction(conn)?;
           Ok(())
         })
       }
@@ -94,8 +95,8 @@ macro_rules! create_sqlx_backend {
   };
 }
 
-#[cfg(feature = "with-sqlx-mssql")]
-create_sqlx_backend!(
+#[cfg(feature = "with-diesel-mysql")]
+create_diesel_backend!(
   /// Creates a new instance from all necessary parameters.
   ///
   /// # Example
@@ -103,35 +104,17 @@ create_sqlx_backend!(
   #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
   #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
-  /// use oapth::{Config, SqlxMssql};
-  /// let _ = SqlxMssql::new(&Config::with_url_from_default_var()?).await?;
+  /// use oapth::{Config, DieselMysql};
+  /// let _ = DieselMysql::new(&Config::with_url_from_default_var()?).await?;
   /// # Ok(()) }
-  SqlxMssql,
-  sqlx_core::mssql::MssqlConnection,
-  crate::fixed_sql_commands::_CREATE_MIGRATION_TABLES_MSSQL,
-  _insert_migrations(crate::_OAPTH_SCHEMA)
-);
-
-#[cfg(feature = "with-sqlx-mysql")]
-create_sqlx_backend!(
-  /// Creates a new instance from all necessary parameters.
-  ///
-  /// # Example
-  ///
-  #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
-  #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
-  /// # #[tokio::main] async fn main() -> oapth::Result<()> {
-  /// use oapth::{Config, SqlxMysql};
-  /// let _ = SqlxMysql::new(&Config::with_url_from_default_var()?).await?;
-  /// # Ok(()) }
-  SqlxMysql,
-  sqlx_core::mysql::MySqlConnection,
+  DieselMysql,
+  diesel::mysql::MysqlConnection,
   crate::fixed_sql_commands::_CREATE_MIGRATION_TABLES_MYSQL,
   _insert_migrations("")
 );
 
-#[cfg(feature = "with-sqlx-postgres")]
-create_sqlx_backend!(
+#[cfg(feature = "with-diesel-postgres")]
+create_diesel_backend!(
   /// Creates a new instance from all necessary parameters.
   ///
   /// # Example
@@ -139,17 +122,17 @@ create_sqlx_backend!(
   #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
   #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
-  /// use oapth::{Config, SqlxPostgres};
-  /// let _ = SqlxPostgres::new(&Config::with_url_from_default_var()?).await?;
+  /// use oapth::{Config, DieselPostgres};
+  /// let _ = DieselPostgres::new(&Config::with_url_from_default_var()?).await?;
   /// # Ok(()) }
-  SqlxPostgres,
-  sqlx_core::postgres::PgConnection,
+  DieselPostgres,
+  diesel::pg::PgConnection,
   crate::fixed_sql_commands::_CREATE_MIGRATION_TABLES_POSTGRESQL,
   _insert_migrations(crate::_OAPTH_SCHEMA)
 );
 
-#[cfg(feature = "with-sqlx-sqlite")]
-create_sqlx_backend!(
+#[cfg(feature = "with-diesel-sqlite")]
+create_diesel_backend!(
   /// Creates a new instance from all necessary parameters.
   ///
   /// # Example
@@ -157,11 +140,11 @@ create_sqlx_backend!(
   #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
   #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
-  /// use oapth::{Config, SqlxSqlite};
-  /// let _ = SqlxSqlite::new(&Config::with_url_from_default_var()?).await?;
+  /// use oapth::{Config, DieselSqlite};
+  /// let _ = DieselSqlite::new(&Config::with_url_from_default_var()?).await?;
   /// # Ok(()) }
-  SqlxSqlite,
-  sqlx_core::sqlite::SqliteConnection,
+  DieselSqlite,
+  diesel::sqlite::SqliteConnection,
   crate::fixed_sql_commands::_CREATE_MIGRATION_TABLES_SQLITE,
   _insert_migrations("")
 );

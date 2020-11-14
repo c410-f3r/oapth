@@ -67,36 +67,36 @@ where
   let mut commands = oapth::Commands::new(backend);
   match cli.commands {
     cli::Commands::Migrate => {
-      let dir = _migrations_dir(cli.dir.as_ref());
-      commands.migrate_from_dir(dir, cli.files_num).await?;
+      let dir = _migrations_file(cli.path.as_ref());
+      commands.migrate_from_cfg(dir, cli.files_num).await?;
     }
     #[cfg(feature = "dev-tools")]
-    cli::Commands::Reset { ref name } => {
-      commands.reset(name).await?;
+    cli::Commands::Recreate { ref name } => {
+      commands.recreate(name).await?;
     }
     cli::Commands::Rollback { ref versions } => {
-      let dir = _migrations_dir(cli.dir.as_ref());
-      commands.rollback_from_dir(dir, versions.iter().copied(), cli.files_num).await?;
+      let dir = _migrations_file(cli.path.as_ref());
+      commands.rollback_from_cfg(dir, &versions, cli.files_num).await?;
     }
     #[cfg(feature = "dev-tools")]
     cli::Commands::Seed => {
-      let dir = _seeds_dir(cli.dir.as_ref());
+      let dir = _seeds_dir(cli.path.as_ref());
       commands.seed_from_dir(dir).await?;
     }
     cli::Commands::Validate => {
-      let dir = _migrations_dir(cli.dir.as_ref());
-      commands.validate_from_dir(dir, cli.files_num).await?;
+      let dir = _migrations_file(cli.path.as_ref());
+      commands.validate_from_cfg(dir, cli.files_num).await?;
     }
   }
   Ok(())
 }
 
 #[inline]
-fn _migrations_dir(path: Option<&PathBuf>) -> &Path {
+fn _migrations_file(path: Option<&PathBuf>) -> &Path {
   if let Some(rslt) = path {
     rslt.as_path()
   } else {
-    Path::new("migrations")
+    Path::new("oapth.cfg")
   }
 }
 
