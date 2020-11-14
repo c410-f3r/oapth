@@ -30,9 +30,6 @@ migrations
     +-- 1__something_fancy.sql (Migration)
 ```
 
-* `Group`: A set of migrations that must also contain an unique version and a name.
-* `Migration`: A migration that is executed once and can't be modified.
-
 The SQL file itself is composed by two parts, one for migrations (`-- oapth UP` section) and another for rollbacks (`-- oapth DOWN` section).
 
 ```sql
@@ -77,7 +74,7 @@ One thing worth noting is that these mandatory dependencies might already be par
 
 ## No features by default
 
-It is necessary to specify a desired feature to actually run the transactions, otherwise you will get a bunch of code that won't do much. Take a look at [Supported back ends](oapth#supported-back-ends).
+It is necessary to specify a desired feature to actually run the transactions, otherwise you will get a bunch of code that won't do much. Take a look at [Supported back ends](#supported-back-ends).
 
 ```bash
 cargo install oapth-cli
