@@ -68,3 +68,18 @@ name = "oapth"
 readme = "README.md"
 repository = "https://github.com/c410-f3r/oapth"
 version = "0.1.0"
+
+[package.metadata.docs.rs]
+features = [
+    "dev-tools",
+    "with-diesel-mysql",
+    "with-diesel-postgres",
+    "with-mysql_async",
+    "with-rusqlite",
+    "with-sqlx-mssql",
+    "with-sqlx-mysql",
+    "with-sqlx-postgres",
+    "with-sqlx-runtime-tokio-rustls",
+    "with-sqlx-sqlite",
+    "with-tokio-postgres"
+]

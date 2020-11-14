@@ -22,3 +22,6 @@ name = "oapth-cli"
 readme = "README.md"
 repository = "https://github.com/c410-f3r/oapth"
 version = "0.1.0"
+
+[package.metadata.docs.rs]
+all-features = true
