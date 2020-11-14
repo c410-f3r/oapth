@@ -55,6 +55,19 @@ impl Config {
     Ok(Self::with_url(url))
   }
 
+  /// Database type
+  ///
+  /// ```rust
+  /// use oapth::Config;
+  /// let c = Config::with_url("postgres://user_name:password@endpoint:1234/database_name");
+  /// assert_eq!(c.database().unwrap(), "postgres");
+  /// ```
+  #[inline]
+  pub fn database(&self) -> crate::Result<&str> {
+    let map = || crate::Error::Other("Invalid URL - Port is not an integer");
+    self.url.split(':').next().ok_or_else(map)
+  }
+
   /// Host with optional port
   ///
   /// ```rust
@@ -121,10 +134,7 @@ impl Config {
   #[inline]
   pub fn password(&self) -> crate::Result<&str> {
     let opt = || {
-      let mut split = self.url.split(':');
-      let _ = split.next()?;
-      let _ = split.next()?;
-      let with_password = split.next()?;
+      let with_password = self.url.split(':').nth(2)?;
       let at_idx = with_password.find('@')?;
       with_password.get(0..at_idx)
     };
@@ -168,11 +178,7 @@ impl Config {
   /// ```
   #[inline]
   pub fn user(&self) -> crate::Result<&str> {
-    let opt = || {
-      let mut split = self.url.split(':');
-      let _ = split.next()?;
-      split.next()?.get(2..)
-    };
+    let opt = || self.url.split(':').nth(1)?.get(2..);
     opt().ok_or_else(|| crate::Error::Other("Invalid URL - Missing database password"))
   }
 }
