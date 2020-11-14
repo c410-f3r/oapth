@@ -1,11 +1,25 @@
+#[cfg(any(
+  feature = "with-diesel-mysql",
+  feature = "with-diesel-postgres",
+  feature = "with-diesel-sqlite",
+))]
+mod db_migration_diesel;
+#[cfg(any(
+  feature = "with-sqlx-mssql",
+  feature = "with-sqlx-mysql",
+  feature = "with-sqlx-postgres",
+  feature = "with-sqlx-sqlite",
+))]
+mod db_migration_sqlx;
+
 use crate::{MigrationCommon, MigrationGroup, MigrationParams};
-use chrono::NaiveDateTime;
+use chrono::{DateTime, FixedOffset, NaiveDateTime, Utc};
 use core::fmt;
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct DbMigration {
   common: MigrationCommon,
-  created_on: NaiveDateTime,
+  created_on: DateTime<FixedOffset>,
   group: MigrationGroup,
 }
 
@@ -63,11 +77,8 @@ impl core::convert::TryFrom<mysql_async::Row> for DbMigration {
           name: from.get("name")?,
           version: from.get("version")?,
         },
-        created_on: from.get::<NaiveDateTime, _>("created_on")?,
-        group: MigrationGroup {
-          version: from.get("group_version")?,
-          name: from.get("group_name")?,
-        },
+        created_on: _fixed_from_naive_utc(from.get::<NaiveDateTime, _>("created_on")?),
+        group: MigrationGroup { version: from.get("omg_version")?, name: from.get("omg_name")? },
       })
     };
     self_opt().ok_or(crate::Error::MysqlAsync(mysql_async::Error::Driver(
@@ -88,99 +99,36 @@ impl<'a> core::convert::TryFrom<&'a rusqlite::Row<'a>> for DbMigration {
         name: from.get("name")?,
         version: from.get("version")?,
       },
-      created_on: from.get("created_on")?,
-      group: MigrationGroup { version: from.get("group_version")?, name: from.get("group_name")? },
+      created_on: from.get::<_, DateTime<Utc>>("created_on")?.into(),
+      group: MigrationGroup { version: from.get("omg_version")?, name: from.get("omg_name")? },
     })
   }
 }
 
-#[cfg(feature = "with-sqlx-mssql")]
-impl core::convert::TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
-  type Error = crate::Error;
-
-  #[allow(clippy::panic)]
-  #[inline]
-  fn try_from(from: sqlx_core::mssql::MssqlRow) -> Result<Self, Self::Error> {
-    use sqlx_core::row::Row;
-    Ok(Self {
-      common: MigrationCommon {
-        checksum: from.try_get("checksum")?,
-        name: from.try_get("name")?,
-        version: from.try_get("version")?,
-      },
-      created_on: from.try_get("created_on")?,
-      group: MigrationGroup {
-        version: from.try_get("group_version")?,
-        name: from.try_get("group_name")?,
-      },
-    })
-  }
-}
-
-#[cfg(feature = "with-sqlx-mysql")]
-impl core::convert::TryFrom<sqlx_core::mysql::MySqlRow> for DbMigration {
+#[cfg(feature = "with-tiberius")]
+impl core::convert::TryFrom<tiberius::Row> for DbMigration {
   type Error = crate::Error;
 
   #[inline]
-  fn try_from(from: sqlx_core::mysql::MySqlRow) -> Result<Self, Self::Error> {
-    use sqlx_core::row::Row;
+  fn try_from(from: tiberius::Row) -> Result<Self, Self::Error> {
+    macro_rules! translate {
+      ($rslt:expr) => {
+        $rslt?.ok_or_else(|| crate::Error::Other("Invalid row for migration retrieval"))?
+      };
+    }
     Ok(Self {
       common: MigrationCommon {
-        checksum: from.try_get("checksum")?,
-        name: from.try_get("name")?,
-        version: from.try_get("version")?,
+        checksum: translate!(from.try_get::<&str, _>("checksum")).into(),
+        name: translate!(from.try_get::<&str, _>("name")).into(),
+        version: translate!(from.try_get("version")),
       },
       created_on: {
-        let dt = from.try_get::<chrono::DateTime<chrono::Utc>, _>("created_on")?;
-        dt.naive_utc()
+        let s = translate!(from.try_get::<&str, _>("created_on"));
+        _mssql_date_hack(s)?
       },
       group: MigrationGroup {
-        version: from.try_get("group_version")?,
-        name: from.try_get("group_name")?,
-      },
-    })
-  }
-}
-
-#[cfg(feature = "with-sqlx-postgres")]
-impl core::convert::TryFrom<sqlx_core::postgres::PgRow> for DbMigration {
-  type Error = crate::Error;
-
-  #[inline]
-  fn try_from(from: sqlx_core::postgres::PgRow) -> Result<Self, Self::Error> {
-    use sqlx_core::row::Row;
-    Ok(Self {
-      common: MigrationCommon {
-        checksum: from.try_get("checksum")?,
-        name: from.try_get("name")?,
-        version: from.try_get("version")?,
-      },
-      created_on: from.try_get("created_on")?,
-      group: MigrationGroup {
-        version: from.try_get("group_version")?,
-        name: from.try_get("group_name")?,
-      },
-    })
-  }
-}
-
-#[cfg(feature = "with-sqlx-sqlite")]
-impl core::convert::TryFrom<sqlx_core::sqlite::SqliteRow> for DbMigration {
-  type Error = crate::Error;
-
-  #[inline]
-  fn try_from(from: sqlx_core::sqlite::SqliteRow) -> Result<Self, Self::Error> {
-    use sqlx_core::row::Row;
-    Ok(Self {
-      common: MigrationCommon {
-        checksum: from.try_get("checksum")?,
-        name: from.try_get("name")?,
-        version: from.try_get("version")?,
-      },
-      created_on: from.try_get("created_on")?,
-      group: MigrationGroup {
-        version: from.try_get("group_version")?,
-        name: from.try_get("group_name")?,
+        version: translate!(from.try_get("omg_version")),
+        name: translate!(from.try_get::<&str, _>("omg_name")).into(),
       },
     })
   }
@@ -200,9 +148,19 @@ impl core::convert::TryFrom<tokio_postgres::Row> for DbMigration {
       },
       created_on: from.try_get("created_on")?,
       group: MigrationGroup {
-        version: from.try_get("group_version")?,
-        name: from.try_get("group_name")?,
+        version: from.try_get("omg_version")?,
+        name: from.try_get("omg_name")?,
       },
     })
   }
+}
+
+fn _fixed_from_naive_utc(naive: NaiveDateTime) -> DateTime<FixedOffset> {
+  chrono::DateTime::<Utc>::from_utc(naive, Utc).into()
+}
+
+fn _mssql_date_hack(s: &str) -> crate::Result<DateTime<FixedOffset>> {
+  let naive_rslt = NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S");
+  let naive = naive_rslt.map_err(|_| crate::Error::Other("Invalid date for mssql"))?;
+  Ok(_fixed_from_naive_utc(naive))
 }

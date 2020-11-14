@@ -2,6 +2,22 @@ use core::fmt;
 
 /// Wraps all possible errors related to `oapth` or third-party crates.
 pub enum Error {
+  #[cfg(any(
+    feature = "with-diesel-mysql",
+    feature = "with-diesel-postgres",
+    feature = "with-diesel-sqlite",
+  ))]
+  /// Diesel error
+  Diesel(diesel::result::Error),
+  #[cfg(any(
+    feature = "with-diesel-mysql",
+    feature = "with-diesel-postgres",
+    feature = "with-diesel-sqlite",
+  ))]
+  /// Diesel connection error
+  DieselConnection(diesel::result::ConnectionError),
+  /// Different rollback versions
+  DifferentRollbackVersions,
   /// Format error
   Fmt(fmt::Error),
   /// Incomplete builder
@@ -22,6 +38,8 @@ pub enum Error {
   /// `mysql_async` error
   #[cfg(feature = "with-mysql_async")]
   MysqlAsync(mysql_async::Error),
+  /// Other
+  Other(&'static str),
   /// `rusqlite` error
   #[cfg(feature = "with-rusqlite")]
   Rusqlite(rusqlite::Error),
@@ -33,6 +51,9 @@ pub enum Error {
     feature = "with-sqlx-sqlite",
   ))]
   Sqlx(sqlx_core::error::Error),
+  /// `tiberius` error
+  #[cfg(feature = "with-tiberius")]
+  Tiberius(tiberius::error::Error),
   /// `tokio-postgres` error
   #[cfg(feature = "with-tokio-postgres")]
   TokioPostgres(tokio_postgres::Error),
@@ -40,6 +61,30 @@ pub enum Error {
   ValidationDivergentMigrations(i32),
   /// Validation - Migrations number
   ValidationLessMigrationsNum(usize, usize),
+}
+
+#[cfg(any(
+  feature = "with-diesel-mysql",
+  feature = "with-diesel-postgres",
+  feature = "with-diesel-sqlite",
+))]
+impl From<diesel::result::Error> for Error {
+  #[inline]
+  fn from(from: diesel::result::Error) -> Self {
+    Self::Diesel(from)
+  }
+}
+
+#[cfg(any(
+  feature = "with-diesel-mysql",
+  feature = "with-diesel-postgres",
+  feature = "with-diesel-sqlite",
+))]
+impl From<diesel::result::ConnectionError> for Error {
+  #[inline]
+  fn from(from: diesel::result::ConnectionError) -> Self {
+    Self::DieselConnection(from)
+  }
 }
 
 impl From<fmt::Error> for Error {
@@ -86,6 +131,14 @@ impl From<std::io::Error> for Error {
   }
 }
 
+#[cfg(feature = "with-tiberius")]
+impl From<tiberius::error::Error> for Error {
+  #[inline]
+  fn from(from: tiberius::error::Error) -> Self {
+    Self::Tiberius(from)
+  }
+}
+
 #[cfg(feature = "with-tokio-postgres")]
 impl From<tokio_postgres::Error> for Error {
   #[inline]
@@ -98,6 +151,19 @@ impl fmt::Debug for Error {
   #[inline]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match *self {
+      #[cfg(any(
+        feature = "with-diesel-mysql",
+        feature = "with-diesel-postgres",
+        feature = "with-diesel-sqlite",
+      ))]
+      Self::Diesel(ref e) => write!(f, "Diesel: {}", e),
+      #[cfg(any(
+        feature = "with-diesel-mysql",
+        feature = "with-diesel-postgres",
+        feature = "with-diesel-sqlite",
+      ))]
+      Self::DieselConnection(ref e) => write!(f, "Diesel connection: {}", e),
+      Self::DifferentRollbackVersions => write!(f, "The number of rollback versions must be equal the number of migration groups"),
       Self::Fmt(ref e) => write!(f, "Fmt: {}", e),
       Self::IncompleteBuilder => write!(f, "It is necessary to provide all parameters to the migration builder"),
       Self::IncompleteSqlFile => write!(
@@ -117,6 +183,7 @@ impl fmt::Debug for Error {
       }
       #[cfg(feature = "with-mysql_async")]
       Self::MysqlAsync(ref e) => write!(f, "MySql: {}", e),
+      Self::Other(s) => write!(f, "Other: {}", s),
       #[cfg(feature = "with-rusqlite")]
       Self::Rusqlite(ref e) => write!(f, "Rusqlite: {}", e),
       #[cfg(any(
@@ -125,7 +192,9 @@ impl fmt::Debug for Error {
         feature = "with-sqlx-postgres",
         feature = "with-sqlx-sqlite",
       ))]
-      Self::Sqlx(ref e) => write!(f, "Sqlx: {}", e),
+      Self::Sqlx(ref e) => write!(f, "SQLx: {}", e),
+      #[cfg(feature = "with-tiberius")]
+      Self::Tiberius(ref e) => write!(f, "Tiberius: {}", e),
       #[cfg(feature = "with-tokio-postgres")]
       Self::TokioPostgres(ref e) => write!(f, "Postgres: {}", e),
       Self::ValidationDivergentMigrations(version) => {

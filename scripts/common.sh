@@ -1,7 +1,6 @@
-
 #!/usr/bin/env bash
 
-set -eux
+set -euxo pipefail
 
 export RUST_BACKTRACE=1
 export RUSTFLAGS='

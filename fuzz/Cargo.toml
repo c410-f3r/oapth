@@ -1,6 +1,6 @@
 [[bin]]
-name = "parse_migration"
-path = "parse_migration.rs"
+name = "parsers"
+path = "parsers.rs"
 
 [[bin]]
 name = "validate"

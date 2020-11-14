@@ -1,20 +1,29 @@
 use crate::{
   fixed_sql_commands::{
     _delete_migrations, _insert_migrations, _migrations_by_mg_version_query,
-    _CREATE_MIGRATION_TABLES_POSTGRESQL,
+    _CREATE_MIGRATION_TABLES_MSSQL,
   },
   Backend, BoxFut, DbMigration, Migration, MigrationGroup, _OAPTH_SCHEMA,
 };
-use core::{convert::TryFrom, str::FromStr};
-use tokio_postgres::{Client, Config, NoTls};
+use core::convert::TryFrom;
+use futures::{AsyncRead, AsyncWrite};
+use tiberius::{AuthMethod, Client, Config};
 
-/// Wraps functionalities for the `tokio-postgres` crate
+/// Wraps functionalities for the `tiberius` crate
+///
+/// This backend currently doesn't support transactions
 #[derive(Debug)]
-pub struct TokioPostgres {
-  conn: Client,
+pub struct Tiberius<T>
+where
+  T: AsyncRead + AsyncWrite + Send + Unpin,
+{
+  conn: Client<T>,
 }
 
-impl TokioPostgres {
+impl<T> Tiberius<T>
+where
+  T: AsyncRead + AsyncWrite + Send + Unpin,
+{
   /// Creates a new instance from all necessary parameters.
   ///
   /// # Example
@@ -22,27 +31,31 @@ impl TokioPostgres {
   #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
   #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
-  /// use oapth::{Config, TokioPostgres};
-  /// let _ = TokioPostgres::new(&Config::with_url_from_default_var()?).await?;
+  /// use oapth::{Config, Tiberius};
+  /// use tokio_util::compat::Tokio02AsyncWriteCompatExt;
+  /// let c = Config::with_url_from_default_var().unwrap();
+  /// let tcp = tokio::net::TcpStream::connect(c.full_host().unwrap()).await.unwrap();
+  /// let _ = Tiberius::new(&c, tcp.compat_write()).await.unwrap();
   /// # Ok(()) }
   /// ```
   #[inline]
-  pub async fn new(oapth_config: &crate::Config) -> crate::Result<Self> {
-    let config = Config::from_str(oapth_config.url())?;
-    let (client, conn) = config.connect(NoTls).await?;
-    tokio::spawn(async move {
-      if let Err(e) = conn.await {
-        eprintln!("Connection error: {}", e);
-      }
-    });
-    Ok(Self { conn: client })
+  pub async fn new(oapth_config: &crate::Config, tcp: T) -> crate::Result<Self> {
+    let mut config = Config::new();
+    config.authentication(AuthMethod::sql_server(oapth_config.user()?, oapth_config.password()?));
+    config.host(oapth_config.host()?);
+    config.port(oapth_config.port()?);
+    let conn = Client::connect(config, tcp).await?;
+    Ok(Self { conn })
   }
 }
 
-impl Backend for TokioPostgres {
+impl<T> Backend for Tiberius<T>
+where
+  T: AsyncRead + AsyncWrite + Send + Unpin,
+{
   #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
-    self.execute(_CREATE_MIGRATION_TABLES_POSTGRESQL)
+    self.execute(_CREATE_MIGRATION_TABLES_MSSQL)
   }
 
   #[inline]
@@ -56,7 +69,7 @@ impl Backend for TokioPostgres {
 
   #[inline]
   fn execute<'a>(&'a mut self, command: &'a str) -> BoxFut<'a, crate::Result<()>> {
-    Box::pin(async move { Ok(self.conn.batch_execute(command).await?) })
+    Box::pin(async move { Ok(self.conn.execute(command, &[][..]).await.map(|_| ())?) })
   }
 
   #[inline]
@@ -78,7 +91,7 @@ impl Backend for TokioPostgres {
   ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
     Box::pin(async move {
       let buffer = _migrations_by_mg_version_query(mg.version(), _OAPTH_SCHEMA)?;
-      let vec = self.conn.query(buffer.as_str(), &[]).await?;
+      let vec = self.conn.query(buffer.as_str(), &[]).await?.into_first_result().await?;
       vec.into_iter().map(DbMigration::try_from).collect::<crate::Result<Vec<_>>>()
     })
   }
@@ -90,11 +103,9 @@ impl Backend for TokioPostgres {
     S: AsRef<str>,
   {
     Box::pin(async move {
-      let transaction = self.conn.transaction().await?;
       for command in commands {
-        transaction.batch_execute(command.as_ref()).await?;
+        self.execute(command.as_ref()).await?;
       }
-      transaction.commit().await?;
       Ok(())
     })
   }

@@ -1,6 +1,6 @@
 use crate::{
   fixed_sql_commands::{
-    _delete_migrations, _insert_migrations, _migrations_by_group_version_query,
+    _delete_migrations, _insert_migrations, _migrations_by_mg_version_query,
     _CREATE_MIGRATION_TABLES_MYSQL,
   },
   Backend, BoxFut, Config, DbMigration, Migration, MigrationGroup,
@@ -73,7 +73,7 @@ impl Backend for MysqlAsync {
   ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
     Box::pin(async move {
       let vec: Vec<Row> =
-        self.conn.query(_migrations_by_group_version_query(mg.version(), "")?.as_str()).await?;
+        self.conn.query(_migrations_by_mg_version_query(mg.version(), "")?.as_str()).await?;
       vec.into_iter().map(DbMigration::try_from).collect::<crate::Result<Vec<_>>>()
     })
   }

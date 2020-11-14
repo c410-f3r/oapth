@@ -1,35 +1,61 @@
 [dependencies]
-arrayvec = { default-features = false, version = "0.5" }
-chrono = { default-features = false, version = "0.4" }
+
+# Back ends
+
+diesel = { default-features = false, features = ["chrono"], optional = true, version = "1.0" }
 futures = { default-features = false, optional = true, version = "0.3" }
 mysql_async = { default-features = false, optional = true, version = "0.25" }
 rusqlite = { default-features = false, features = ["chrono", "trace"], optional = true, version = "0.24" }
-siphasher = { default-features = false, version = "0.3" }
-sqlx-core = { branch = "date", default-features = false, features = ["chrono"], git = "https://github.com/c410-f3r/sqlx", optional = true }
+sqlx-core = { default-features = false, features = ["chrono"], optional = true, version = "0.4" }
+tiberius = { default-features = false, optional = true, version = "0.4" }
 tokio = { default-features = false, features = ["rt-core"], optional = true, version = "0.2" }
 tokio-postgres = { default-features = false, features = ["runtime", "with-chrono-0_4"], optional = true, version = "0.5" }
 
+# Internals
+
+arrayvec = { default-features = false, version = "0.5" }
+chrono = { default-features = false, version = "0.4" }
+siphasher = { default-features = false, version = "0.3" }
+
 [dev-dependencies]
 env_logger = { default-features = false, version = "0.8" }
-tokio = { default-features = false, features = ["macros", "rt-core"], version = "0.2" }
+tokio = { default-features = false, features = ["macros", "net", "rt-core"], version = "0.2" }
+tokio-util = { default-features = false, features = ["compat"], version = "0.3" }
 
 [features]
+
+# Diesel
+
+with-diesel-mysql = ["diesel/mysql", "std"]
+with-diesel-postgres = ["diesel/postgres", "std"]
+with-diesel-sqlite = ["diesel/sqlite", "std"]
+
+# Internal "private" feature that is meaningless for public usage
+
+_integration_tests = []
+
+# Others
+
 default = []
 dev-tools = []
 std = []
 with-mysql_async = ["mysql_async", "std"]
 with-rusqlite = ["rusqlite", "std"]
+with-tiberius = ["futures", "std", "tiberius"]
+with-tokio-postgres = ["std", "tokio", "tokio-postgres"]
+
+# SQLx
+
 with-sqlx-mssql = ["futures", "sqlx-core/mssql", "std"]
 with-sqlx-mysql = ["futures", "sqlx-core/mysql", "std"]
 with-sqlx-postgres = ["futures", "sqlx-core/postgres", "std"]
-with-sqlx-runtime-actix = ["sqlx-core/runtime-actix", "std"]
-with-sqlx-runtime-async-std = ["sqlx-core/runtime-async-std", "std"]
-with-sqlx-runtime-tokio = ["sqlx-core/runtime-tokio", "std"]
+with-sqlx-runtime-actix-native-tls = ["sqlx-core/runtime-actix-native-tls", "std"]
+with-sqlx-runtime-actix-rustls = ["sqlx-core/runtime-actix-rustls", "std"]
+with-sqlx-runtime-async-std-native-tls = ["sqlx-core/runtime-async-std-native-tls", "std"]
+with-sqlx-runtime-async-std-rustls = ["sqlx-core/runtime-async-std-rustls", "std"]
+with-sqlx-runtime-tokio-native-tls = ["sqlx-core/runtime-tokio-native-tls", "std"]
+with-sqlx-runtime-tokio-rustls = ["sqlx-core/runtime-tokio-rustls", "std"]
 with-sqlx-sqlite = ["futures", "sqlx-core/sqlite", "std"]
-with-tokio-postgres = ["std", "tokio", "tokio-postgres"]
-
-# Internal "private" feature that is meaningless for public usage
-_integration_tests = []
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
