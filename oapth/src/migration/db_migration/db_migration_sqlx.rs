@@ -4,7 +4,6 @@ use crate::{DbMigration, MigrationCommon, MigrationGroup};
 impl core::convert::TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
   type Error = crate::Error;
 
-  #[allow(clippy::panic)]
   #[inline]
   fn try_from(from: sqlx_core::mssql::MssqlRow) -> Result<Self, Self::Error> {
     use sqlx_core::row::Row;
@@ -16,7 +15,7 @@ impl core::convert::TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
       },
       created_on: {
         let s = from.try_get::<String, _>("created_on")?;
-        crate::db_migration::_mssql_date_hack(&s)?
+        crate::migration::db_migration::_mssql_date_hack(&s)?
       },
       group: MigrationGroup {
         version: from.try_get("omg_version")?,

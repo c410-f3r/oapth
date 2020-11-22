@@ -1,12 +1,13 @@
 use crate::{
   fixed_sql_commands::{
     _delete_migrations, _insert_migrations, _migrations_by_mg_version_query,
-    _CREATE_MIGRATION_TABLES_MYSQL,
+    mysql::{_all_tables, _CREATE_MIGRATION_TABLES},
   },
-  Backend, BoxFut, Config, DbMigration, Migration, MigrationGroup,
+  BackEnd, BoxFut, Config, DbMigration, Migration, MigrationGroup, _BackEnd,
 };
+use alloc::string::String;
 use core::convert::TryFrom;
-use mysql_async::{prelude::Queryable, Conn, Params, Pool, Row, TxOpts};
+use mysql_async::{prelude::Queryable, Conn, Pool, Row, TxOpts};
 
 /// Wraps functionalities for the `mysql_async` crate
 #[derive(Debug)]
@@ -19,8 +20,8 @@ impl MysqlAsync {
   ///
   /// # Example
   ///
-  #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
-  #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
+  #[cfg_attr(feature = "_integration-tests", doc = "```rust")]
+  #[cfg_attr(not(feature = "_integration-tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
   /// use oapth::{Config, MysqlAsync};
   /// let _ = MysqlAsync::new(&Config::with_url_from_default_var()?).await?;
@@ -34,10 +35,34 @@ impl MysqlAsync {
   }
 }
 
-impl Backend for MysqlAsync {
+impl BackEnd for MysqlAsync {}
+
+impl _BackEnd for MysqlAsync {
+  #[inline]
+  fn all_tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move {
+      let buffer = _all_tables(schema)?;
+      let rows: Vec<Row> = self.conn.query(buffer.as_str()).await?;
+      rows
+        .into_iter()
+        .map(|row| {
+          row.get::<String, _>(0).ok_or(crate::Error::MysqlAsync(mysql_async::Error::Driver(
+            mysql_async::DriverError::FromRow { row },
+          )))
+        })
+        .collect::<crate::Result<_>>()
+    })
+  }
+
+  #[cfg(feature = "dev-tools")]
+  #[inline]
+  fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+    Box::pin(async move { Ok(self.execute(&crate::fixed_sql_commands::mysql::_clean()?).await?) })
+  }
+
   #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
-    self.execute(_CREATE_MIGRATION_TABLES_MYSQL)
+    self.execute(_CREATE_MIGRATION_TABLES)
   }
 
   #[inline]
@@ -51,7 +76,7 @@ impl Backend for MysqlAsync {
 
   #[inline]
   fn execute<'a>(&'a mut self, command: &'a str) -> BoxFut<'a, crate::Result<()>> {
-    self.transaction(command.split(';').filter(|el| !el.is_empty()))
+    Box::pin(async move { Ok(self.conn.query_drop(command).await?) })
   }
 
   #[inline]
@@ -72,8 +97,8 @@ impl Backend for MysqlAsync {
     mg: &'a MigrationGroup,
   ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
     Box::pin(async move {
-      let vec: Vec<Row> =
-        self.conn.query(_migrations_by_mg_version_query(mg.version(), "")?.as_str()).await?;
+      let buffer = _migrations_by_mg_version_query(mg.version(), "")?;
+      let vec: Vec<Row> = self.conn.query(buffer.as_str()).await?;
       vec.into_iter().map(DbMigration::try_from).collect::<crate::Result<Vec<_>>>()
     })
   }
@@ -87,7 +112,7 @@ impl Backend for MysqlAsync {
     Box::pin(async move {
       let mut transaction = self.conn.start_transaction(TxOpts::default()).await?;
       for command in commands {
-        transaction.exec_drop(command.as_ref(), Params::Empty).await?;
+        transaction.query_drop(command.as_ref()).await?;
       }
       transaction.commit().await?;
       Ok(())

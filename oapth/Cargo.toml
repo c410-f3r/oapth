@@ -2,13 +2,14 @@
 
 # Back ends
 
-diesel = { default-features = false, features = ["chrono"], optional = true, version = "1.0" }
+diesel = { default-features = false, features = ["chrono"], git = "https://github.com/diesel-rs/diesel", optional = true }
+diesel-dynamic-schema = { default-features = false, git = "https://github.com/diesel-rs/diesel", optional = true }
 futures = { default-features = false, optional = true, version = "0.3" }
 mysql_async = { default-features = false, optional = true, version = "0.25" }
 rusqlite = { default-features = false, features = ["chrono", "trace"], optional = true, version = "0.24" }
 sqlx-core = { default-features = false, features = ["chrono"], optional = true, version = "0.4" }
 tiberius = { default-features = false, optional = true, version = "0.4" }
-tokio = { default-features = false, features = ["rt-core"], optional = true, version = "0.2" }
+tokio = { default-features = false, optional = true, version = "0.2" }
 tokio-postgres = { default-features = false, features = ["runtime", "with-chrono-0_4"], optional = true, version = "0.5" }
 
 # Internals
@@ -18,44 +19,31 @@ chrono = { default-features = false, version = "0.4" }
 siphasher = { default-features = false, version = "0.3" }
 
 [dev-dependencies]
+chrono = { default-features = false, features = ["clock"], version = "0.4" }
 env_logger = { default-features = false, version = "0.8" }
 tokio = { default-features = false, features = ["macros", "net", "rt-core"], version = "0.2" }
 tokio-util = { default-features = false, features = ["compat"], version = "0.3" }
 
 [features]
-
-# Diesel
-
-with-diesel-mysql = ["diesel/mysql", "std"]
-with-diesel-postgres = ["diesel/postgres", "std"]
-with-diesel-sqlite = ["diesel/sqlite", "std"]
-
-# Internal "private" feature that is meaningless for public usage
-
-_integration_tests = []
-
-# Others
-
 default = []
 dev-tools = []
 std = []
+with-diesel-mysql = ["diesel/mysql", "diesel-dynamic-schema", "std"]
+with-diesel-postgres = ["diesel/postgres", "diesel-dynamic-schema", "std"]
+with-diesel-sqlite = ["diesel/sqlite", "diesel-dynamic-schema", "std"]
 with-mysql_async = ["mysql_async", "std"]
 with-rusqlite = ["rusqlite", "std"]
-with-tiberius = ["futures", "std", "tiberius"]
-with-tokio-postgres = ["std", "tokio", "tokio-postgres"]
-
-# SQLx
-
 with-sqlx-mssql = ["futures", "sqlx-core/mssql", "std"]
 with-sqlx-mysql = ["futures", "sqlx-core/mysql", "std"]
 with-sqlx-postgres = ["futures", "sqlx-core/postgres", "std"]
-with-sqlx-runtime-actix-native-tls = ["sqlx-core/runtime-actix-native-tls", "std"]
-with-sqlx-runtime-actix-rustls = ["sqlx-core/runtime-actix-rustls", "std"]
-with-sqlx-runtime-async-std-native-tls = ["sqlx-core/runtime-async-std-native-tls", "std"]
-with-sqlx-runtime-async-std-rustls = ["sqlx-core/runtime-async-std-rustls", "std"]
-with-sqlx-runtime-tokio-native-tls = ["sqlx-core/runtime-tokio-native-tls", "std"]
-with-sqlx-runtime-tokio-rustls = ["sqlx-core/runtime-tokio-rustls", "std"]
 with-sqlx-sqlite = ["futures", "sqlx-core/sqlite", "std"]
+with-tiberius = ["futures", "std", "tiberius"]
+with-tokio-postgres = ["std", "tokio", "tokio-postgres"]
+
+# Internal "private" features that should be meaningless for public usage
+
+_integration-tests = ["std"]
+_sqlx_hack = ["sqlx-core/runtime-tokio-rustls"]
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
@@ -70,16 +58,4 @@ repository = "https://github.com/c410-f3r/oapth"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-features = [
-    "dev-tools",
-    "with-diesel-mysql",
-    "with-diesel-postgres",
-    "with-mysql_async",
-    "with-rusqlite",
-    "with-sqlx-mssql",
-    "with-sqlx-mysql",
-    "with-sqlx-postgres",
-    "with-sqlx-runtime-tokio-rustls",
-    "with-sqlx-sqlite",
-    "with-tokio-postgres"
-]
+all-features = true

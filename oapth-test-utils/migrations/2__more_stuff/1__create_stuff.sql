@@ -5,6 +5,11 @@ CREATE TABLE apple (
   weight INT NOT NULL
 );
 
+CREATE TABLE coffee (
+  id INT NOT NULL PRIMARY KEY
+);
+
 -- oapth DOWN
 
+DROP TABLE coffee;
 DROP TABLE apple;

@@ -1,17 +1,18 @@
 use crate::{
   fixed_sql_commands::{
     _delete_migrations, _insert_migrations, _migrations_by_mg_version_query,
-    _CREATE_MIGRATION_TABLES_MSSQL,
+    mssql::{_all_tables, _CREATE_MIGRATION_TABLES},
   },
-  Backend, BoxFut, DbMigration, Migration, MigrationGroup, _OAPTH_SCHEMA,
+  BackEnd, BoxFut, DbMigration, Migration, MigrationGroup, _BackEnd, _OAPTH_SCHEMA,
 };
+use alloc::string::String;
 use core::convert::TryFrom;
 use futures::{AsyncRead, AsyncWrite};
 use tiberius::{AuthMethod, Client, Config};
 
 /// Wraps functionalities for the `tiberius` crate
 ///
-/// This backend currently doesn't support transactions
+/// This BackEnd currently doesn't support transactions
 #[derive(Debug)]
 pub struct Tiberius<T>
 where
@@ -28,8 +29,8 @@ where
   ///
   /// # Example
   ///
-  #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
-  #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
+  #[cfg_attr(feature = "_integration-tests", doc = "```rust")]
+  #[cfg_attr(not(feature = "_integration-tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
   /// use oapth::{Config, Tiberius};
   /// use tokio_util::compat::Tokio02AsyncWriteCompatExt;
@@ -49,13 +50,36 @@ where
   }
 }
 
-impl<T> Backend for Tiberius<T>
+impl<T> BackEnd for Tiberius<T> where T: AsyncRead + AsyncWrite + Send + Unpin {}
+
+impl<T> _BackEnd for Tiberius<T>
 where
   T: AsyncRead + AsyncWrite + Send + Unpin,
 {
   #[inline]
+  fn all_tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move {
+      let query_result = self.conn.query(_all_tables(schema)?.as_str(), &[]).await?;
+      let rows = query_result.into_first_result().await?;
+      rows
+        .into_iter()
+        .map(|r| {
+          let opt = r.try_get::<&str, _>(0)?;
+          opt.map(|el| el.into()).ok_or(crate::Error::Other("Invalid query"))
+        })
+        .collect::<crate::Result<_>>()
+    })
+  }
+
+  #[cfg(feature = "dev-tools")]
+  #[inline]
+  fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+    Box::pin(async move { Ok(self.execute(&crate::fixed_sql_commands::mssql::_clean()?).await?) })
+  }
+
+  #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
-    self.execute(_CREATE_MIGRATION_TABLES_MSSQL)
+    self.execute(_CREATE_MIGRATION_TABLES)
   }
 
   #[inline]

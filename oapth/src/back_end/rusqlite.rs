@@ -1,12 +1,13 @@
 use crate::{
   fixed_sql_commands::{
     _delete_migrations, _insert_migrations, _migrations_by_mg_version_query,
-    _CREATE_MIGRATION_TABLES_SQLITE,
+    sqlite::{_all_tables, _CREATE_MIGRATION_TABLES},
   },
-  Backend, BoxFut, Config, DbMigration, Migration, MigrationGroup,
+  BackEnd, BoxFut, Config, DbMigration, Migration, MigrationGroup, _BackEnd,
 };
+use alloc::string::String;
 use core::convert::TryFrom;
-use rusqlite::{params, Connection, NO_PARAMS};
+use rusqlite::{Connection, Row, NO_PARAMS};
 
 /// Wraps functionalities for the `rusqlite` crate
 #[derive(Debug)]
@@ -19,8 +20,8 @@ impl Rusqlite {
   ///
   /// # Example
   ///
-  #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
-  #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
+  #[cfg_attr(feature = "_integration-tests", doc = "```rust")]
+  #[cfg_attr(not(feature = "_integration-tests"), doc = "```ignore,rust")]
   /// #[tokio::main]
   /// # async fn main() -> oapth::Result<()> {
   /// use oapth::{Config, Rusqlite};
@@ -32,12 +33,43 @@ impl Rusqlite {
     let conn = Connection::open_with_flags(real_path, Default::default())?;
     Ok(Self { conn })
   }
+
+  #[inline]
+  async fn query<F, T>(&mut self, query: &str, cb: F) -> crate::Result<Vec<T>>
+  where
+    F: FnMut(&Row<'_>) -> rusqlite::Result<T>,
+  {
+    Ok(
+      self
+        .conn
+        .prepare(query)?
+        .query_map(NO_PARAMS, cb)?
+        .into_iter()
+        .collect::<Result<Vec<T>, _>>()?,
+    )
+  }
 }
 
-impl Backend for Rusqlite {
+impl BackEnd for Rusqlite {}
+
+impl _BackEnd for Rusqlite {
+  #[inline]
+  fn all_tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move {
+      let buffer = _all_tables(schema)?;
+      Ok(self.query(buffer.as_str(), |r| Ok(r.get::<_, String>(0)?)).await?)
+    })
+  }
+
+  #[cfg(feature = "dev-tools")]
+  #[inline]
+  fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+    Box::pin(async move { Ok(self.execute(&crate::fixed_sql_commands::sqlite::_clean()?).await?) })
+  }
+
   #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
-    self.execute(_CREATE_MIGRATION_TABLES_SQLITE)
+    self.execute(_CREATE_MIGRATION_TABLES)
   }
 
   #[inline]
@@ -79,14 +111,8 @@ impl Backend for Rusqlite {
           rusqlite::Error::InvalidQuery
         }
       };
-      Ok(
-        self
-          .conn
-          .prepare(_migrations_by_mg_version_query(mg.version(), "")?.as_str())?
-          .query_map(NO_PARAMS, |row| DbMigration::try_from(row).map_err(fun))?
-          .into_iter()
-          .collect::<Result<Vec<_>, _>>()?,
-      )
+      let buffer = _migrations_by_mg_version_query(mg.version(), "")?;
+      Ok(self.query(buffer.as_str(), |row| DbMigration::try_from(row).map_err(fun)).await?)
     })
   }
 
@@ -99,19 +125,10 @@ impl Backend for Rusqlite {
     Box::pin(async move {
       let transaction = self.conn.transaction()?;
       for command in commands {
-        transaction.execute(command.as_ref(), params![]).map(usize_to_u64)?;
+        transaction.execute_batch(command.as_ref())?;
       }
       transaction.commit()?;
       Ok(())
     })
   }
-}
-
-#[allow(
-  // Who has a 128bit pointer size computer?
-  clippy::as_conversions
-)]
-#[inline]
-fn usize_to_u64(n: usize) -> u64 {
-  n as u64
 }

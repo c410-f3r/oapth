@@ -1,0 +1,41 @@
+[[bench]]
+harness = false
+name = "back-ends"
+path = "back_ends.rs"
+
+[dependencies]
+criterion = { default-features = false, version = "0.3" }
+sqlx-core = { default-features = false, features = ["runtime-tokio-rustls"], version = "0.4" }
+tokio = { default-features = false, features = ["macros", "net", "rt-threaded"], version = "0.2" }
+tokio-util = { default-features = false, features = ["compat"], version = "0.3" }
+
+[dependencies.oapth]
+default-features = false
+features = [
+    "dev-tools",
+    "with-diesel-mysql",
+    "with-diesel-postgres",
+    "with-diesel-sqlite",
+    "with-mysql_async",
+    "with-rusqlite",
+    "with-sqlx-mssql",
+    "with-sqlx-mysql",
+    "with-sqlx-postgres",
+    "with-sqlx-sqlite",
+    "with-tiberius",
+    "with-tokio-postgres"
+]
+path = "../oapth"
+
+[features]
+default = []
+
+[package]
+name = "oapth-benchmarks"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2018"
+
+[workspace]
+

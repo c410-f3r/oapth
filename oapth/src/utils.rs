@@ -11,6 +11,22 @@ use {
   },
 };
 
+#[cfg(feature = "std")]
+macro_rules! loop_files {
+  ($buffer:expr, $iter:expr, $n:expr, $cb:expr) => {{
+    loop {
+      for el in crate::_iter_n_times($n, &mut $iter) {
+        $buffer.push(el?);
+      }
+      if $buffer.is_empty() {
+        break;
+      }
+      $cb;
+      $buffer.clear();
+    }
+  }};
+}
+
 #[inline]
 pub fn binary_seach_migration_by_version<T>(version: i32, migrations: &[T]) -> Option<(usize, &T)>
 where
@@ -21,10 +37,10 @@ where
     common.version.cmp(&version)
   }) {
     Err(_) => None,
-    #[
+    #[allow(
       // Indexing will not panic in this scenario
-      allow(clippy::indexing_slicing)
-    ]
+      clippy::indexing_slicing
+    )]
     Ok(rslt) => Some((rslt, &migrations[rslt])),
   }
 }
@@ -86,14 +102,14 @@ where
 
 #[cfg(feature = "std")]
 #[inline]
-pub fn map_paths_into_migrations<I>(
+fn map_paths_into_migrations<I>(
   migrations: I,
 ) -> impl Clone + Iterator<Item = crate::Result<Migration>>
 where
   I: Clone + Iterator<Item = PathBuf>,
 {
   migrations.filter_map(|path| {
-    let (version, name) = _migration_file_name_parts(path.file_name()?.to_str()?)?;
+    let (version, name) = migration_file_name_parts(path.file_name()?.to_str()?)?;
     let file = match File::open(path) {
       Err(e) => return Some(Err(e.into())),
       Ok(rslt) => rslt,
@@ -108,8 +124,9 @@ where
   })
 }
 
+#[cfg(feature = "std")]
 #[inline]
-pub fn _migration_file_name_parts(s: &str) -> Option<(i32, String)> {
+fn migration_file_name_parts(s: &str) -> Option<(i32, String)> {
   if !s.is_ascii() {
     return None;
   }
@@ -121,7 +138,7 @@ pub fn _migration_file_name_parts(s: &str) -> Option<(i32, String)> {
 
 #[cfg(feature = "std")]
 #[inline]
-pub fn migrations_from_dir(path: &Path) -> Option<(MigrationGroup, Vec<PathBuf>)> {
+fn migrations_from_dir(path: &Path) -> Option<(MigrationGroup, Vec<PathBuf>)> {
   let (mg_version, mg_name) = _group_dir_name_parts(path.file_name()?.to_str()?)?;
 
   let files_rslts = files(path).ok()?.map(|rslt| rslt.map(|el| el.path()));
@@ -135,131 +152,4 @@ pub fn migrations_from_dir(path: &Path) -> Option<(MigrationGroup, Vec<PathBuf>)
 #[inline]
 fn read_dir_with_cb(dir: &Path) -> crate::Result<impl Iterator<Item = crate::Result<DirEntry>>> {
   Ok(std::fs::read_dir(dir)?.map(|entry_rslt| entry_rslt.map_err(|e| e.into())))
-}
-
-#[cfg(all(feature = "_integration_tests", test))]
-macro_rules! create_integration_test {
-  ($mod_name:ident, $backend:expr, $($fun:ident),+) => {
-    mod $mod_name {
-      $(
-        #[tokio::test]
-        async fn $fun() {
-          let _ = env_logger::builder().is_test(true).try_init();
-          let mut commands = crate::Commands::new($backend);
-          super::$fun(&mut commands).await;
-        }
-      )+
-    }
-  };
-}
-
-#[cfg(all(feature = "_integration_tests", test))]
-macro_rules! _create_integration_test_backend {
-  ($backend_ty:ident) => {{
-    let c = crate::Config::with_url_from_default_var().unwrap();
-    crate::$backend_ty::new(&c).await.unwrap()
-  }};
-}
-
-#[cfg(all(feature = "_integration_tests", test))]
-macro_rules! create_integration_tests {
-  ($($fun:ident),+) => {
-    #[cfg(feature = "with-diesel-mysql")]
-    create_integration_test!(
-      diesel_mysql,
-      _create_integration_test_backend!(DieselMysql),
-      $($fun),+
-    );
-
-    #[cfg(feature = "with-diesel-postgres")]
-    create_integration_test!(
-      diesel_postgres,
-      _create_integration_test_backend!(DieselPostgres),
-      $($fun),+
-    );
-
-    #[cfg(feature = "with-diesel-sqlite")]
-    create_integration_test!(
-      diesel_sqlite,
-      _create_integration_test_backend!(DieselSqlite),
-      $($fun),+
-    );
-
-    #[cfg(feature = "with-mysql_async")]
-    create_integration_test!(
-      mysql_async,
-      _create_integration_test_backend!(MysqlAsync),
-      $($fun),+
-    );
-
-    #[cfg(feature = "with-rusqlite")]
-    create_integration_test!(
-      rusqlite,
-      _create_integration_test_backend!(Rusqlite),
-      $($fun),+
-    );
-
-    #[cfg(feature = "with-sqlx-mssql")]
-    create_integration_test!(
-      sqlx_mssql,
-      _create_integration_test_backend!(SqlxMssql),
-      $($fun),+
-    );
-
-    #[cfg(feature = "with-sqlx-mysql")]
-    create_integration_test!(
-      sqlx_mysql,
-      _create_integration_test_backend!(SqlxMysql),
-      $($fun),+
-    );
-
-    #[cfg(feature = "with-sqlx-postgres")]
-    create_integration_test!(
-      sqlx_postgres,
-      _create_integration_test_backend!(SqlxPostgres),
-      $($fun),+
-    );
-
-    #[cfg(feature = "with-sqlx-sqlite")]
-    create_integration_test!(
-      sqlx_sqlite,
-      _create_integration_test_backend!(SqlxSqlite),
-      $($fun),+
-    );
-
-    #[cfg(feature = "with-tiberius")]
-    create_integration_test!(
-      tiberius,
-      {
-        use tokio_util::compat::Tokio02AsyncWriteCompatExt;
-        let c = crate::Config::with_url_from_default_var().unwrap();
-        let tcp = tokio::net::TcpStream::connect(c.full_host().unwrap()).await.unwrap();
-        crate::Tiberius::new(&c, tcp.compat_write()).await.unwrap()
-      },
-      $($fun),+
-    );
-
-    #[cfg(feature = "with-tokio-postgres")]
-    create_integration_test!(
-      tokio_postgres,
-      _create_integration_test_backend!(TokioPostgres),
-      $($fun),+
-    );
-  };
-}
-
-#[cfg(feature = "std")]
-macro_rules! loop_files {
-  ($buffer:expr, $iter:expr, $n:expr, $cb:expr) => {{
-    loop {
-      for el in crate::_iter_n_times($n, &mut $iter) {
-        $buffer.push(el?);
-      }
-      if $buffer.is_empty() {
-        break;
-      }
-      $cb;
-      $buffer.clear();
-    }
-  }};
 }

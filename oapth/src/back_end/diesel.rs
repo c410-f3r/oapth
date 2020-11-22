@@ -1,30 +1,36 @@
+mod schemas;
+
 use crate::{
   fixed_sql_commands::{_delete_migrations, _insert_migrations, _migrations_by_mg_version_query},
-  Backend, BoxFut, Config, DbMigration, Migration, MigrationGroup,
+  BackEnd, BoxFut, Config, DbMigration, Migration, MigrationGroup, _BackEnd,
 };
+use alloc::string::String;
 use diesel::{
   connection::{SimpleConnection, TransactionManager},
   sql_query, Connection, RunQueryDsl,
 };
+use schemas::AllTables;
 
-macro_rules! create_diesel_backend {
+macro_rules! create_diesel_back_end {
   (
     $(#[$new_doc:meta])+
-    $backend_name:ident,
+    $back_end_name:ident,
+    $all_tables:path,
+    $clean:path,
     $conn_ty:ty,
     $create_oapth_tables:expr,
-    $insert_migrations:ident($schema:expr)
+    $insert_migrations:ident($schema:expr),
   ) => {
     /// Wraps functionalities for the `diesel` crate
     #[
       // Diesel types doesn't implement Debug
       allow(missing_debug_implementations)
     ]
-    pub struct $backend_name {
+    pub struct $back_end_name {
       conn: $conn_ty,
     }
 
-    impl $backend_name {
+    impl $back_end_name {
       $(#[$new_doc])+
       #[inline]
       pub async fn new(config: &Config) -> crate::Result<Self> {
@@ -33,7 +39,26 @@ macro_rules! create_diesel_backend {
       }
     }
 
-    impl Backend for $backend_name {
+    impl BackEnd for $back_end_name {
+    }
+
+    impl _BackEnd for $back_end_name {
+      #[inline]
+      fn all_tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+        Box::pin(async move {
+          let a: Vec<AllTables> = sql_query($all_tables(schema)?.as_str()).load(&self.conn)?;
+          Ok(a.into_iter().map(|el| el.table_name).collect())
+        })
+      }
+
+      #[cfg(feature = "dev-tools")]
+      #[inline]
+      fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+        Box::pin(async move {
+          Ok(self.execute(&$clean()?).await?)
+        })
+      }
+
       #[inline]
       fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
         self.execute($create_oapth_tables)
@@ -49,7 +74,7 @@ macro_rules! create_diesel_backend {
       }
 
       #[inline]
-      fn execute<'a>(&'a mut self, command: &'a str) -> BoxFut<'a, crate::Result<()>> {
+      fn execute<'b>(&'b mut self, command: &'b str) -> BoxFut<'b, crate::Result<()>> {
         Box::pin(async move { Ok(self.conn.batch_execute(command).map(|_| {})?) })
       }
 
@@ -61,7 +86,7 @@ macro_rules! create_diesel_backend {
       ) -> BoxFut<'a, crate::Result<()>>
       where
         I: Clone + Iterator<Item = &'a Migration> + 'a,
-      {
+        {
         Box::pin(_insert_migrations(self, mg, $schema, migrations))
       }
 
@@ -96,55 +121,61 @@ macro_rules! create_diesel_backend {
 }
 
 #[cfg(feature = "with-diesel-mysql")]
-create_diesel_backend!(
+create_diesel_back_end!(
   /// Creates a new instance from all necessary parameters.
   ///
   /// # Example
   ///
-  #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
-  #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
+  #[cfg_attr(feature = "_integration-tests", doc = "```rust")]
+  #[cfg_attr(not(feature = "_integration-tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
   /// use oapth::{Config, DieselMysql};
   /// let _ = DieselMysql::new(&Config::with_url_from_default_var()?).await?;
   /// # Ok(()) }
   DieselMysql,
+  crate::fixed_sql_commands::mysql::_all_tables,
+  crate::fixed_sql_commands::mysql::_clean,
   diesel::mysql::MysqlConnection,
-  crate::fixed_sql_commands::_CREATE_MIGRATION_TABLES_MYSQL,
-  _insert_migrations("")
+  crate::fixed_sql_commands::mysql::_CREATE_MIGRATION_TABLES,
+  _insert_migrations(""),
 );
 
 #[cfg(feature = "with-diesel-postgres")]
-create_diesel_backend!(
+create_diesel_back_end!(
   /// Creates a new instance from all necessary parameters.
   ///
   /// # Example
   ///
-  #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
-  #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
+  #[cfg_attr(feature = "_integration-tests", doc = "```rust")]
+  #[cfg_attr(not(feature = "_integration-tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
   /// use oapth::{Config, DieselPostgres};
   /// let _ = DieselPostgres::new(&Config::with_url_from_default_var()?).await?;
   /// # Ok(()) }
   DieselPostgres,
+  crate::fixed_sql_commands::postgres::_all_tables,
+  crate::fixed_sql_commands::postgres::_clean,
   diesel::pg::PgConnection,
-  crate::fixed_sql_commands::_CREATE_MIGRATION_TABLES_POSTGRESQL,
-  _insert_migrations(crate::_OAPTH_SCHEMA)
+  crate::fixed_sql_commands::postgres::_CREATE_MIGRATION_TABLES,
+  _insert_migrations(crate::_OAPTH_SCHEMA),
 );
 
 #[cfg(feature = "with-diesel-sqlite")]
-create_diesel_backend!(
+create_diesel_back_end!(
   /// Creates a new instance from all necessary parameters.
   ///
   /// # Example
   ///
-  #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
-  #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
+  #[cfg_attr(feature = "_integration-tests", doc = "```rust")]
+  #[cfg_attr(not(feature = "_integration-tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
   /// use oapth::{Config, DieselSqlite};
   /// let _ = DieselSqlite::new(&Config::with_url_from_default_var()?).await?;
   /// # Ok(()) }
   DieselSqlite,
+  crate::fixed_sql_commands::sqlite::_all_tables,
+  crate::fixed_sql_commands::sqlite::_clean,
   diesel::sqlite::SqliteConnection,
-  crate::fixed_sql_commands::_CREATE_MIGRATION_TABLES_SQLITE,
-  _insert_migrations("")
+  crate::fixed_sql_commands::sqlite::_CREATE_MIGRATION_TABLES,
+  _insert_migrations(""),
 );

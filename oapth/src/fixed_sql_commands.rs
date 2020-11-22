@@ -1,7 +1,3 @@
-use crate::{Backend, Migration};
-use arrayvec::ArrayString;
-use core::{concat, fmt::Write};
-
 macro_rules! oapth_migration_columns {
   () => {
     "_oapth_migration_omg_version INT NOT NULL, \
@@ -28,90 +24,24 @@ macro_rules! serial_id {
   };
 }
 
-pub const _CREATE_MIGRATION_TABLES_MSSQL: &str = concat!(
-  "IF (NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = '_oapth'))
-  BEGIN
-    EXEC ('CREATE SCHEMA [_oapth]')
-  END
+pub(crate) mod mssql;
+pub(crate) mod mysql;
+pub(crate) mod postgres;
+pub(crate) mod sqlite;
 
-  IF (NOT EXISTS (
-    SELECT
-      1
-    FROM
-      information_schema.tables
-    WHERE
-      table_name = '_oapth_migration_group' AND table_schema = '_oapth'
-  ))
-  BEGIN
-  CREATE TABLE _oapth._oapth_migration_group (",
-  oapth_migration_group_columns!(),
-  ");
-  END
-  
-  IF (NOT EXISTS (
-    SELECT
-      1
-    FROM
-      information_schema.tables
-    WHERE
-      table_name = '_oapth_migration' AND table_schema = '_oapth'
-  ))
-  BEGIN
-  CREATE TABLE _oapth._oapth_migration (
-  id INT NOT NULL IDENTITY PRIMARY KEY,
-  created_on VARCHAR(32) NOT NULL DEFAULT CONVERT(VARCHAR(32), CURRENT_TIMESTAMP, 120),",
-  oapth_migration_columns!(),
-  ");
-  END"
-);
-
-pub const _CREATE_MIGRATION_TABLES_MYSQL: &str = concat!(
-  "CREATE TABLE IF NOT EXISTS _oapth_migration_group (",
-  oapth_migration_group_columns!(),
-  "); \
-
-  CREATE TABLE IF NOT EXISTS _oapth_migration (",
-  serial_id!(),
-  "created_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,",
-  oapth_migration_columns!(),
-  ");"
-);
-
-pub const _CREATE_MIGRATION_TABLES_POSTGRESQL: &str = concat!(
-  "CREATE SCHEMA IF NOT EXISTS _oapth; \
-
-  CREATE TABLE IF NOT EXISTS _oapth._oapth_migration_group (",
-  oapth_migration_group_columns!(),
-  ");
-
-  CREATE TABLE IF NOT EXISTS _oapth._oapth_migration (",
-  serial_id!(),
-  "created_on TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,",
-  oapth_migration_columns!(),
-  ");"
-);
-
-pub const _CREATE_MIGRATION_TABLES_SQLITE: &str = concat!(
-  "CREATE TABLE IF NOT EXISTS _oapth_migration_group (",
-  oapth_migration_group_columns!(),
-  "); \
-
-  CREATE TABLE IF NOT EXISTS _oapth_migration (
-  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  created_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,",
-  oapth_migration_columns!(),
-  ");"
-);
+use crate::{BackEnd, Migration};
+use arrayvec::ArrayString;
+use core::fmt::Write;
 
 #[inline]
 pub async fn _delete_migrations<B>(
-  backend: &mut B,
+  back_end: &mut B,
   mg: &crate::MigrationGroup,
   schema: &str,
   version: i32,
 ) -> crate::Result<()>
 where
-  B: Backend,
+  B: BackEnd,
 {
   let mut buffer = ArrayString::<[u8; 128]>::new();
   buffer.write_fmt(format_args!(
@@ -120,19 +50,19 @@ where
     mg_version = mg.version(),
     schema = schema,
   ))?;
-  backend.execute(&buffer).await?;
+  back_end.execute(&buffer).await?;
   Ok(())
 }
 
 #[inline]
 pub async fn _insert_migrations<'a, B, I>(
-  backend: &'a mut B,
+  back_end: &'a mut B,
   mg: &'a crate::MigrationGroup,
   schema: &str,
   migrations: I,
 ) -> crate::Result<()>
 where
-  B: Backend,
+  B: BackEnd,
   I: Clone + Iterator<Item = &'a Migration> + 'a,
 {
   let mut insert_migration_group_str = ArrayString::<[u8; 512]>::new();
@@ -140,16 +70,16 @@ where
     "INSERT INTO {schema}_oapth_migration_group (version, name)
     SELECT * FROM (SELECT {mg_version} AS version, '{mg_name}' AS name) AS tmp
     WHERE NOT EXISTS (
-        SELECT 1 FROM {schema}_oapth_migration_group WHERE version = {mg_version}
+      SELECT 1 FROM {schema}_oapth_migration_group WHERE version = {mg_version}
     );",
     mg_name = mg.name(),
     mg_version = mg.version(),
     schema = schema
   ))?;
-  backend.execute(&insert_migration_group_str).await?;
+  back_end.execute(&insert_migration_group_str).await?;
 
-  backend.transaction(migrations.clone().map(|m| m.sql_up())).await?;
-  backend
+  back_end.transaction(migrations.clone().map(|m| m.sql_up())).await?;
+  back_end
     .transaction(
       migrations.filter_map(|m| _insert_oapth_migration_str(mg.version(), &m.common, schema).ok()),
     )

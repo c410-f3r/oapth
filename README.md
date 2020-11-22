@@ -8,13 +8,19 @@
 
 Flexible version control for databases through SQL migrations. Supports embedded and CLI workflows for MS-SQL, MariaDB, MySQL, PostgreSQL and SQLite.
 
-This project is fully documented, applies fuzz tests in some targets and doesn't make use of `expect`, `panic`, `unsafe` or `unwrap`.
+This project tries to support all database bridges of the Rust ecosystem, is fully documented, applies fuzz tests in some targets and doesn't make use of `expect`, `panic`, `unsafe` or `unwrap`.
+
+## No features by default
+
+It is necessary to specify a desired feature to actually run the transactions, otherwise you will get a bunch of code that won't do much. Take a look at [Supported back ends](#supported-back-ends).
 
 ## CLI
 
 The CLI application expects a configuration file that contains a set of paths where each path is a directory with multiple migrations.
 
 ```ini
+// oapth.cfg
+
 migrations/1__initial
 migrations/2__create_post
 ```
@@ -28,6 +34,7 @@ migrations
     +-- 2__create_post.sql (Migration)
 +-- 2__fancy_stuff (Group)
     +-- 1__something_fancy.sql (Migration)
+oapth.cfg
 ```
 
 The SQL file itself is composed by two parts, one for migrations (`-- oapth UP` section) and another for rollbacks (`-- oapth DOWN` section).
@@ -56,7 +63,9 @@ Execution order between migrations and migration groups is dictated by their num
 The library gives freedom to arrange groups and uses `arrayvec`, `chrono` and `siphash` as mandatory internal crates which brings a total of 6 dependencies into your application. If this behavior is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
 
 ```rust
-// oapth = { features = ["with-sqlx-postgres", "with-sqlx-runtime-async-std"], version = "SOME_VERSION" }
+// [dependencies]
+// oapth = { features = ["with-sqlx-postgres"], version = "SOME_VERSION" }
+// sqlx-core = { default-features = false, features = ["runtime-tokio-rustls"], version = "SOME_VERSION" }
 
 use oapth::{Commands, Config, SqlxPostgres};
 use std::path::Path;
@@ -71,15 +80,6 @@ async fn main() -> oapth::Result<()> {
 ```
 
 One thing worth noting is that these mandatory dependencies might already be part of your application as transients. In case of doubt, check your `Cargo.lock` file or type `cargo tree` for analysis.
-
-## No features by default
-
-It is necessary to specify a desired feature to actually run the transactions, otherwise you will get a bunch of code that won't do much. Take a look at [Supported back ends](#supported-back-ends).
-
-```bash
-cargo install oapth-cli
-oapth migrate # Will do nothing
-```
 
 ## Supported back ends
 
@@ -140,16 +140,27 @@ DROP SCHEMA cool_department_schema;
 
 For PostgreSQL (except Diesel), migration timestamps are stored and retrieved with the timezone declared in the database. For everything else, timestamps are UTC.
 
-| Backend                | Type             |
+| Back end                | Type             |
 | ---------------------- | ---------------- |
 | Diesel (MariaDB/Mysql) | UTC              |
 | Diesel (PostgreSQL)    | UTC              |
 | Diesel (SQlite)        | UTC              |
 | mysql_async            | UTC              |
 | rusqlite               | UTC              |
-| SQLx (MariaDB/MySql)   | UTC              |
+b| SQLx (MariaDB/MySql)   | UTC              |
 | SQLx (MS-SQL)          | UTC              |
 | SQLx (PostgreSQL)      | Fixed time zones |
 | SQLx (SQLite)          | UTC              |
 | tiberius               | UTC              |
 | tokio-postgres         | Fixed time zones |
+
+# Development tools
+
+- `clean`: Tries to clean all objects of a database, including separated namespaces/schemas.
+- `seed`: Executes arbitrary code that is intended to populate data for tests.
+
+These development tools are enabled with the `dev-tools` feature in both library and CLI.
+
+# Project development
+
+If you don't want to manually install all databases in your system, checkout `scripts/podman-start.sh` where each database image is pulled and executed automatically.

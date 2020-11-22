@@ -1,4 +1,4 @@
-use crate::{Backend, Commands};
+use crate::{BackEnd, Commands};
 #[cfg(feature = "std")]
 use {
   crate::files,
@@ -6,7 +6,7 @@ use {
 };
 impl<B> Commands<B>
 where
-  B: Backend,
+  B: BackEnd,
 {
   /// Executes an arbitrary stream of SQL commands
   ///
@@ -17,7 +17,7 @@ where
     I: Iterator<Item = S> + 'a,
     S: AsRef<str>,
   {
-    self.backend.transaction(seeds).await?;
+    self.back_end.transaction(seeds).await?;
     Ok(())
   }
 

@@ -1,10 +1,11 @@
 use crate::{
   fixed_sql_commands::{
     _delete_migrations, _insert_migrations, _migrations_by_mg_version_query,
-    _CREATE_MIGRATION_TABLES_POSTGRESQL,
+    postgres::{_all_tables, _CREATE_MIGRATION_TABLES},
   },
-  Backend, BoxFut, DbMigration, Migration, MigrationGroup, _OAPTH_SCHEMA,
+  BackEnd, BoxFut, DbMigration, Migration, MigrationGroup, _BackEnd, _OAPTH_SCHEMA,
 };
+use alloc::string::String;
 use core::{convert::TryFrom, str::FromStr};
 use tokio_postgres::{Client, Config, NoTls};
 
@@ -19,8 +20,8 @@ impl TokioPostgres {
   ///
   /// # Example
   ///
-  #[cfg_attr(feature = "_integration_tests", doc = "```rust")]
-  #[cfg_attr(not(feature = "_integration_tests"), doc = "```ignore,rust")]
+  #[cfg_attr(feature = "_integration-tests", doc = "```rust")]
+  #[cfg_attr(not(feature = "_integration-tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
   /// use oapth::{Config, TokioPostgres};
   /// let _ = TokioPostgres::new(&Config::with_url_from_default_var()?).await?;
@@ -39,10 +40,28 @@ impl TokioPostgres {
   }
 }
 
-impl Backend for TokioPostgres {
+impl BackEnd for TokioPostgres {}
+
+impl _BackEnd for TokioPostgres {
+  #[inline]
+  fn all_tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move {
+      let rows = self.conn.query(_all_tables(schema)?.as_str(), &[]).await?;
+      rows.into_iter().map(|r| Ok(r.try_get::<_, String>(0)?)).collect::<crate::Result<_>>()
+    })
+  }
+
+  #[cfg(feature = "dev-tools")]
+  #[inline]
+  fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+    Box::pin(
+      async move { Ok(self.execute(&crate::fixed_sql_commands::postgres::_clean()?).await?) },
+    )
+  }
+
   #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
-    self.execute(_CREATE_MIGRATION_TABLES_POSTGRESQL)
+    self.execute(_CREATE_MIGRATION_TABLES)
   }
 
   #[inline]

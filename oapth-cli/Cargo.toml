@@ -2,11 +2,12 @@
 clap = { default-features = false, features = ["derive", "std"], version = "3.0.0-beta.2" }
 oapth = { default-features = false, features = ["std"], path = "../oapth", version = "0.1" }
 tokio = { default-features = false, features = ["macros", "rt-core"], version = "0.2" }
+sqlx-core = { default-features = false, optional = true, version = "0.4" }
 
 [features]
 default = []
 dev-tools = ["oapth/dev-tools"]
-mssql = ["oapth/with-sqlx-mssql", "oapth/with-sqlx-runtime-tokio-rustls"]
+mssql = ["oapth/with-sqlx-mssql", "sqlx-core/runtime-tokio-rustls"]
 mysql = ["oapth/with-mysql_async"]
 postgres = ["oapth/with-tokio-postgres"]
 sqlite = ["oapth/with-rusqlite"]

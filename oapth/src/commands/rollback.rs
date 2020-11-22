@@ -1,4 +1,4 @@
-use crate::{Backend, Commands, Migration, MigrationGroup};
+use crate::{BackEnd, Commands, Migration, MigrationGroup};
 #[cfg(feature = "std")]
 use {
   crate::{group_and_migrations_from_path, parse_cfg},
@@ -7,7 +7,7 @@ use {
 
 impl<B> Commands<B>
 where
-  B: Backend,
+  B: BackEnd,
 {
   /// Rollbacks the migrations of a group to a given `version`.
   ///
@@ -22,11 +22,11 @@ where
   where
     I: Clone + DoubleEndedIterator<Item = &'a Migration> + 'a,
   {
-    let db_migrations = self.backend.migrations(mg).await?;
+    let db_migrations = self.back_end.migrations(mg).await?;
     self.do_validate(&db_migrations, migrations.clone())?;
     let reverts_iter = migrations.map(|el| el.sql_down());
-    self.backend.transaction(reverts_iter).await?;
-    self.backend.delete_migrations(version, mg).await?;
+    self.back_end.transaction(reverts_iter).await?;
+    self.back_end.delete_migrations(version, mg).await?;
     Ok(())
   }
 
@@ -82,26 +82,5 @@ where
     let (mg, mut migrations) = if let Some(rslt) = opt { rslt } else { return Ok(()) };
     loop_files!(buffer, migrations, files_num, self.rollback(&mg, buffer.iter(), version).await?);
     Ok(())
-  }
-}
-
-#[cfg(all(feature = "_integration_tests", test))]
-pub(crate) mod tests {
-  use crate::{Backend, Commands, MigrationGroup};
-  use std::path::Path;
-
-  pub(crate) async fn rollback_works<B>(c: &mut Commands<B>)
-  where
-    B: Backend,
-  {
-    let path = Path::new("../oapth-test-utils/oapth.cfg");
-    c.migrate_from_cfg(path, 128).await.unwrap();
-    c.rollback_from_cfg(path, &[0, 0][..], 128).await.unwrap();
-    let initial = MigrationGroup::new(1, "initial");
-    let initial_migrations = c.backend_mut().migrations(&initial).await.unwrap();
-    assert_eq!(initial_migrations.len(), 0);
-    let more_stuff = MigrationGroup::new(2, "more_stuff");
-    let more_stuff_migrations = c.backend_mut().migrations(&more_stuff).await.unwrap();
-    assert_eq!(more_stuff_migrations.len(), 0);
   }
 }

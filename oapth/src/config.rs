@@ -1,7 +1,7 @@
 use alloc::string::String;
 
-/// Default environment variable
-pub const DEFAULT_ENV_VAR: &str = "DATABASE_URL";
+#[cfg(feature = "std")]
+const DEFAULT_ENV_VAR: &str = "DATABASE_URL";
 
 /// Configuration to connect to a database
 #[derive(Debug)]
@@ -85,7 +85,7 @@ impl Config {
       let last_at = s0.rfind('@')?;
       s0.get(last_at.saturating_add(1)..)
     };
-    opt().ok_or_else(|| crate::Error::Other("Invalid URL - Missing host with optional port"))
+    opt().ok_or(crate::Error::Other("Invalid URL - Missing host with optional port"))
   }
 
   /// Host
@@ -121,7 +121,7 @@ impl Config {
       let last_slash = self.url.rfind('/')?;
       self.url.get(last_slash.saturating_add(1)..)
     };
-    opt().ok_or_else(|| crate::Error::Other("Invalid URL - Missing database name"))
+    opt().ok_or(crate::Error::Other("Invalid URL - Missing database name"))
   }
 
   /// Password
@@ -138,7 +138,7 @@ impl Config {
       let at_idx = with_password.find('@')?;
       with_password.get(0..at_idx)
     };
-    opt().ok_or_else(|| crate::Error::Other("Invalid URL - Missing database password"))
+    opt().ok_or(crate::Error::Other("Invalid URL - Missing database password"))
   }
 
   /// Port
@@ -179,6 +179,6 @@ impl Config {
   #[inline]
   pub fn user(&self) -> crate::Result<&str> {
     let opt = || self.url.split(':').nth(1)?.get(2..);
-    opt().ok_or_else(|| crate::Error::Other("Invalid URL - Missing database password"))
+    opt().ok_or(crate::Error::Other("Invalid URL - Missing database password"))
   }
 }

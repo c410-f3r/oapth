@@ -1,5 +1,5 @@
 use crate::{
-  binary_seach_migration_by_version, Backend, Commands, DbMigration, Migration, MigrationGroup,
+  binary_seach_migration_by_version, BackEnd, Commands, DbMigration, Migration, MigrationGroup,
   MigrationParams,
 };
 #[cfg(feature = "std")]
@@ -10,7 +10,7 @@ use {
 
 impl<B> Commands<B>
 where
-  B: Backend,
+  B: BackEnd,
 {
   /// Verifies if the provided migrations are a superset of the migrations within the database
   /// by verification their checksums.
@@ -23,7 +23,7 @@ where
   where
     I: Iterator<Item = &'a Migration>,
   {
-    let db_migrations = self.backend.migrations(mg).await?;
+    let db_migrations = self.back_end.migrations(mg).await?;
     self.do_validate(&db_migrations, migrations)
   }
 
@@ -101,7 +101,7 @@ where
   ) -> crate::Result<()> {
     let opt = group_and_migrations_from_path(path, |a, b| a.cmp(b));
     let (mg, mut migrations) = if let Some(rslt) = opt { rslt } else { return Ok(()) };
-    let db_migrations = self.backend.migrations(&mg).await?;
+    let db_migrations = self.back_end.migrations(&mg).await?;
     loop_files!(buffer, migrations, files_num, self.do_validate(&db_migrations, buffer.iter())?);
     Ok(())
   }

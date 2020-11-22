@@ -30,8 +30,8 @@ impl DbMigration {
   }
 
   #[inline]
-  pub fn common(&self) -> &MigrationCommon {
-    &self.common
+  pub fn created_on(&self) -> &DateTime<FixedOffset> {
+    &self.created_on
   }
 
   #[inline]

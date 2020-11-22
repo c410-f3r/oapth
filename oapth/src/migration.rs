@@ -1,7 +1,7 @@
-pub(crate) mod db_migration;
-pub(crate) mod migration_common;
-pub(crate) mod migration_group;
-pub(crate) mod migration_params;
+pub mod db_migration;
+pub mod migration_common;
+pub mod migration_group;
+pub mod migration_params;
 
 use crate::{MigrationCommon, MigrationParams};
 use alloc::string::{String, ToString};

@@ -1,7 +1,8 @@
 macro_rules! create_schema {
-  ($mod_name:ident, $timestamp:ty) => {
+  ($mod_name:ident, $timestamp:ident) => {
     mod $mod_name {
-      table! {
+
+      diesel::table! {
         _oapth_migration (id) {
           id -> Integer,
 
@@ -14,7 +15,7 @@ macro_rules! create_schema {
         }
       }
 
-      table! {
+      diesel::table! {
         _oapth_migration_group (version) {
           version -> Integer,
           name -> Text,
@@ -29,14 +30,14 @@ create_schema!(schema_pg, Timestamptz);
 #[cfg(any(feature = "with-diesel-mysql", feature = "with-diesel-sqlite",))]
 create_schema!(schema, Timestamp);
 
+#[cfg(any(feature = "with-diesel-mysql", feature = "with-diesel-sqlite",))]
+use self::schema::{_oapth_migration as m, _oapth_migration_group as mg};
 use crate::{DbMigration, MigrationCommon, MigrationGroup};
 use diesel::{
   deserialize::{FromSql, QueryableByName},
   dsl::SqlTypeOf,
   row::NamedRow,
 };
-#[cfg(any(feature = "with-diesel-mysql", feature = "with-diesel-sqlite",))]
-use schema::{_oapth_migration as m, _oapth_migration_group as mg};
 #[cfg(feature = "with-diesel-postgres")]
 use {
   chrono::{DateTime, Utc},
@@ -54,23 +55,21 @@ where
   String: FromSql<SqlTypeOf<m::omg_name>, diesel::mysql::Mysql>,
   String: FromSql<SqlTypeOf<mg::name>, diesel::mysql::Mysql>,
 {
-  fn build<R>(row: &R) -> diesel::deserialize::Result<Self>
-  where
-    R: NamedRow<diesel::mysql::Mysql>,
-  {
+  fn build<'a>(row: &impl NamedRow<'a, diesel::mysql::Mysql>) -> diesel::deserialize::Result<Self> {
     Ok(Self {
       common: MigrationCommon {
-        checksum: row.get::<SqlTypeOf<m::checksum>, String>("checksum")?,
-        name: row.get::<SqlTypeOf<m::name>, String>("name")?,
-        version: row.get::<SqlTypeOf<m::version>, i32>("version")?,
+        checksum: NamedRow::get::<SqlTypeOf<m::checksum>, String>(row, "checksum")?,
+        name: NamedRow::get::<SqlTypeOf<m::name>, String>(row, "name")?,
+        version: NamedRow::get::<SqlTypeOf<m::version>, i32>(row, "version")?,
       },
       created_on: {
-        let naive = row.get::<SqlTypeOf<m::created_on>, chrono::NaiveDateTime>("created_on")?;
-        crate::db_migration::_fixed_from_naive_utc(naive)
+        let naive =
+          NamedRow::get::<SqlTypeOf<m::created_on>, chrono::NaiveDateTime>(row, "created_on")?;
+        crate::migration::db_migration::_fixed_from_naive_utc(naive)
       },
       group: MigrationGroup {
-        name: row.get::<SqlTypeOf<mg::name>, String>("omg_name")?,
-        version: row.get::<SqlTypeOf<mg::version>, i32>("omg_version")?,
+        name: NamedRow::get::<SqlTypeOf<mg::name>, String>(row, "omg_name")?,
+        version: NamedRow::get::<SqlTypeOf<mg::version>, i32>(row, "omg_version")?,
       },
     })
   }
@@ -87,20 +86,18 @@ where
   String: FromSql<SqlTypeOf<m_pg::omg_name>, diesel::pg::Pg>,
   String: FromSql<SqlTypeOf<mg_pg::name>, diesel::pg::Pg>,
 {
-  fn build<R>(row: &R) -> diesel::deserialize::Result<Self>
-  where
-    R: NamedRow<diesel::pg::Pg>,
-  {
+  fn build<'a>(row: &impl NamedRow<'a, diesel::pg::Pg>) -> diesel::deserialize::Result<Self> {
     Ok(Self {
       common: MigrationCommon {
-        checksum: row.get::<SqlTypeOf<m_pg::checksum>, String>("checksum")?,
-        name: row.get::<SqlTypeOf<m_pg::name>, String>("name")?,
-        version: row.get::<SqlTypeOf<m_pg::version>, i32>("version")?,
+        checksum: NamedRow::get::<SqlTypeOf<m_pg::checksum>, String>(row, "checksum")?,
+        name: NamedRow::get::<SqlTypeOf<m_pg::name>, String>(row, "name")?,
+        version: NamedRow::get::<SqlTypeOf<m_pg::version>, i32>(row, "version")?,
       },
-      created_on: row.get::<SqlTypeOf<m_pg::created_on>, DateTime<Utc>>("created_on")?.into(),
+      created_on: NamedRow::get::<SqlTypeOf<m_pg::created_on>, DateTime<Utc>>(row, "created_on")?
+        .into(),
       group: MigrationGroup {
-        name: row.get::<SqlTypeOf<mg_pg::name>, String>("omg_name")?,
-        version: row.get::<SqlTypeOf<mg_pg::version>, i32>("omg_version")?,
+        name: NamedRow::get::<SqlTypeOf<mg_pg::name>, String>(row, "omg_name")?,
+        version: NamedRow::get::<SqlTypeOf<mg_pg::version>, i32>(row, "omg_version")?,
       },
     })
   }
@@ -117,23 +114,23 @@ where
   String: FromSql<SqlTypeOf<m::omg_name>, diesel::sqlite::Sqlite>,
   String: FromSql<SqlTypeOf<mg::name>, diesel::sqlite::Sqlite>,
 {
-  fn build<R>(row: &R) -> diesel::deserialize::Result<Self>
-  where
-    R: NamedRow<diesel::sqlite::Sqlite>,
-  {
+  fn build<'a>(
+    row: &impl NamedRow<'a, diesel::sqlite::Sqlite>,
+  ) -> diesel::deserialize::Result<Self> {
     Ok(Self {
       common: MigrationCommon {
-        checksum: row.get::<SqlTypeOf<m::checksum>, String>("checksum")?,
-        name: row.get::<SqlTypeOf<m::name>, String>("name")?,
-        version: row.get::<SqlTypeOf<m::version>, i32>("version")?,
+        checksum: NamedRow::get::<SqlTypeOf<m::checksum>, String>(row, "checksum")?,
+        name: NamedRow::get::<SqlTypeOf<m::name>, String>(row, "name")?,
+        version: NamedRow::get::<SqlTypeOf<m::version>, i32>(row, "version")?,
       },
       created_on: {
-        let naive = row.get::<SqlTypeOf<m::created_on>, chrono::NaiveDateTime>("created_on")?;
-        crate::db_migration::_fixed_from_naive_utc(naive)
+        let naive =
+          NamedRow::get::<SqlTypeOf<m::created_on>, chrono::NaiveDateTime>(row, "created_on")?;
+        crate::migration::db_migration::_fixed_from_naive_utc(naive)
       },
       group: MigrationGroup {
-        name: row.get::<SqlTypeOf<mg::name>, String>("omg_name")?,
-        version: row.get::<SqlTypeOf<mg::version>, i32>("omg_version")?,
+        name: NamedRow::get::<SqlTypeOf<mg::name>, String>(row, "omg_name")?,
+        version: NamedRow::get::<SqlTypeOf<mg::version>, i32>(row, "omg_version")?,
       },
     })
   }

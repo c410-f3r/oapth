@@ -1,4 +1,4 @@
-//! Instances for documentation tests
+//! Instances mostly used for documentation tests
 
 use crate::{Migration, MigrationGroup};
 

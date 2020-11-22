@@ -1,7 +1,20 @@
-use crate::{Backend, BoxFut, DbMigration, Migration, MigrationGroup};
-use alloc::{boxed::Box, vec::Vec};
+use crate::{BackEnd, BoxFut, DbMigration, Migration, MigrationGroup, _BackEnd};
+use alloc::{boxed::Box, string::String, vec::Vec};
 
-impl Backend for () {
+impl BackEnd for () {}
+
+impl _BackEnd for () {
+  #[inline]
+  fn all_tables<'a>(&'a mut self, _: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move { Ok(Vec::new()) })
+  }
+
+  #[cfg(feature = "dev-tools")]
+  #[inline]
+  fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+    Box::pin(async move { Ok(()) })
+  }
+
   #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
     Box::pin(async move { Ok(()) })

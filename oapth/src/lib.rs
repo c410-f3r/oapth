@@ -4,65 +4,64 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(any(
-  feature = "with-diesel-mysql",
-  feature = "with-diesel-postgres",
-  feature = "with-diesel-sqlite",
-))]
-#[macro_use]
-extern crate diesel;
 extern crate alloc;
 
 #[macro_use]
 mod utils;
 
-mod backend;
+mod _back_end;
+mod back_end;
 mod commands;
 mod config;
 pub mod doc_tests;
 mod error;
 mod fixed_sql_commands;
+#[cfg(all(feature = "_integration-tests", test))]
+mod integration_tests;
 mod migration;
 #[cfg(feature = "std")]
 mod parsers;
 
-#[cfg(any(
-  feature = "with-diesel-mysql",
-  feature = "with-diesel-postgres",
-  feature = "with-diesel-sqlite",
-))]
-pub use backend::diesel::*;
+#[cfg(feature = "with-diesel-mysql")]
+pub use back_end::diesel::DieselMysql;
+#[cfg(feature = "with-diesel-postgres")]
+pub use back_end::diesel::DieselPostgres;
+#[cfg(feature = "with-diesel-sqlite")]
+pub use back_end::diesel::DieselSqlite;
 #[cfg(feature = "with-mysql_async")]
-pub use backend::mysql_async::*;
+pub use back_end::mysql_async::MysqlAsync;
 #[cfg(feature = "with-rusqlite")]
-pub use backend::rusqlite::*;
-#[cfg(any(
-  feature = "with-sqlx-mssql",
-  feature = "with-sqlx-mysql",
-  feature = "with-sqlx-postgres",
-  feature = "with-sqlx-sqlite",
-))]
-pub use backend::sqlx::*;
+pub use back_end::rusqlite::Rusqlite;
+#[cfg(feature = "with-sqlx-mssql")]
+pub use back_end::sqlx::SqlxMssql;
+#[cfg(feature = "with-sqlx-mysql")]
+pub use back_end::sqlx::SqlxMysql;
+#[cfg(feature = "with-sqlx-postgres")]
+pub use back_end::sqlx::SqlxPostgres;
+#[cfg(feature = "with-sqlx-sqlite")]
+pub use back_end::sqlx::SqlxSqlite;
 #[cfg(feature = "with-tiberius")]
-pub use backend::tiberius::*;
+pub use back_end::tiberius::Tiberius;
 #[cfg(feature = "with-tokio-postgres")]
-pub use backend::tokio_postgres::*;
-pub use backend::*;
-pub use commands::*;
-pub use config::*;
-pub use error::*;
-pub use migration::{migration_group::*, *};
+pub use back_end::tokio_postgres::TokioPostgres;
+pub use back_end::BackEnd;
+pub use commands::Commands;
+pub use config::Config;
+pub use error::Error;
+pub use migration::{migration_group::MigrationGroup, Migration};
 #[cfg(feature = "std")]
-pub use parsers::*;
+pub use parsers::{parse_cfg, parse_migration};
 
+use _back_end::_BackEnd;
 use alloc::boxed::Box;
 use core::{future::Future, pin::Pin};
-use migration::{db_migration::*, migration_common::*, migration_params::*};
+use migration::{
+  db_migration::DbMigration, migration_common::MigrationCommon, migration_params::MigrationParams,
+};
 use utils::*;
 
 const _OAPTH_SCHEMA: &str = "_oapth.";
 
-/// Alias for `Pin<Box<dyn Future<Output = T> + 'a>>`
-pub type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + 'a>>;
+type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + 'a>>;
 /// Alias for `core::result::Result<T, oapth::Error>`
 pub type Result<T> = core::result::Result<T, Error>;
