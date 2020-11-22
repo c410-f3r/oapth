@@ -160,7 +160,3 @@ For PostgreSQL (except Diesel), migration timestamps are stored and retrieved wi
 - `seed`: Executes arbitrary code that is intended to populate data for tests.
 
 These development tools are enabled with the `dev-tools` feature in both library and CLI.
-
-## Project development
-
-If you don't want to manually install all databases in your system, checkout `scripts/podman-start.sh` where each database image is pulled and executed automatically.
