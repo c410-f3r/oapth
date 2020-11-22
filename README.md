@@ -147,20 +147,20 @@ For PostgreSQL (except Diesel), migration timestamps are stored and retrieved wi
 | Diesel (SQlite)        | UTC              |
 | mysql_async            | UTC              |
 | rusqlite               | UTC              |
-b| SQLx (MariaDB/MySql)   | UTC              |
+| SQLx (MariaDB/MySql)   | UTC              |
 | SQLx (MS-SQL)          | UTC              |
 | SQLx (PostgreSQL)      | Fixed time zones |
 | SQLx (SQLite)          | UTC              |
 | tiberius               | UTC              |
 | tokio-postgres         | Fixed time zones |
 
-# Development tools
+## Development tools
 
 - `clean`: Tries to clean all objects of a database, including separated namespaces/schemas.
 - `seed`: Executes arbitrary code that is intended to populate data for tests.
 
 These development tools are enabled with the `dev-tools` feature in both library and CLI.
 
-# Project development
+## Project development
 
 If you don't want to manually install all databases in your system, checkout `scripts/podman-start.sh` where each database image is pulled and executed automatically.

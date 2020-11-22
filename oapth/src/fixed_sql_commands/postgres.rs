@@ -47,6 +47,7 @@ pub fn _all_tables(schema: &str) -> crate::Result<ArrayString<[u8; 1024]>> {
   Ok(buffer)
 }
 
+// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[inline]
 pub fn _clean() -> crate::Result<ArrayString<[u8; 2048]>> {
   let mut buffer = ArrayString::new();
