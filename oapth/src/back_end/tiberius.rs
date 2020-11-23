@@ -3,7 +3,7 @@ use crate::{
     _delete_migrations, _insert_migrations, _migrations_by_mg_version_query,
     mssql::{_all_tables, _CREATE_MIGRATION_TABLES},
   },
-  BackEnd, BoxFut, DbMigration, Migration, MigrationGroup, _BackEnd, _OAPTH_SCHEMA,
+  BackEnd, BoxFut, DbMigration, Migration, MigrationGroup, _BackEnd, _OAPTH_SCHEMA_PREFIX,
 };
 use alloc::string::String;
 use core::convert::TryFrom;
@@ -88,7 +88,7 @@ where
     version: i32,
     mg: &'a MigrationGroup,
   ) -> BoxFut<'a, crate::Result<()>> {
-    Box::pin(async move { Ok(_delete_migrations(self, mg, _OAPTH_SCHEMA, version).await?) })
+    Box::pin(async move { Ok(_delete_migrations(self, mg, _OAPTH_SCHEMA_PREFIX, version).await?) })
   }
 
   #[inline]
@@ -105,7 +105,7 @@ where
   where
     I: Clone + Iterator<Item = &'a Migration> + 'a,
   {
-    Box::pin(_insert_migrations(self, mg, _OAPTH_SCHEMA, migrations))
+    Box::pin(_insert_migrations(self, mg, _OAPTH_SCHEMA_PREFIX, migrations))
   }
 
   #[inline]
@@ -114,7 +114,7 @@ where
     mg: &'a MigrationGroup,
   ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
     Box::pin(async move {
-      let buffer = _migrations_by_mg_version_query(mg.version(), _OAPTH_SCHEMA)?;
+      let buffer = _migrations_by_mg_version_query(mg.version(), _OAPTH_SCHEMA_PREFIX)?;
       let vec = self.conn.query(buffer.as_str(), &[]).await?.into_first_result().await?;
       vec.into_iter().map(DbMigration::try_from).collect::<crate::Result<Vec<_>>>()
     })

@@ -135,7 +135,7 @@ create_sqlx_back_end!(
   crate::fixed_sql_commands::mssql::_clean,
   sqlx_core::mssql::MssqlConnection,
   crate::fixed_sql_commands::mssql::_CREATE_MIGRATION_TABLES,
-  _insert_migrations(crate::_OAPTH_SCHEMA)
+  _insert_migrations(crate::_OAPTH_SCHEMA_PREFIX)
 );
 
 #[cfg(feature = "with-sqlx-mysql")]
@@ -175,7 +175,7 @@ create_sqlx_back_end!(
   crate::fixed_sql_commands::postgres::_clean,
   sqlx_core::postgres::PgConnection,
   crate::fixed_sql_commands::postgres::_CREATE_MIGRATION_TABLES,
-  _insert_migrations(crate::_OAPTH_SCHEMA)
+  _insert_migrations(crate::_OAPTH_SCHEMA_PREFIX)
 );
 
 #[cfg(feature = "with-sqlx-sqlite")]

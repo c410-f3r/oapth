@@ -60,7 +60,7 @@ use migration::{
 };
 use utils::*;
 
-const _OAPTH_SCHEMA: &str = "_oapth.";
+const _OAPTH_SCHEMA_PREFIX: &str = "_oapth.";
 
 type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + 'a>>;
 /// Alias for `core::result::Result<T, oapth::Error>`

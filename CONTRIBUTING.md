@@ -2,7 +2,7 @@ Before submitting a PR, and should probably run `./scripts/internal-tests.sh` an
 
 #### Integration tests
 
-Tests that involve databases, therefore, you will need a local installation or a remove instance with connection access.
+Tests that involve databases, therefore, you will need a local installation or a remote instance with connection access.
 
 #### Internal tests
 

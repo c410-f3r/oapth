@@ -282,12 +282,12 @@ pub struct AuxTestParams {
   pub schema_regulator: usize,
 }
 
-pub async fn _create_foo_table<B>(c: &mut Commands<B>, schema: &str)
+pub async fn _create_foo_table<B>(c: &mut Commands<B>, schema_prefix: &str)
 where
   B: BackEnd,
 {
   let mut buffer = ArrayString::<[u8; 64]>::new();
-  buffer.write_fmt(format_args!("CREATE TABLE {}foo(id INT)", schema)).unwrap();
+  buffer.write_fmt(format_args!("CREATE TABLE {}foo(id INT)", schema_prefix)).unwrap();
   c.back_end.execute(&buffer).await.unwrap();
 }
 

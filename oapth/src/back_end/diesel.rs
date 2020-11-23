@@ -157,7 +157,7 @@ create_diesel_back_end!(
   crate::fixed_sql_commands::postgres::_clean,
   diesel::pg::PgConnection,
   crate::fixed_sql_commands::postgres::_CREATE_MIGRATION_TABLES,
-  _insert_migrations(crate::_OAPTH_SCHEMA),
+  _insert_migrations(crate::_OAPTH_SCHEMA_PREFIX),
 );
 
 #[cfg(feature = "with-diesel-sqlite")]
