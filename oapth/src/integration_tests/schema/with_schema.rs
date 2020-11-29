@@ -1,22 +1,22 @@
 use crate::{
-  integration_tests::{AuxTestParams, _migrate_doc_test},
+  integration_tests::{_migrate_doc_test, AuxTestParams},
   BackEnd, Commands,
 };
 
-pub async fn _all_tables_returns_the_number_of_tables_of_oapth_schema<B>(
+pub async fn all_tables_returns_the_number_of_tables_of_oapth_schema<B>(
   c: &mut Commands<B>,
   _: AuxTestParams,
 ) where
-  B: BackEnd,
+  B: BackEnd
 {
-  assert_eq!(c.back_end.all_tables("_oapth").await.unwrap().len(), 0);
+  assert_eq!(c.back_end.tables("_oapth").await.unwrap().len(), 0);
   _migrate_doc_test(c).await;
-  assert_eq!(c.back_end.all_tables("_oapth").await.unwrap().len(), 2);
+  assert_eq!(c.back_end.tables("_oapth").await.unwrap().len(), 2);
 }
 
-pub async fn _migrate_works<B>(c: &mut Commands<B>, aux: AuxTestParams)
+pub async fn migrate_works<B>(c: &mut Commands<B>, aux: AuxTestParams)
 where
-  B: BackEnd,
+  B: BackEnd
 {
-  crate::integration_tests::schema::_migrate_works(c, aux, 2).await
+  crate::integration_tests::schema::migrate_works(c, aux, 2).await
 }

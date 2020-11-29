@@ -4,14 +4,14 @@ use core::fmt;
 pub enum Error {
   #[cfg(any(
     feature = "with-diesel-mysql",
-    feature = "with-diesel-postgres",
+    feature = "with-diesel-pg",
     feature = "with-diesel-sqlite",
   ))]
   /// Diesel error
   Diesel(diesel::result::Error),
   #[cfg(any(
     feature = "with-diesel-mysql",
-    feature = "with-diesel-postgres",
+    feature = "with-diesel-pg",
     feature = "with-diesel-sqlite",
   ))]
   /// Diesel connection error
@@ -47,7 +47,7 @@ pub enum Error {
   #[cfg(any(
     feature = "with-sqlx-mssql",
     feature = "with-sqlx-mysql",
-    feature = "with-sqlx-postgres",
+    feature = "with-sqlx-pg",
     feature = "with-sqlx-sqlite",
   ))]
   Sqlx(sqlx_core::error::Error),
@@ -63,11 +63,7 @@ pub enum Error {
   ValidationLessMigrationsNum(usize, usize),
 }
 
-#[cfg(any(
-  feature = "with-diesel-mysql",
-  feature = "with-diesel-postgres",
-  feature = "with-diesel-sqlite",
-))]
+#[oapth_macros::diesel_]
 impl From<diesel::result::Error> for Error {
   #[inline]
   fn from(from: diesel::result::Error) -> Self {
@@ -75,11 +71,7 @@ impl From<diesel::result::Error> for Error {
   }
 }
 
-#[cfg(any(
-  feature = "with-diesel-mysql",
-  feature = "with-diesel-postgres",
-  feature = "with-diesel-sqlite",
-))]
+#[oapth_macros::diesel_]
 impl From<diesel::result::ConnectionError> for Error {
   #[inline]
   fn from(from: diesel::result::ConnectionError) -> Self {
@@ -110,12 +102,7 @@ impl From<rusqlite::Error> for Error {
   }
 }
 
-#[cfg(any(
-  feature = "with-sqlx-mssql",
-  feature = "with-sqlx-mysql",
-  feature = "with-sqlx-postgres",
-  feature = "with-sqlx-sqlite",
-))]
+#[oapth_macros::sqlx_]
 impl From<sqlx_core::error::Error> for Error {
   #[inline]
   fn from(from: sqlx_core::error::Error) -> Self {
@@ -131,7 +118,7 @@ impl From<std::io::Error> for Error {
   }
 }
 
-#[cfg(feature = "with-tiberius")]
+#[oapth_macros::tiberius_]
 impl From<tiberius::error::Error> for Error {
   #[inline]
   fn from(from: tiberius::error::Error) -> Self {
@@ -139,7 +126,7 @@ impl From<tiberius::error::Error> for Error {
   }
 }
 
-#[cfg(feature = "with-tokio-postgres")]
+#[oapth_macros::tokio_postgres_]
 impl From<tokio_postgres::Error> for Error {
   #[inline]
   fn from(from: tokio_postgres::Error) -> Self {
@@ -153,13 +140,13 @@ impl fmt::Debug for Error {
     match *self {
       #[cfg(any(
         feature = "with-diesel-mysql",
-        feature = "with-diesel-postgres",
+        feature = "with-diesel-pg",
         feature = "with-diesel-sqlite",
       ))]
       Self::Diesel(ref e) => write!(f, "Diesel: {}", e),
       #[cfg(any(
         feature = "with-diesel-mysql",
-        feature = "with-diesel-postgres",
+        feature = "with-diesel-pg",
         feature = "with-diesel-sqlite",
       ))]
       Self::DieselConnection(ref e) => write!(f, "Diesel connection: {}", e),
@@ -189,14 +176,14 @@ impl fmt::Debug for Error {
       #[cfg(any(
         feature = "with-sqlx-mssql",
         feature = "with-sqlx-mysql",
-        feature = "with-sqlx-postgres",
+        feature = "with-sqlx-pg",
         feature = "with-sqlx-sqlite",
       ))]
       Self::Sqlx(ref e) => write!(f, "SQLx: {}", e),
       #[cfg(feature = "with-tiberius")]
-      Self::Tiberius(ref e) => write!(f, "Tiberius: {}", e),
+      Self::Tiberius(ref e) => write!(f, "tiberius: {}", e),
       #[cfg(feature = "with-tokio-postgres")]
-      Self::TokioPostgres(ref e) => write!(f, "Postgres: {}", e),
+      Self::TokioPostgres(ref e) => write!(f, "tokio postgres: {}", e),
       Self::ValidationDivergentMigrations(version) => {
         write!(
           f,
@@ -222,5 +209,5 @@ impl fmt::Display for Error {
   }
 }
 
-#[cfg(feature = "std")]
+#[oapth_macros::std_]
 impl std::error::Error for Error {}

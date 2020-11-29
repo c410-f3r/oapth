@@ -1,8 +1,7 @@
 use crate::{
   binary_seach_migration_by_version, BackEnd, Commands, DbMigration, Migration, MigrationGroup,
-  MigrationParams,
 };
-#[cfg(feature = "std")]
+#[oapth_macros::std_]
 use {
   crate::{group_and_migrations_from_path, parse_cfg},
   std::{fs::File, path::Path},
@@ -21,15 +20,15 @@ where
     migrations: I,
   ) -> crate::Result<()>
   where
-    I: Iterator<Item = &'a Migration>,
+    I: Clone + Iterator<Item = &'a Migration>,
   {
     let db_migrations = self.back_end.migrations(mg).await?;
-    self.do_validate(&db_migrations, migrations)
+    self.do_validate(&db_migrations, Self::filter_by_db(migrations))
   }
 
   /// Applies `validate` to a set of groups according to the configuration file
   #[inline]
-  #[cfg(feature = "std")]
+  #[oapth_macros::std_]
   pub async fn validate_from_cfg<'a>(
     &'a mut self,
     path: &'a Path,
@@ -47,7 +46,7 @@ where
 
   /// Applies `validate` to a set of migrations according to a given directory
   #[inline]
-  #[cfg(feature = "std")]
+  #[oapth_macros::std_]
   pub async fn validate_from_dir<'a>(
     &'a mut self,
     path: &'a Path,
@@ -72,12 +71,15 @@ where
       let version = migration.version();
       let opt = binary_seach_migration_by_version(version, &db_migrations);
       let db_migration = if let Some(rslt) = opt {
-        rslt.1
+        rslt
       } else {
         continue;
       };
 
-      if migration.common() != db_migration.common() {
+      if migration.checksum() != db_migration.checksum()
+        || migration.name() != db_migration.name()
+        || migration.version() != db_migration.version()
+      {
         return Err(crate::Error::ValidationDivergentMigrations(version));
       }
 
@@ -92,7 +94,7 @@ where
   }
 
   #[inline]
-  #[cfg(feature = "std")]
+  #[oapth_macros::std_]
   async fn do_validate_from_dir<'a>(
     &'a mut self,
     buffer: &'a mut Vec<Migration>,

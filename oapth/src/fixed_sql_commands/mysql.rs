@@ -1,7 +1,7 @@
 use arrayvec::ArrayString;
 use core::fmt::Write;
 
-pub const _CREATE_MIGRATION_TABLES: &str = concat!(
+pub const CREATE_MIGRATION_TABLES: &str = concat!(
   "CREATE TABLE IF NOT EXISTS _oapth_migration_group (",
   oapth_migration_group_columns!(),
   "); \
@@ -13,26 +13,13 @@ pub const _CREATE_MIGRATION_TABLES: &str = concat!(
   ");"
 );
 
-// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/mysql/MySQLSchema.java
-#[inline]
-pub fn _all_tables(_: &str) -> crate::Result<ArrayString<[u8; 256]>> {
-  let mut buffer = ArrayString::new();
-  buffer.write_fmt(format_args!(
-    "
-    SELECT
-      all_tables.table_name AS table_name
-    FROM
-      information_schema.tables AS all_tables
-    WHERE
-      all_tables.table_type IN ('BASE TABLE', 'SYSTEM VERSIONED')
-    ",
-  ))?;
-  Ok(buffer)
-}
-
 // https://stackoverflow.com/questions/12403662/how-to-remove-all-mysql-tables-from-the-command-line-without-drop-database-permi/18625545#18625545
+#[oapth_macros::dev_tools_]
 #[inline]
-pub fn _clean() -> crate::Result<ArrayString<[u8; 1024]>> {
+pub async fn clean<B>(_: &mut B) -> crate::Result<ArrayString<[u8; 2048]>>
+where
+  B: crate::BackEnd
+{
   let mut buffer = ArrayString::new();
   buffer.write_fmt(format_args!(
     "
@@ -49,6 +36,23 @@ pub fn _clean() -> crate::Result<ArrayString<[u8; 1024]>> {
     EXECUTE stmt;
     DEALLOCATE PREPARE stmt;
     SET FOREIGN_KEY_CHECKS = 1;
+    ",
+  ))?;
+  Ok(buffer)
+}
+
+// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/mysql/MySQLSchema.java
+#[inline]
+pub fn tables(_: &str) -> crate::Result<ArrayString<[u8; 256]>> {
+  let mut buffer = ArrayString::new();
+  buffer.write_fmt(format_args!(
+    "
+    SELECT
+      table_name AS generic_column
+    FROM
+      information_schema.tables
+    WHERE
+      tables.table_type IN ('BASE TABLE', 'SYSTEM VERSIONED')
     ",
   ))?;
   Ok(buffer)

@@ -9,59 +9,62 @@ extern crate alloc;
 #[macro_use]
 mod utils;
 
-mod _back_end;
-mod back_end;
+oapth_macros::any_db! { mod fixed_sql_commands; }
+#[cfg(all(feature = "_integration-tests", test))]
+oapth_macros::any_db! { mod integration_tests; }
+mod back_end_impls;
+mod back_ends;
 mod commands;
 mod config;
+mod database;
 pub mod doc_tests;
 mod error;
-mod fixed_sql_commands;
-#[cfg(all(feature = "_integration-tests", test))]
-mod integration_tests;
 mod migration;
-#[cfg(feature = "std")]
-mod parsers;
+oapth_macros::std! { mod parsers; }
 
-#[cfg(feature = "with-diesel-mysql")]
-pub use back_end::diesel::DieselMysql;
-#[cfg(feature = "with-diesel-postgres")]
-pub use back_end::diesel::DieselPostgres;
-#[cfg(feature = "with-diesel-sqlite")]
-pub use back_end::diesel::DieselSqlite;
-#[cfg(feature = "with-mysql_async")]
-pub use back_end::mysql_async::MysqlAsync;
-#[cfg(feature = "with-rusqlite")]
-pub use back_end::rusqlite::Rusqlite;
-#[cfg(feature = "with-sqlx-mssql")]
-pub use back_end::sqlx::SqlxMssql;
-#[cfg(feature = "with-sqlx-mysql")]
-pub use back_end::sqlx::SqlxMysql;
-#[cfg(feature = "with-sqlx-postgres")]
-pub use back_end::sqlx::SqlxPostgres;
-#[cfg(feature = "with-sqlx-sqlite")]
-pub use back_end::sqlx::SqlxSqlite;
-#[cfg(feature = "with-tiberius")]
-pub use back_end::tiberius::Tiberius;
-#[cfg(feature = "with-tokio-postgres")]
-pub use back_end::tokio_postgres::TokioPostgres;
-pub use back_end::BackEnd;
+#[oapth_macros::diesel_mysql_]
+pub use back_end_impls::diesel::DieselMysql;
+#[oapth_macros::diesel_pg_]
+pub use back_end_impls::diesel::DieselPg;
+#[oapth_macros::diesel_sqlite_]
+pub use back_end_impls::diesel::DieselSqlite;
+#[oapth_macros::mysql_async_]
+pub use back_end_impls::mysql_async::MysqlAsync;
+#[oapth_macros::rusqlite_]
+pub use back_end_impls::rusqlite::Rusqlite;
+#[oapth_macros::sqlx_mssql_]
+pub use back_end_impls::sqlx::SqlxMssql;
+#[oapth_macros::sqlx_mysql_]
+pub use back_end_impls::sqlx::SqlxMysql;
+#[oapth_macros::sqlx_pg_]
+pub use back_end_impls::sqlx::SqlxPg;
+#[oapth_macros::sqlx_sqlite_]
+pub use back_end_impls::sqlx::SqlxSqlite;
+#[oapth_macros::tiberius_]
+pub use back_end_impls::tiberius::Tiberius;
+#[oapth_macros::tokio_postgres_]
+pub use back_end_impls::tokio_postgres::TokioPostgres;
+pub use back_ends::back_end::BackEnd;
 pub use commands::Commands;
 pub use config::Config;
+pub use database::Database;
 pub use error::Error;
 pub use migration::{migration_group::MigrationGroup, Migration};
-#[cfg(feature = "std")]
-pub use parsers::{parse_cfg, parse_migration};
 
-use _back_end::_BackEnd;
+#[oapth_macros::std_]
+pub use parsers::{parse_cfg, parse_migration::parse_migration};
+
 use alloc::boxed::Box;
+use arrayvec::ArrayVec;
+use back_ends::back_end_generic::BackEndGeneric;
 use core::{future::Future, pin::Pin};
-use migration::{
-  db_migration::DbMigration, migration_common::MigrationCommon, migration_params::MigrationParams,
-};
+use migration::{db_migration::DbMigration, migration_common::MigrationCommon};
 use utils::*;
 
-const _OAPTH_SCHEMA_PREFIX: &str = "_oapth.";
+#[oapth_macros::with_schema_]
+const OAPTH_SCHEMA_PREFIX: &str = "_oapth.";
 
 type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + 'a>>;
+type Dbs = ArrayVec<[Database; 4]>;
 /// Alias for `core::result::Result<T, oapth::Error>`
 pub type Result<T> = core::result::Result<T, Error>;

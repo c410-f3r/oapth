@@ -1,5 +1,5 @@
 use crate::{BackEnd, Commands};
-#[cfg(feature = "std")]
+#[oapth_macros::std_]
 use {
   crate::files,
   std::{fs::read_to_string, path::Path},
@@ -21,7 +21,7 @@ where
     Ok(())
   }
 
-  #[cfg(all(feature = "dev-tools", feature = "std"))]
+  #[oapth_macros::std_]
   /// Applies `Commands::seed` from a set of files located inside a given `dir`.
   #[inline]
   pub async fn seed_from_dir<'a>(&'a mut self, dir: &'a Path) -> crate::Result<()> {

@@ -1,10 +1,8 @@
-use crate::{BoxFut, DbMigration, Migration, MigrationGroup};
+use crate::{BoxFut, Database, DbMigration, Migration, MigrationGroup};
 use alloc::{string::String, vec::Vec};
 
-pub trait _BackEnd {
-  fn all_tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>>;
-
-  #[cfg(feature = "dev-tools")]
+pub trait BackEndGeneric {
+  #[oapth_macros::dev_tools_]
   fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>>;
 
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>>;
@@ -14,6 +12,8 @@ pub trait _BackEnd {
     version: i32,
     mg: &'a MigrationGroup,
   ) -> BoxFut<'a, crate::Result<()>>;
+
+  fn database() -> Database;
 
   fn execute<'a>(&'a mut self, command: &'a str) -> BoxFut<'a, crate::Result<()>>;
 
@@ -29,6 +29,10 @@ pub trait _BackEnd {
     &'a mut self,
     mg: &'a MigrationGroup,
   ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>>;
+
+  fn query_string<'a>(&'a mut self, query: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>>;
+
+  fn tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>>;
 
   fn transaction<'a, I, S>(&'a mut self, commands: I) -> BoxFut<'a, crate::Result<()>>
   where

@@ -38,5 +38,5 @@ tools() {
         -A clippy::missing_docs_in_private_items
 
     /bin/echo -e "\e[0;33m***** Running Rustfmt on ${package} *****\e[0m\n"
-    cargo fmt --all --manifest-path "${package}"/Cargo.toml -- --check
+    cargo fmt --all --manifest-path "${package}"/Cargo.toml
 }

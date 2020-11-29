@@ -1,5 +1,5 @@
 use crate::{BackEnd, Commands, Migration, MigrationGroup};
-#[cfg(feature = "std")]
+#[oapth_macros::std_]
 use {
   crate::{group_and_migrations_from_path, parse_cfg},
   std::{fs::File, path::Path},
@@ -25,7 +25,7 @@ where
   }
 
   /// Applies `migrate` to a set of groups according to the configuration file
-  #[cfg(feature = "std")]
+  #[oapth_macros::std_]
   #[inline]
   pub async fn migrate_from_cfg<'a>(
     &'a mut self,
@@ -44,7 +44,7 @@ where
   }
 
   /// Applies `migrate` to a set of migrations according to a given directory
-  #[cfg(feature = "std")]
+  #[oapth_macros::std_]
   #[inline]
   pub async fn migrate_from_dir<'a>(
     &'a mut self,
@@ -66,18 +66,19 @@ where
     I: Clone + Iterator<Item = &'a Migration> + 'a,
   {
     let db_migrations = self.back_end.migrations(mg).await?;
-    self.do_validate(&db_migrations, migrations.clone())?;
+    let filtered_by_db = Self::filter_by_db(migrations);
+    self.do_validate(&db_migrations, filtered_by_db.clone())?;
     if let Some(rslt) = db_migrations.last() {
       let last_db_mig_version = rslt.version();
-      let to_apply = migrations.filter(move |el| el.version() > last_db_mig_version);
+      let to_apply = filtered_by_db.filter(move |el| el.version() > last_db_mig_version);
       self.back_end.insert_migrations(to_apply, mg).await?;
     } else {
-      self.back_end.insert_migrations(migrations, mg).await?;
+      self.back_end.insert_migrations(filtered_by_db, mg).await?;
     }
     Ok(())
   }
 
-  #[cfg(feature = "std")]
+  #[oapth_macros::std_]
   #[inline]
   async fn do_migrate_from_dir<'a>(
     &'a mut self,

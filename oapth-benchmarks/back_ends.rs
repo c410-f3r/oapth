@@ -5,8 +5,8 @@ use criterion::{
   BenchmarkId, Criterion,
 };
 use oapth::{
-  Commands, Config, DieselMysql, DieselPostgres, DieselSqlite, MysqlAsync, Rusqlite, SqlxMssql,
-  SqlxMysql, SqlxPostgres, SqlxSqlite, Tiberius, TokioPostgres,
+  Commands, Config, DieselMysql, DieselPg, DieselSqlite, MysqlAsync, Rusqlite, SqlxMssql,
+  SqlxMysql, SqlxPg, SqlxSqlite, Tiberius, TokioPostgres,
 };
 use std::path::Path;
 use tokio::runtime::Runtime;
@@ -16,13 +16,13 @@ macro_rules! add_benchmark_group {
     $criterion:expr,
     $f:ident,
     $diesel_mysql:expr,
-    $diesel_postgres:expr,
+    $diesel_pg:expr,
     $diesel_sqlite:expr,
     $mysql_async:expr,
     $rusqlite:expr,
     $sqlx_mssql:expr,
     $sqlx_mysql:expr,
-    $sqlx_postgres:expr,
+    $sqlx_pg:expr,
     $sqlx_sqlite:expr,
     $tiberius:expr,
     $tokio_postgres:expr
@@ -33,7 +33,7 @@ macro_rules! add_benchmark_group {
     {
       let mssql_config = Config::with_url_from_var("MSSQL").unwrap();
       let mysql_config = Config::with_url_from_var("MYSQL").unwrap();
-      let postgres_config = Config::with_url_from_var("POSTGRES").unwrap();
+      let pg_config = Config::with_url_from_var("POSTGRES").unwrap();
       let sqlite_config = Config::with_url_from_var("SQLITE").unwrap();
 
       group.bench_with_input(BenchmarkId::new("Diesel - MySQL", size), &size, |b, _| {
@@ -50,8 +50,8 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(DieselPostgres::new(&postgres_config).await.unwrap());
-            $diesel_postgres(c).await;
+            let c = Commands::new(DieselPg::new(&pg_config).await.unwrap());
+            $diesel_pg(c).await;
           });
         })
       });
@@ -110,7 +110,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(SqlxPostgres::new(&postgres_config).await.unwrap());
+            let c = Commands::new(SqlxPg::new(&pg_config).await.unwrap());
             $sqlx_postgres(c).await;
           });
         })
@@ -143,7 +143,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(TokioPostgres::new(&postgres_config).await.unwrap());
+            let c = Commands::new(TokioPostgres::new(&pg_config).await.unwrap());
             $tokio_postgres(c).await;
           });
         })
@@ -164,7 +164,7 @@ fn criterion_benchmark(c: &mut Criterion) {
       let cfg = Path::new("../oapth-test-utils/oapth.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
-    |mut c: Commands<DieselPostgres>| async move {
+    |mut c: Commands<DieselPg>| async move {
       let cfg = Path::new("../oapth-test-utils/oapth.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
@@ -188,7 +188,7 @@ fn criterion_benchmark(c: &mut Criterion) {
       let cfg = Path::new("../oapth-test-utils/oapth.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
-    |mut c: Commands<SqlxPostgres>| async move {
+    |mut c: Commands<SqlxPg>| async move {
       let cfg = Path::new("../oapth-test-utils/oapth.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },

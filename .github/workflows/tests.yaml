@@ -36,7 +36,7 @@ jobs:
           "integration-tests-mariadb",
           "integration-tests-mssql",
           "integration-tests-mysql",
-          "integration-tests-postgres",
+          "integration-tests-pg",
           "integration-tests-sqlite"
         ]
     steps:

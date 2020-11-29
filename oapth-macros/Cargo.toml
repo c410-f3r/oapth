@@ -1,0 +1,22 @@
+[dependencies]
+
+[features]
+default = []
+
+[lib]
+proc-macro = true
+
+[package]
+authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
+categories = ["database"]
+description = "Oapth macros"
+edition = "2018"
+keywords = ["database", "migration", "oapth", "sql"]
+license = "Apache-2.0"
+name = "oapth-macros"
+readme = "README.md"
+repository = "https://github.com/c410-f3r/oapth"
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+all-features = true

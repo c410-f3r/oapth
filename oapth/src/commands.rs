@@ -1,12 +1,10 @@
-#[cfg(feature = "dev-tools")]
-mod clean;
+oapth_macros::dev_tools! { mod clean; }
 mod migrate;
 mod rollback;
-#[cfg(feature = "dev-tools")]
-mod seed;
+oapth_macros::dev_tools! { mod seed; }
 mod validate;
 
-use crate::BackEnd;
+use crate::{BackEnd, Migration};
 
 /// SQL commands facade
 #[derive(Debug)]
@@ -22,5 +20,12 @@ where
   #[inline]
   pub fn new(back_end: B) -> Self {
     Self { back_end }
+  }
+
+  fn filter_by_db<'a, I>(migrations: I) -> impl Clone + Iterator<Item = &'a Migration>
+  where
+    I: Clone + Iterator<Item = &'a Migration>,
+  {
+    migrations.filter(|m| if m.dbs().is_empty() { true } else { m.dbs().contains(&B::database()) })
   }
 }

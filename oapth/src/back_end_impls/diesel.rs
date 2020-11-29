@@ -1,25 +1,26 @@
 mod schemas;
 
 use crate::{
-  fixed_sql_commands::{_delete_migrations, _insert_migrations, _migrations_by_mg_version_query},
-  BackEnd, BoxFut, Config, DbMigration, Migration, MigrationGroup, _BackEnd,
+  fixed_sql_commands::{delete_migrations, insert_migrations, migrations_by_mg_version_query},
+  BackEnd, BackEndGeneric, BoxFut, Config, DbMigration,  MigrationGroup, Database, Migration
 };
 use alloc::string::String;
 use diesel::{
   connection::{SimpleConnection, TransactionManager},
   sql_query, Connection, RunQueryDsl,
 };
-use schemas::AllTables;
+use schemas::GenericTable;
 
 macro_rules! create_diesel_back_end {
   (
     $(#[$new_doc:meta])+
     $back_end_name:ident,
-    $all_tables:path,
     $clean:path,
     $conn_ty:ty,
+    $database:expr,
     $create_oapth_tables:expr,
     $insert_migrations:ident($schema:expr),
+    $tables:path,
   ) => {
     /// Wraps functionalities for the `diesel` crate
     #[
@@ -42,20 +43,13 @@ macro_rules! create_diesel_back_end {
     impl BackEnd for $back_end_name {
     }
 
-    impl _BackEnd for $back_end_name {
-      #[inline]
-      fn all_tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
-        Box::pin(async move {
-          let a: Vec<AllTables> = sql_query($all_tables(schema)?.as_str()).load(&self.conn)?;
-          Ok(a.into_iter().map(|el| el.table_name).collect())
-        })
-      }
-
-      #[cfg(feature = "dev-tools")]
+    impl BackEndGeneric for $back_end_name {
+      #[oapth_macros::dev_tools_]
       #[inline]
       fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
         Box::pin(async move {
-          Ok(self.execute(&$clean()?).await?)
+          let clean = $clean(self).await?;
+          Ok(self.execute(&clean).await?)
         })
       }
 
@@ -65,17 +59,29 @@ macro_rules! create_diesel_back_end {
       }
 
       #[inline]
+      fn database() -> Database {
+        $database
+      }
+
+      #[inline]
       fn delete_migrations<'a>(
         &'a mut self,
         version: i32,
         mg: &'a MigrationGroup,
       ) -> BoxFut<'a, crate::Result<()>> {
-        Box::pin(async move { Ok(_delete_migrations(self, mg, $schema, version).await?) })
+        Box::pin(async move { Ok(delete_migrations(self, mg, $schema, version).await?) })
       }
 
       #[inline]
       fn execute<'b>(&'b mut self, command: &'b str) -> BoxFut<'b, crate::Result<()>> {
-        Box::pin(async move { Ok(self.conn.batch_execute(command).map(|_| {})?) })
+        Box::pin(async move {
+          Ok(if command.is_empty() {
+            ()
+          }
+          else {
+            self.conn.batch_execute(command).map(|_| {})?
+          })
+        })
       }
 
       #[inline]
@@ -87,15 +93,31 @@ macro_rules! create_diesel_back_end {
       where
         I: Clone + Iterator<Item = &'a Migration> + 'a,
         {
-        Box::pin(_insert_migrations(self, mg, $schema, migrations))
+        Box::pin(insert_migrations(self, mg, $schema, migrations))
       }
 
       #[inline]
       fn migrations<'a>(&'a mut self, mg: &'a MigrationGroup,) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
         Box::pin(async move {
-          let query = _migrations_by_mg_version_query(mg.version(), $schema)?;
+          let query = migrations_by_mg_version_query(mg.version(), $schema)?;
           let migrations = sql_query(query.as_str()).load(&self.conn)?;
           Ok(migrations)
+        })
+      }
+
+      #[inline]
+      fn query_string<'a>(&'a mut self, query: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+        Box::pin(async move {
+          let tables: Vec<GenericTable> = sql_query(query).load(&self.conn)?;
+          Ok(tables.into_iter().map(|el| el.generic_column).collect())
+        })
+      }
+
+      #[inline]
+      fn tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+        Box::pin(async move {
+          let tables: Vec<GenericTable> = sql_query($tables(schema)?.as_str()).load(&self.conn)?;
+          Ok(tables.into_iter().map(|el| el.generic_column).collect())
         })
       }
 
@@ -120,7 +142,7 @@ macro_rules! create_diesel_back_end {
   };
 }
 
-#[cfg(feature = "with-diesel-mysql")]
+#[oapth_macros::diesel_mysql_]
 create_diesel_back_end!(
   /// Creates a new instance from all necessary parameters.
   ///
@@ -133,14 +155,15 @@ create_diesel_back_end!(
   /// let _ = DieselMysql::new(&Config::with_url_from_default_var()?).await?;
   /// # Ok(()) }
   DieselMysql,
-  crate::fixed_sql_commands::mysql::_all_tables,
-  crate::fixed_sql_commands::mysql::_clean,
+  crate::fixed_sql_commands::mysql::clean,
   diesel::mysql::MysqlConnection,
-  crate::fixed_sql_commands::mysql::_CREATE_MIGRATION_TABLES,
+  Database::Mysql,
+  crate::fixed_sql_commands::mysql::CREATE_MIGRATION_TABLES,
   _insert_migrations(""),
+  crate::fixed_sql_commands::mysql::tables,
 );
 
-#[cfg(feature = "with-diesel-postgres")]
+#[oapth_macros::diesel_pg_]
 create_diesel_back_end!(
   /// Creates a new instance from all necessary parameters.
   ///
@@ -149,18 +172,19 @@ create_diesel_back_end!(
   #[cfg_attr(feature = "_integration-tests", doc = "```rust")]
   #[cfg_attr(not(feature = "_integration-tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
-  /// use oapth::{Config, DieselPostgres};
-  /// let _ = DieselPostgres::new(&Config::with_url_from_default_var()?).await?;
+  /// use oapth::{Config, DieselPg};
+  /// let _ = DieselPg::new(&Config::with_url_from_default_var()?).await?;
   /// # Ok(()) }
-  DieselPostgres,
-  crate::fixed_sql_commands::postgres::_all_tables,
-  crate::fixed_sql_commands::postgres::_clean,
+  DieselPg,
+  crate::fixed_sql_commands::pg::clean,
   diesel::pg::PgConnection,
-  crate::fixed_sql_commands::postgres::_CREATE_MIGRATION_TABLES,
-  _insert_migrations(crate::_OAPTH_SCHEMA_PREFIX),
+  Database::Pg,
+  crate::fixed_sql_commands::pg::CREATE_MIGRATION_TABLES,
+  _insert_migrations(crate::OAPTH_SCHEMA_PREFIX),
+  crate::fixed_sql_commands::pg::tables,
 );
 
-#[cfg(feature = "with-diesel-sqlite")]
+#[oapth_macros::diesel_sqlite_]
 create_diesel_back_end!(
   /// Creates a new instance from all necessary parameters.
   ///
@@ -173,9 +197,10 @@ create_diesel_back_end!(
   /// let _ = DieselSqlite::new(&Config::with_url_from_default_var()?).await?;
   /// # Ok(()) }
   DieselSqlite,
-  crate::fixed_sql_commands::sqlite::_all_tables,
-  crate::fixed_sql_commands::sqlite::_clean,
+  crate::fixed_sql_commands::sqlite::clean,
   diesel::sqlite::SqliteConnection,
-  crate::fixed_sql_commands::sqlite::_CREATE_MIGRATION_TABLES,
+  Database::Sqlite,
+  crate::fixed_sql_commands::sqlite::CREATE_MIGRATION_TABLES,
   _insert_migrations(""),
+  crate::fixed_sql_commands::sqlite::tables,
 );

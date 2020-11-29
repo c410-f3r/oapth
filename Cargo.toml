@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "oapth",
-    "oapth-cli"
+    "oapth-cli",
+    "oapth-macros"
 ]

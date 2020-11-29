@@ -18,30 +18,31 @@ macro_rules! oapth_migration_group_columns {
   };
 }
 
+#[oapth_macros::mysql_or_pg_]
 macro_rules! serial_id {
   () => {
     "id SERIAL NOT NULL PRIMARY KEY,"
   };
 }
 
-pub(crate) mod mssql;
-pub(crate) mod mysql;
-pub(crate) mod postgres;
-pub(crate) mod sqlite;
+oapth_macros::mssql! { pub(crate) mod mssql; }
+oapth_macros::mysql! { pub(crate) mod mysql; }
+oapth_macros::pg! { pub(crate) mod pg; }
+oapth_macros::sqlite! { pub(crate) mod sqlite; }
 
 use crate::{BackEnd, Migration};
 use arrayvec::ArrayString;
 use core::fmt::Write;
 
 #[inline]
-pub async fn _delete_migrations<B>(
+pub async fn delete_migrations<B>(
   back_end: &mut B,
   mg: &crate::MigrationGroup,
   schema_prefix: &str,
   version: i32,
 ) -> crate::Result<()>
 where
-  B: BackEnd,
+  B: BackEnd
 {
   let mut buffer = ArrayString::<[u8; 128]>::new();
   buffer.write_fmt(format_args!(
@@ -55,7 +56,7 @@ where
 }
 
 #[inline]
-pub async fn _insert_migrations<'a, B, I>(
+pub async fn insert_migrations<'a, B, I>(
   back_end: &'a mut B,
   mg: &'a crate::MigrationGroup,
   schema_prefix: &str,
@@ -79,18 +80,14 @@ where
   back_end.execute(&insert_migration_group_str).await?;
 
   back_end.transaction(migrations.clone().map(|m| m.sql_up())).await?;
-  back_end
-    .transaction(
-      migrations
-        .filter_map(|m| _insert_oapth_migration_str(mg.version(), &m.common, schema_prefix).ok()),
-    )
-    .await?;
+  let f = |m| insert_oapth_migration_str(mg.version(), m, schema_prefix).ok();
+  back_end.transaction(migrations.filter_map(f)).await?;
 
   Ok(())
 }
 
 #[inline]
-pub fn _migrations_by_mg_version_query(
+pub fn migrations_by_mg_version_query(
   mg_version: i32,
   schema_prefix: &str,
 ) -> crate::Result<ArrayString<[u8; 512]>> {
@@ -119,11 +116,12 @@ pub fn _migrations_by_mg_version_query(
 }
 
 #[inline]
-fn _insert_oapth_migration_str(
+fn insert_oapth_migration_str(
   mg_version: i32,
-  m: &crate::MigrationCommon,
+  m: &Migration,
   schema_prefix: &str,
-) -> crate::Result<ArrayString<[u8; 512]>> {
+) -> crate::Result<ArrayString<[u8; 512]>>
+{
   let mut buffer = ArrayString::<[u8; 512]>::new();
   buffer.write_fmt(format_args!(
     "INSERT INTO {schema_prefix}_oapth_migration (
@@ -131,9 +129,9 @@ fn _insert_oapth_migration_str(
     ) VALUES (
       {m_version}, {mg_version}, '{m_checksum}', '{m_name}'
     );",
-    m_checksum = m.checksum,
-    m_name = m.name,
-    m_version = m.version,
+    m_checksum = m.checksum(),
+    m_name = m.name(),
+    m_version = m.version(),
     mg_version = mg_version,
     schema_prefix = schema_prefix,
   ))?;

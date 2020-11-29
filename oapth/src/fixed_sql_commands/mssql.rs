@@ -1,7 +1,7 @@
 use arrayvec::ArrayString;
 use core::fmt::Write;
 
-pub const _CREATE_MIGRATION_TABLES: &str = concat!(
+pub const CREATE_MIGRATION_TABLES: &str = concat!(
   "IF (NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = '_oapth'))
     BEGIN
       EXEC ('CREATE SCHEMA [_oapth]')
@@ -38,31 +38,12 @@ pub const _CREATE_MIGRATION_TABLES: &str = concat!(
   END"
 );
 
+#[oapth_macros::dev_tools_]
 #[inline]
-pub fn _all_tables(schema: &str) -> crate::Result<ArrayString<[u8; 512]>> {
-  let mut buffer = ArrayString::new();
-  buffer.write_fmt(format_args!(
-    "
-    SELECT
-      all_tables.name AS table_name
-    FROM
-      sys.objects AS all_tables LEFT JOIN sys.extended_properties AS eps ON all_tables.object_id = eps.major_id
-      AND eps.class = 1
-      AND eps.minor_id = 0
-      AND eps.name='microsoft_database_tools_support'
-    WHERE
-      SCHEMA_NAME(all_tables.schema_id) = '{schema}'
-      AND eps.major_id IS NULL
-      AND all_tables.is_ms_shipped = 0
-      AND all_tables.type IN ('U');
-    ",
-    schema = schema
-  ))?;
-  Ok(buffer)
-}
-
-#[inline]
-pub fn _clean() -> crate::Result<ArrayString<[u8; 1024]>> {
+pub async fn clean<B>(_: &mut B) -> crate::Result<ArrayString<[u8; 2048]>>
+where
+  B: crate::BackEnd
+{
   let mut buffer = ArrayString::new();
   buffer.write_fmt(format_args!(
     r#"
@@ -94,6 +75,29 @@ pub fn _clean() -> crate::Result<ArrayString<[u8; 1024]>> {
 
     EXECUTE sp_msforeachtable "ALTER TABLE ? WITH CHECK CHECK CONSTRAINT all"
     "#
+  ))?;
+  Ok(buffer)
+}
+
+#[inline]
+pub fn tables(schema: &str) -> crate::Result<ArrayString<[u8; 512]>> {
+  let mut buffer = ArrayString::new();
+  buffer.write_fmt(format_args!(
+    "
+    SELECT
+      tables.name AS generic_column
+    FROM
+      sys.objects AS tables LEFT JOIN sys.extended_properties AS eps ON tables.object_id = eps.major_id
+      AND eps.class = 1
+      AND eps.minor_id = 0
+      AND eps.name='microsoft_database_tools_support'
+    WHERE
+      SCHEMA_NAME(tables.schema_id) = '{schema}'
+      AND eps.major_id IS NULL
+      AND tables.is_ms_shipped = 0
+      AND tables.type IN ('U');
+    ",
+    schema = schema
   ))?;
   Ok(buffer)
 }

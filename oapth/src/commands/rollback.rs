@@ -1,5 +1,5 @@
 use crate::{BackEnd, Commands, Migration, MigrationGroup};
-#[cfg(feature = "std")]
+#[oapth_macros::std_]
 use {
   crate::{group_and_migrations_from_path, parse_cfg},
   std::{fs::File, path::Path},
@@ -23,8 +23,9 @@ where
     I: Clone + DoubleEndedIterator<Item = &'a Migration> + 'a,
   {
     let db_migrations = self.back_end.migrations(mg).await?;
-    self.do_validate(&db_migrations, migrations.clone())?;
-    let reverts_iter = migrations.map(|el| el.sql_down());
+    let filtered_by_db = Self::filter_by_db(migrations);
+    self.do_validate(&db_migrations, filtered_by_db.clone())?;
+    let reverts_iter = filtered_by_db.map(|el| el.sql_down());
     self.back_end.transaction(reverts_iter).await?;
     self.back_end.delete_migrations(version, mg).await?;
     Ok(())
@@ -36,7 +37,7 @@ where
   )]
   /// Applies `rollback` to a set of groups according to the configuration file
   #[inline]
-  #[cfg(feature = "std")]
+  #[oapth_macros::std_]
   pub async fn rollback_from_cfg<'a>(
     &'a mut self,
     path: &'a Path,
@@ -58,7 +59,7 @@ where
 
   /// Applies `rollback` to a set of migrations according to a given directory
   #[inline]
-  #[cfg(feature = "std")]
+  #[oapth_macros::std_]
   pub async fn rollback_from_dir<'a>(
     &'a mut self,
     path: &'a Path,
@@ -70,7 +71,7 @@ where
   }
 
   #[inline]
-  #[cfg(feature = "std")]
+  #[oapth_macros::std_]
   async fn do_rollback_from_dir<'a>(
     &'a mut self,
     buffer: &'a mut Vec<Migration>,
