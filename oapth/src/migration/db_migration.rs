@@ -1,18 +1,7 @@
-#[cfg(any(
-  feature = "with-diesel-mysql",
-  feature = "with-diesel-postgres",
-  feature = "with-diesel-sqlite",
-))]
-mod db_migration_diesel;
-#[cfg(any(
-  feature = "with-sqlx-mssql",
-  feature = "with-sqlx-mysql",
-  feature = "with-sqlx-postgres",
-  feature = "with-sqlx-sqlite",
-))]
-mod db_migration_sqlx;
+oapth_macros::diesel! { mod db_migration_diesel; }
+oapth_macros::sqlx! { mod db_migration_sqlx; }
 
-use crate::{MigrationCommon, MigrationGroup, MigrationParams};
+use crate::{Database, MigrationCommon, MigrationGroup};
 use chrono::{DateTime, FixedOffset, NaiveDateTime, Utc};
 use core::fmt;
 
@@ -20,6 +9,7 @@ use core::fmt;
 pub struct DbMigration {
   common: MigrationCommon,
   created_on: DateTime<FixedOffset>,
+  db: Database,
   group: MigrationGroup,
 }
 
@@ -32,6 +22,11 @@ impl DbMigration {
   #[inline]
   pub fn created_on(&self) -> &DateTime<FixedOffset> {
     &self.created_on
+  }
+
+  #[inline]
+  pub fn db(&self) -> Database {
+    self.db
   }
 
   #[inline]
@@ -50,13 +45,6 @@ impl DbMigration {
   }
 }
 
-impl MigrationParams for DbMigration {
-  #[inline]
-  fn common(&self) -> &MigrationCommon {
-    &self.common
-  }
-}
-
 impl fmt::Display for DbMigration {
   #[inline]
   fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -64,7 +52,7 @@ impl fmt::Display for DbMigration {
   }
 }
 
-#[cfg(feature = "with-mysql_async")]
+#[oapth_macros::mysql_async_]
 impl core::convert::TryFrom<mysql_async::Row> for DbMigration {
   type Error = crate::Error;
 
@@ -78,6 +66,7 @@ impl core::convert::TryFrom<mysql_async::Row> for DbMigration {
           version: from.get("version")?,
         },
         created_on: _fixed_from_naive_utc(from.get::<NaiveDateTime, _>("created_on")?),
+        db: Database::Mysql,
         group: MigrationGroup { version: from.get("omg_version")?, name: from.get("omg_name")? },
       })
     };
@@ -87,7 +76,7 @@ impl core::convert::TryFrom<mysql_async::Row> for DbMigration {
   }
 }
 
-#[cfg(feature = "with-rusqlite")]
+#[oapth_macros::rusqlite_]
 impl<'a> core::convert::TryFrom<&'a rusqlite::Row<'a>> for DbMigration {
   type Error = crate::Error;
 
@@ -100,12 +89,13 @@ impl<'a> core::convert::TryFrom<&'a rusqlite::Row<'a>> for DbMigration {
         version: from.get("version")?,
       },
       created_on: from.get::<_, DateTime<Utc>>("created_on")?.into(),
+      db: Database::Sqlite,
       group: MigrationGroup { version: from.get("omg_version")?, name: from.get("omg_name")? },
     })
   }
 }
 
-#[cfg(feature = "with-tiberius")]
+#[oapth_macros::tiberius_]
 impl core::convert::TryFrom<tiberius::Row> for DbMigration {
   type Error = crate::Error;
 
@@ -124,8 +114,9 @@ impl core::convert::TryFrom<tiberius::Row> for DbMigration {
       },
       created_on: {
         let s = translate!(from.try_get::<&str, _>("created_on"));
-        _mssql_date_hack(s)?
+        mssql_date_hack(s)?
       },
+      db: Database::Mssql,
       group: MigrationGroup {
         version: translate!(from.try_get("omg_version")),
         name: translate!(from.try_get::<&str, _>("omg_name")).into(),
@@ -134,7 +125,7 @@ impl core::convert::TryFrom<tiberius::Row> for DbMigration {
   }
 }
 
-#[cfg(feature = "with-tokio-postgres")]
+#[oapth_macros::tokio_postgres_]
 impl core::convert::TryFrom<tokio_postgres::Row> for DbMigration {
   type Error = crate::Error;
 
@@ -147,6 +138,7 @@ impl core::convert::TryFrom<tokio_postgres::Row> for DbMigration {
         version: from.try_get("version")?,
       },
       created_on: from.try_get("created_on")?,
+      db: Database::Pg,
       group: MigrationGroup {
         version: from.try_get("omg_version")?,
         name: from.try_get("omg_name")?,
@@ -159,7 +151,8 @@ fn _fixed_from_naive_utc(naive: NaiveDateTime) -> DateTime<FixedOffset> {
   chrono::DateTime::<Utc>::from_utc(naive, Utc).into()
 }
 
-fn _mssql_date_hack(s: &str) -> crate::Result<DateTime<FixedOffset>> {
+#[oapth_macros::mssql_]
+fn mssql_date_hack(s: &str) -> crate::Result<DateTime<FixedOffset>> {
   let naive_rslt = NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S");
   let naive = naive_rslt.map_err(|_| crate::Error::Other("Invalid date for mssql"))?;
   Ok(_fixed_from_naive_utc(naive))

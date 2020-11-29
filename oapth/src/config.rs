@@ -1,6 +1,6 @@
 use alloc::string::String;
 
-#[cfg(feature = "std")]
+#[oapth_macros::std_]
 const DEFAULT_ENV_VAR: &str = "DATABASE_URL";
 
 /// Configuration to connect to a database
@@ -31,7 +31,7 @@ impl Config {
   /// let _ = Config::with_url_from_default_var()?;
   /// # Ok(()) }
   /// ```
-  #[cfg(feature = "std")]
+  #[oapth_macros::std_]
   #[inline]
   pub fn with_url_from_default_var() -> crate::Result<Self> {
     Self::with_url_from_var(DEFAULT_ENV_VAR)
@@ -48,7 +48,7 @@ impl Config {
   /// let _ = Config::with_url_from_var("SOMETHING")?;
   /// # Ok(()) }
   /// ```
-  #[cfg(feature = "std")]
+  #[oapth_macros::std_]
   #[inline]
   pub fn with_url_from_var(env_var: &str) -> crate::Result<Self> {
     let url = std::env::var(env_var).map_err(|_| crate::Error::MissingEnvVar)?;

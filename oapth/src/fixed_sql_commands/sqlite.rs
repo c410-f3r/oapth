@@ -1,7 +1,7 @@
 use arrayvec::ArrayString;
 use core::fmt::Write;
 
-pub const _CREATE_MIGRATION_TABLES: &str = concat!(
+pub const CREATE_MIGRATION_TABLES: &str = concat!(
   "CREATE TABLE IF NOT EXISTS _oapth_migration_group (",
   oapth_migration_group_columns!(),
   "); \
@@ -13,17 +13,12 @@ pub const _CREATE_MIGRATION_TABLES: &str = concat!(
   ");"
 );
 
+#[oapth_macros::dev_tools_]
 #[inline]
-pub fn _all_tables(_: &str) -> crate::Result<ArrayString<[u8; 128]>> {
-  let mut buffer = ArrayString::new();
-  buffer.write_fmt(format_args!(
-    "SELECT tbl_name table_name FROM sqlite_master all_tables WHERE type='table' AND tbl_name NOT LIKE 'sqlite_%';"
-  ))?;
-  Ok(buffer)
-}
-
-#[inline]
-pub fn _clean() -> crate::Result<ArrayString<[u8; 256]>> {
+pub async fn clean<B>(_: &mut B) -> crate::Result<ArrayString<[u8; 256]>>
+where
+B: crate::BackEnd
+{
   let mut buffer = ArrayString::new();
   buffer.write_fmt(format_args!(
     "
@@ -31,6 +26,15 @@ pub fn _clean() -> crate::Result<ArrayString<[u8; 256]>> {
     DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger');
     PRAGMA writable_schema = 0;
     ",
+  ))?;
+  Ok(buffer)
+}
+
+#[inline]
+pub fn tables(_: &str) -> crate::Result<ArrayString<[u8; 128]>> {
+  let mut buffer = ArrayString::new();
+  buffer.write_fmt(format_args!(
+    "SELECT tbl_name generic_column FROM sqlite_master tables WHERE type='table' AND tbl_name NOT LIKE 'sqlite_%';"
   ))?;
   Ok(buffer)
 }

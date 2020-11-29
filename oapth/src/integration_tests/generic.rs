@@ -1,19 +1,19 @@
 use crate::{integration_tests::AuxTestParams, BackEnd, Commands, MigrationGroup};
 use std::path::Path;
 
-pub async fn _all_tables_returns_the_number_of_tables_of_the_default_schema<B>(
+pub async fn all_tables_returns_the_number_of_tables_of_the_default_schema<B>(
   c: &mut Commands<B>,
   aux: AuxTestParams,
 ) where
-  B: BackEnd,
+  B: BackEnd
 {
   c.back_end.execute("CREATE TABLE foo(id INT)").await.unwrap();
-  assert_eq!(c.back_end.all_tables(aux.default_schema).await.unwrap().len(), 1);
+  assert_eq!(c.back_end.tables(aux.default_schema).await.unwrap().len(), 1);
 }
 
-pub async fn _rollback_works<B>(c: &mut Commands<B>, aux: AuxTestParams)
+pub async fn rollback_works<B>(c: &mut Commands<B>, aux: AuxTestParams)
 where
-  B: BackEnd,
+  B: BackEnd
 {
   let path = Path::new("../oapth-test-utils/oapth.cfg");
   c.migrate_from_cfg(path, 128).await.unwrap();
@@ -24,6 +24,6 @@ where
   let more_stuff = MigrationGroup::new(2, "more_stuff");
   let more_stuff_migrations = c.back_end.migrations(&more_stuff).await.unwrap();
   assert_eq!(more_stuff_migrations.len(), 0);
-  assert_eq!(c.back_end.all_tables(aux.default_schema).await.unwrap().len(), aux.schema_regulator);
-  assert_eq!(c.back_end.all_tables(aux.oapth_schema).await.unwrap().len(), 2);
+  assert_eq!(c.back_end.tables(aux.default_schema).await.unwrap().len(), aux.schema_regulator);
+  assert_eq!(c.back_end.tables(aux.oapth_schema).await.unwrap().len(), 2);
 }

@@ -25,26 +25,26 @@ macro_rules! create_schema {
   };
 }
 
-#[cfg(feature = "with-diesel-postgres")]
+#[oapth_macros::diesel_pg_]
 create_schema!(schema_pg, Timestamptz);
-#[cfg(any(feature = "with-diesel-mysql", feature = "with-diesel-sqlite",))]
+#[oapth_macros::diesel_minus_pg_]
 create_schema!(schema, Timestamp);
 
-#[cfg(any(feature = "with-diesel-mysql", feature = "with-diesel-sqlite",))]
+#[oapth_macros::diesel_minus_pg_]
 use self::schema::{_oapth_migration as m, _oapth_migration_group as mg};
-use crate::{DbMigration, MigrationCommon, MigrationGroup};
+#[oapth_macros::diesel_pg_]
+use {
+  chrono::{DateTime, Utc},
+  schema_pg::{_oapth_migration as m_pg, _oapth_migration_group as mg_pg},
+};
+use crate::{DbMigration, Database, MigrationCommon, MigrationGroup};
 use diesel::{
   deserialize::{FromSql, QueryableByName},
   dsl::SqlTypeOf,
   row::NamedRow,
 };
-#[cfg(feature = "with-diesel-postgres")]
-use {
-  chrono::{DateTime, Utc},
-  schema_pg::{_oapth_migration as m_pg, _oapth_migration_group as mg_pg},
-};
 
-#[cfg(feature = "with-diesel-mysql")]
+#[oapth_macros::diesel_mysql_]
 impl QueryableByName<diesel::mysql::Mysql> for DbMigration
 where
   i32: FromSql<SqlTypeOf<m::omg_version>, diesel::mysql::Mysql>,
@@ -67,6 +67,7 @@ where
           NamedRow::get::<SqlTypeOf<m::created_on>, chrono::NaiveDateTime>(row, "created_on")?;
         crate::migration::db_migration::_fixed_from_naive_utc(naive)
       },
+      db: Database::Mysql,
       group: MigrationGroup {
         name: NamedRow::get::<SqlTypeOf<mg::name>, String>(row, "omg_name")?,
         version: NamedRow::get::<SqlTypeOf<mg::version>, i32>(row, "omg_version")?,
@@ -75,7 +76,7 @@ where
   }
 }
 
-#[cfg(feature = "with-diesel-postgres")]
+#[oapth_macros::diesel_pg_]
 impl QueryableByName<diesel::pg::Pg> for DbMigration
 where
   i32: FromSql<SqlTypeOf<m_pg::omg_version>, diesel::pg::Pg>,
@@ -95,6 +96,7 @@ where
       },
       created_on: NamedRow::get::<SqlTypeOf<m_pg::created_on>, DateTime<Utc>>(row, "created_on")?
         .into(),
+      db: Database::Pg,
       group: MigrationGroup {
         name: NamedRow::get::<SqlTypeOf<mg_pg::name>, String>(row, "omg_name")?,
         version: NamedRow::get::<SqlTypeOf<mg_pg::version>, i32>(row, "omg_version")?,
@@ -103,7 +105,7 @@ where
   }
 }
 
-#[cfg(feature = "with-diesel-sqlite")]
+#[oapth_macros::diesel_sqlite_]
 impl QueryableByName<diesel::sqlite::Sqlite> for DbMigration
 where
   i32: FromSql<SqlTypeOf<m::omg_version>, diesel::sqlite::Sqlite>,
@@ -128,6 +130,7 @@ where
           NamedRow::get::<SqlTypeOf<m::created_on>, chrono::NaiveDateTime>(row, "created_on")?;
         crate::migration::db_migration::_fixed_from_naive_utc(naive)
       },
+      db: Database::Sqlite,
       group: MigrationGroup {
         name: NamedRow::get::<SqlTypeOf<mg::name>, String>(row, "omg_name")?,
         version: NamedRow::get::<SqlTypeOf<mg::version>, i32>(row, "omg_version")?,

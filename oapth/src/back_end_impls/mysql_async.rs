@@ -1,9 +1,9 @@
 use crate::{
   fixed_sql_commands::{
-    _delete_migrations, _insert_migrations, _migrations_by_mg_version_query,
-    mysql::{_all_tables, _CREATE_MIGRATION_TABLES},
+    delete_migrations, insert_migrations, migrations_by_mg_version_query,
+    mysql::{tables, CREATE_MIGRATION_TABLES},
   },
-  BackEnd, BoxFut, Config, DbMigration, Migration, MigrationGroup, _BackEnd,
+  BackEnd, BackEndGeneric, BoxFut, Config, DbMigration, Migration, MigrationGroup, Database
 };
 use alloc::string::String;
 use core::convert::TryFrom;
@@ -37,32 +37,26 @@ impl MysqlAsync {
 
 impl BackEnd for MysqlAsync {}
 
-impl _BackEnd for MysqlAsync {
-  #[inline]
-  fn all_tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
-    Box::pin(async move {
-      let buffer = _all_tables(schema)?;
-      let rows: Vec<Row> = self.conn.query(buffer.as_str()).await?;
-      rows
-        .into_iter()
-        .map(|row| {
-          row.get::<String, _>(0).ok_or(crate::Error::MysqlAsync(mysql_async::Error::Driver(
-            mysql_async::DriverError::FromRow { row },
-          )))
-        })
-        .collect::<crate::Result<_>>()
-    })
-  }
-
-  #[cfg(feature = "dev-tools")]
+impl BackEndGeneric for MysqlAsync {
+  #[oapth_macros::dev_tools_]
   #[inline]
   fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
-    Box::pin(async move { Ok(self.execute(&crate::fixed_sql_commands::mysql::_clean()?).await?) })
+    Box::pin(
+      async move {
+        let clean = crate::fixed_sql_commands::mysql::clean(self).await?;
+        Ok(self.execute(&clean).await?)
+      },
+    )
   }
 
   #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
-    self.execute(_CREATE_MIGRATION_TABLES)
+    self.execute(CREATE_MIGRATION_TABLES)
+  }
+
+  #[inline]
+  fn database() -> Database {
+    Database::Mysql
   }
 
   #[inline]
@@ -71,7 +65,7 @@ impl _BackEnd for MysqlAsync {
     version: i32,
     mg: &'a MigrationGroup,
   ) -> BoxFut<'a, crate::Result<()>> {
-    Box::pin(async move { Ok(_delete_migrations(self, mg, "", version).await?) })
+    Box::pin(async move { Ok(delete_migrations(self, mg, "", version).await?) })
   }
 
   #[inline]
@@ -88,7 +82,7 @@ impl _BackEnd for MysqlAsync {
   where
     I: Clone + Iterator<Item = &'a Migration> + 'a,
   {
-    Box::pin(_insert_migrations(self, mg, "", migrations))
+    Box::pin(insert_migrations(self, mg, "", migrations))
   }
 
   #[inline]
@@ -97,9 +91,40 @@ impl _BackEnd for MysqlAsync {
     mg: &'a MigrationGroup,
   ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
     Box::pin(async move {
-      let buffer = _migrations_by_mg_version_query(mg.version(), "")?;
+      let buffer = migrations_by_mg_version_query(mg.version(), "")?;
       let vec: Vec<Row> = self.conn.query(buffer.as_str()).await?;
       vec.into_iter().map(DbMigration::try_from).collect::<crate::Result<Vec<_>>>()
+    })
+  }
+
+  #[inline]
+  fn query_string<'a>(&'a mut self, query: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move {
+      let rows: Vec<Row> = self.conn.query(query).await?;
+      rows
+        .into_iter()
+        .map(|row| {
+          row.get::<String, _>(0).ok_or(crate::Error::MysqlAsync(mysql_async::Error::Driver(
+            mysql_async::DriverError::FromRow { row },
+          )))
+        })
+        .collect::<crate::Result<_>>()
+    })
+  }
+  
+  #[inline]
+  fn tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move {
+      let buffer = tables(schema)?;
+      let rows: Vec<Row> = self.conn.query(buffer.as_str()).await?;
+      rows
+        .into_iter()
+        .map(|row| {
+          row.get::<String, _>(0).ok_or(crate::Error::MysqlAsync(mysql_async::Error::Driver(
+            mysql_async::DriverError::FromRow { row },
+          )))
+        })
+        .collect::<crate::Result<_>>()
     })
   }
 

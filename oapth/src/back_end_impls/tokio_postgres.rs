@@ -1,9 +1,9 @@
 use crate::{
   fixed_sql_commands::{
-    _delete_migrations, _insert_migrations, _migrations_by_mg_version_query,
-    postgres::{_all_tables, _CREATE_MIGRATION_TABLES},
+    delete_migrations, insert_migrations, migrations_by_mg_version_query,
+    pg::{tables, CREATE_MIGRATION_TABLES},
   },
-  BackEnd, BoxFut, DbMigration, Migration, MigrationGroup, _BackEnd, _OAPTH_SCHEMA_PREFIX,
+  BackEnd, BackEndGeneric, BoxFut, DbMigration, Migration, MigrationGroup, OAPTH_SCHEMA_PREFIX, Database
 };
 use alloc::string::String;
 use core::{convert::TryFrom, str::FromStr};
@@ -42,26 +42,26 @@ impl TokioPostgres {
 
 impl BackEnd for TokioPostgres {}
 
-impl _BackEnd for TokioPostgres {
-  #[inline]
-  fn all_tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
-    Box::pin(async move {
-      let rows = self.conn.query(_all_tables(schema)?.as_str(), &[]).await?;
-      rows.into_iter().map(|r| Ok(r.try_get::<_, String>(0)?)).collect::<crate::Result<_>>()
-    })
-  }
-
-  #[cfg(feature = "dev-tools")]
+impl BackEndGeneric for TokioPostgres {
+  #[oapth_macros::dev_tools_]
   #[inline]
   fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
     Box::pin(
-      async move { Ok(self.execute(&crate::fixed_sql_commands::postgres::_clean()?).await?) },
+      async move {
+        let clean = crate::fixed_sql_commands::pg::clean(self).await?;
+        Ok(self.execute(&clean).await?)
+      },
     )
   }
 
   #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
-    self.execute(_CREATE_MIGRATION_TABLES)
+    self.execute(CREATE_MIGRATION_TABLES)
+  }
+
+  #[inline]
+  fn database() -> Database {
+    Database::Pg
   }
 
   #[inline]
@@ -70,7 +70,7 @@ impl _BackEnd for TokioPostgres {
     version: i32,
     mg: &'a MigrationGroup,
   ) -> BoxFut<'a, crate::Result<()>> {
-    Box::pin(async move { Ok(_delete_migrations(self, mg, _OAPTH_SCHEMA_PREFIX, version).await?) })
+    Box::pin(async move { Ok(delete_migrations(self, mg, OAPTH_SCHEMA_PREFIX, version).await?) })
   }
 
   #[inline]
@@ -87,7 +87,7 @@ impl _BackEnd for TokioPostgres {
   where
     I: Clone + Iterator<Item = &'a Migration> + 'a,
   {
-    Box::pin(_insert_migrations(self, mg, _OAPTH_SCHEMA_PREFIX, migrations))
+    Box::pin(insert_migrations(self, mg, OAPTH_SCHEMA_PREFIX, migrations))
   }
 
   #[inline]
@@ -96,9 +96,25 @@ impl _BackEnd for TokioPostgres {
     mg: &'a MigrationGroup,
   ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
     Box::pin(async move {
-      let buffer = _migrations_by_mg_version_query(mg.version(), _OAPTH_SCHEMA_PREFIX)?;
+      let buffer = migrations_by_mg_version_query(mg.version(), OAPTH_SCHEMA_PREFIX)?;
       let vec = self.conn.query(buffer.as_str(), &[]).await?;
       vec.into_iter().map(DbMigration::try_from).collect::<crate::Result<Vec<_>>>()
+    })
+  }
+
+  #[inline]
+  fn query_string<'a>(&'a mut self, query: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move {
+      let rows = self.conn.query(query, &[]).await?;
+      rows.into_iter().map(|r| Ok(r.try_get::<_, String>(0)?)).collect::<crate::Result<_>>()
+    })
+  }
+
+  #[inline]
+  fn tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move {
+      let rows = self.conn.query(tables(schema)?.as_str(), &[]).await?;
+      rows.into_iter().map(|r| Ok(r.try_get::<_, String>(0)?)).collect::<crate::Result<_>>()
     })
   }
 

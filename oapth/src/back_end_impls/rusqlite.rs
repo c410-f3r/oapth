@@ -1,9 +1,9 @@
 use crate::{
   fixed_sql_commands::{
-    _delete_migrations, _insert_migrations, _migrations_by_mg_version_query,
-    sqlite::{_all_tables, _CREATE_MIGRATION_TABLES},
+    delete_migrations, insert_migrations, migrations_by_mg_version_query,
+    sqlite::{tables, CREATE_MIGRATION_TABLES},
   },
-  BackEnd, BoxFut, Config, DbMigration, Migration, MigrationGroup, _BackEnd,
+  BackEnd, BackEndGeneric, BoxFut, Config, DbMigration, Migration, MigrationGroup,  Database
 };
 use alloc::string::String;
 use core::convert::TryFrom;
@@ -52,24 +52,26 @@ impl Rusqlite {
 
 impl BackEnd for Rusqlite {}
 
-impl _BackEnd for Rusqlite {
-  #[inline]
-  fn all_tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
-    Box::pin(async move {
-      let buffer = _all_tables(schema)?;
-      Ok(self.query(buffer.as_str(), |r| Ok(r.get::<_, String>(0)?)).await?)
-    })
-  }
-
-  #[cfg(feature = "dev-tools")]
+impl BackEndGeneric for Rusqlite {
+  #[oapth_macros::dev_tools_]
   #[inline]
   fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
-    Box::pin(async move { Ok(self.execute(&crate::fixed_sql_commands::sqlite::_clean()?).await?) })
+    Box::pin(
+      async move {
+        let clean = crate::fixed_sql_commands::sqlite::clean(self).await?;
+        Ok(self.execute(&clean).await?)
+      },
+    )
   }
 
   #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
-    self.execute(_CREATE_MIGRATION_TABLES)
+    self.execute(CREATE_MIGRATION_TABLES)
+  }
+
+  #[inline]
+  fn database() -> Database {
+    Database::Sqlite
   }
 
   #[inline]
@@ -78,7 +80,7 @@ impl _BackEnd for Rusqlite {
     version: i32,
     mg: &'a MigrationGroup,
   ) -> BoxFut<'a, crate::Result<()>> {
-    Box::pin(async move { Ok(_delete_migrations(self, mg, "", version).await?) })
+    Box::pin(async move { Ok(delete_migrations(self, mg, "", version).await?) })
   }
 
   #[inline]
@@ -95,7 +97,7 @@ impl _BackEnd for Rusqlite {
   where
     I: Clone + Iterator<Item = &'a Migration> + 'a,
   {
-    Box::pin(_insert_migrations(self, mg, "", migrations))
+    Box::pin(insert_migrations(self, mg, "", migrations))
   }
 
   #[inline]
@@ -111,8 +113,23 @@ impl _BackEnd for Rusqlite {
           rusqlite::Error::InvalidQuery
         }
       };
-      let buffer = _migrations_by_mg_version_query(mg.version(), "")?;
+      let buffer = migrations_by_mg_version_query(mg.version(), "")?;
       Ok(self.query(buffer.as_str(), |row| DbMigration::try_from(row).map_err(fun)).await?)
+    })
+  }
+
+  #[inline]
+  fn query_string<'a>(&'a mut self, query: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move {
+      Ok(self.query(query, |r| Ok(r.get::<_, String>(0)?)).await?)
+    })
+  }
+
+  #[inline]
+  fn tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move {
+      let buffer = tables(schema)?;
+      Ok(self.query(buffer.as_str(), |r| Ok(r.get::<_, String>(0)?)).await?)
     })
   }
 

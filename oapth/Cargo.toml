@@ -3,7 +3,6 @@
 # Back ends
 
 diesel = { default-features = false, features = ["chrono"], git = "https://github.com/diesel-rs/diesel", optional = true }
-diesel-dynamic-schema = { default-features = false, git = "https://github.com/diesel-rs/diesel", optional = true }
 futures = { default-features = false, optional = true, version = "0.3" }
 mysql_async = { default-features = false, optional = true, version = "0.25" }
 rusqlite = { default-features = false, features = ["chrono", "trace"], optional = true, version = "0.24" }
@@ -16,6 +15,7 @@ tokio-postgres = { default-features = false, features = ["runtime", "with-chrono
 
 arrayvec = { default-features = false, version = "0.5" }
 chrono = { default-features = false, version = "0.4" }
+oapth-macros = { default-features = false, path = "../oapth-macros" }
 siphasher = { default-features = false, version = "0.3" }
 
 [dev-dependencies]
@@ -25,17 +25,17 @@ tokio = { default-features = false, features = ["macros", "net", "rt-core"], ver
 tokio-util = { default-features = false, features = ["compat"], version = "0.3" }
 
 [features]
-default = []
+default = ["std"]
 dev-tools = []
 std = []
-with-diesel-mysql = ["diesel/mysql", "diesel-dynamic-schema", "std"]
-with-diesel-postgres = ["diesel/postgres", "diesel-dynamic-schema", "std"]
-with-diesel-sqlite = ["diesel/sqlite", "diesel-dynamic-schema", "std"]
+with-diesel-mysql = ["diesel/mysql", "std"]
+with-diesel-pg = ["diesel/postgres", "std"]
+with-diesel-sqlite = ["diesel/sqlite", "std"]
 with-mysql_async = ["mysql_async", "std"]
 with-rusqlite = ["rusqlite", "std"]
 with-sqlx-mssql = ["futures", "sqlx-core/mssql", "std"]
 with-sqlx-mysql = ["futures", "sqlx-core/mysql", "std"]
-with-sqlx-postgres = ["futures", "sqlx-core/postgres", "std"]
+with-sqlx-pg = ["futures", "sqlx-core/postgres", "std"]
 with-sqlx-sqlite = ["futures", "sqlx-core/sqlite", "std"]
 with-tiberius = ["futures", "std", "tiberius"]
 with-tokio-postgres = ["std", "tokio", "tokio-postgres"]
@@ -48,7 +48,7 @@ _sqlx_hack = ["sqlx-core/runtime-tokio-rustls"]
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
 categories = ["database"]
-description = "Oapth"
+description = "Flexible version control for databases through SQL migrations"
 edition = "2018"
 keywords = ["database", "migration", "oapth", "sql"]
 license = "Apache-2.0"

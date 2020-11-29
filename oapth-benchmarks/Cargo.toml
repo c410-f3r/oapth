@@ -14,13 +14,13 @@ default-features = false
 features = [
     "dev-tools",
     "with-diesel-mysql",
-    "with-diesel-postgres",
+    "with-diesel-pg",
     "with-diesel-sqlite",
     "with-mysql_async",
     "with-rusqlite",
     "with-sqlx-mssql",
     "with-sqlx-mysql",
-    "with-sqlx-postgres",
+    "with-sqlx-pg",
     "with-sqlx-sqlite",
     "with-tiberius",
     "with-tokio-postgres"

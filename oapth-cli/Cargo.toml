@@ -9,7 +9,7 @@ default = []
 dev-tools = ["oapth/dev-tools"]
 mssql = ["oapth/with-sqlx-mssql", "sqlx-core/runtime-tokio-rustls"]
 mysql = ["oapth/with-mysql_async"]
-postgres = ["oapth/with-tokio-postgres"]
+pg = ["oapth/with-tokio-postgres"]
 sqlite = ["oapth/with-rusqlite"]
 
 [package]

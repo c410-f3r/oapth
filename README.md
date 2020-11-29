@@ -8,7 +8,7 @@
 
 Flexible version control for databases through SQL migrations. Supports embedded and CLI workflows for MS-SQL, MariaDB, MySQL, PostgreSQL and SQLite.
 
-This project tries to support all database bridges of the Rust ecosystem, is fully documented, applies fuzz tests in some targets and doesn't make use of `expect`, `panic`, `unsafe` or `unwrap`.
+This project tries to support all database bridges of the Rust ecosystem, is fully documented, applies fuzz tests in some targets and doesn't make use of `expect`, `indexing`, `panic`, `unsafe` or `unwrap`.
 
 ## No features by default
 
@@ -60,26 +60,42 @@ Execution order between migrations and migration groups is dictated by their num
 
 ## Library
 
-The library gives freedom to arrange groups and uses `arrayvec`, `chrono` and `siphash` as mandatory internal crates which brings a total of 6 dependencies into your application. If this behavior is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
+The library gives freedom to arrange groups and uses `arrayvec`, `chrono`, `oapth-macros` and `siphash` as mandatory internal crates which brings a total of 7 dependencies into your application. If this behavior is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
 
 ```rust
 // [dependencies]
-// oapth = { features = ["with-sqlx-postgres"], version = "SOME_VERSION" }
+// oapth = { features = ["with-sqlx-pg"], version = "SOME_VERSION" }
 // sqlx-core = { default-features = false, features = ["runtime-tokio-rustls"], version = "SOME_VERSION" }
 
-use oapth::{Commands, Config, SqlxPostgres};
+use oapth::{Commands, Config, SqlxPg};
 use std::path::Path;
 
 #[async_std::main]
 async fn main() -> oapth::Result<()> {
     let config = Config::with_url_from_default_var()?;
-    let mut commands = Commands::new(SqlxPostgres::new(&config).await?);
+    let mut commands = Commands::new(SqlxPg::new(&config).await?);
     commands.migrate_from_dir(Path::new("my_custom_migration_group_path"), 128).await?;
     Ok(())
 }
 ```
 
 One thing worth noting is that these mandatory dependencies might already be part of your application as transients. In case of doubt, check your `Cargo.lock` file or type `cargo tree` for analysis.
+
+## Conditional migration
+
+If one particular migration needs to be executed in a specific set of databases, then it is possible to use the `-- oapth dbs` parameter in a file.
+
+```sql
+-- oapth dbs mssql,pg
+
+-- oapth UP
+
+CREATE SCHEMA foo;
+
+-- oapth DOWN
+
+DROP SCHEMA foo;
+```
 
 ## Supported back ends
 
@@ -89,14 +105,14 @@ Each back end has a feature that can be selected when using the library:
 oapth = { features = ["with-tokio-postgres"], version = "SOME_VERSION" }
 ```
 
-- Diesel (MariaDB/Mysql) - `with-diesel-mssql`
-- Diesel (PostgreSQL) - `with-diesel-mysql`
-- Diesel (SQlite) - `with-diesel-postgres`
+- Diesel (MariaDB/Mysql) - `with-diesel-mysql`
+- Diesel (PostgreSQL) - `with-diesel-pg`
+- Diesel (SQlite) - `with-diesel-sqlite`
 - mysql_async - `with-mysql_async`
 - rusqlite - `with-rusqlite`
-- SQLx (MariaDB/MySql) - `with-sqlx-mysq`
+- SQLx (MariaDB/MySql) - `with-sqlx-mysql`
 - SQLx (MS-SQL) - `with-sqlx-mssql`
-- SQLx (PostgreSQL) - `with-sqlx-postgres`
+- SQLx (PostgreSQL) - `with-sqlx-pg`
 - SQLx (SQLite) - `with-sqlx-sqlite`
 - tiberius - `with-tiberius`
 - tokio-postgres - `with-tokio-postgres`
@@ -104,12 +120,12 @@ oapth = { features = ["with-tokio-postgres"], version = "SOME_VERSION" }
 Or when installing the CLI binary:
 
 ```bash
-cargo install oapth-cli --features "postgres"
+cargo install oapth-cli --features "pg"
 ```
 
 - `mssql`
 - `mysql`
-- `postgres`
+- `pg`
 - `sqlite`
 
 ## Diesel support
@@ -123,8 +139,6 @@ For supported databases, there is no direct user parameter that inserts migratio
 ```sql
 -- oapth UP
 
-CREATE SCHEMA cool_department_schema;
-
 CREATE TABLE cool_department_schema.author (
   id INT NOT NULL PRIMARY KEY,
   full_name VARCHAR(50) NOT NULL
@@ -133,7 +147,6 @@ CREATE TABLE cool_department_schema.author (
 -- oapth DOWN
 
 DROP TABLE cool_department_schema.author;
-DROP SCHEMA cool_department_schema;
 ```
 
 ##  Migration time zones

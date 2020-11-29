@@ -1,35 +1,27 @@
 pub mod db_migration;
 pub mod migration_common;
 pub mod migration_group;
-pub mod migration_params;
 
-use crate::{MigrationCommon, MigrationParams};
+use crate::{Database, Dbs, MigrationCommon};
 use alloc::string::{String, ToString};
 use core::hash::{Hash, Hasher};
 use siphasher::sip::SipHasher13;
 
 /// A migration that is intended to be inserted into a database
-
-// Internally, `Migration` is anything that is NOT coming from the database
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Migration {
-  pub(crate) common: MigrationCommon,
-  pub(crate) sql_down: String,
-  pub(crate) sql_up: String,
-}
-
-impl MigrationParams for Migration {
-  #[inline]
-  fn common(&self) -> &MigrationCommon {
-    &self.common
-  }
+  common: MigrationCommon,
+  dbs: Dbs,
+  sql_down: String,
+  sql_up: String,
 }
 
 impl Migration {
   /// Creates a new instance from all necessary input parameters.
   #[inline]
-  pub fn new<IN, ISD, ISU>(version: i32, name: IN, sql_up: ISU, sql_down: ISD) -> Self
+  pub fn new<DI, IN, ISD, ISU>(dbs: DI, version: i32, name: IN, sql_up: ISU, sql_down: ISD) -> Self
   where
+    DI: Iterator<Item = Database>,
     IN: Into<String>,
     ISD: Into<String>,
     ISU: Into<String>,
@@ -44,6 +36,15 @@ impl Migration {
     version.hash(&mut hasher);
     let checksum = hasher.finish().to_string();
     Self {
+      dbs: {
+        let mut dedup_dbs = Dbs::new();
+        for db in dbs {
+          if !dedup_dbs.contains(&db) {
+            dedup_dbs.push(db);
+          }
+        }
+        dedup_dbs
+      },
       common: MigrationCommon { checksum, name: _name, version },
       sql_down: _sql_down,
       sql_up: _sql_up,
@@ -61,6 +62,21 @@ impl Migration {
   #[inline]
   pub fn checksum(&self) -> &str {
     &self.common.checksum
+  }
+
+  /// Databases
+  ///
+  /// An empty slice means all databases
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use oapth::doc_tests::migration;
+  /// assert_eq!(migration().dbs(), [])
+  /// ```
+  #[inline]
+  pub fn dbs(&self) -> &[Database] {
+    &self.dbs
   }
 
   /// Name

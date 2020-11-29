@@ -1,15 +1,10 @@
-use crate::{BackEnd, BoxFut, DbMigration, Migration, MigrationGroup, _BackEnd};
+use crate::{BackEnd, BackEndGeneric, BoxFut, Database, DbMigration, Migration, MigrationGroup};
 use alloc::{boxed::Box, string::String, vec::Vec};
 
 impl BackEnd for () {}
 
-impl _BackEnd for () {
-  #[inline]
-  fn all_tables<'a>(&'a mut self, _: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
-    Box::pin(async move { Ok(Vec::new()) })
-  }
-
-  #[cfg(feature = "dev-tools")]
+impl BackEndGeneric for () {
+  #[oapth_macros::dev_tools_]
   #[inline]
   fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
     Box::pin(async move { Ok(()) })
@@ -18,6 +13,11 @@ impl _BackEnd for () {
   #[inline]
   fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
     Box::pin(async move { Ok(()) })
+  }
+
+  #[inline]
+  fn database() -> Database {
+    Database::Pg
   }
 
   #[inline]
@@ -51,6 +51,16 @@ impl _BackEnd for () {
     &'a mut self,
     _: &'a MigrationGroup,
   ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
+    Box::pin(async move { Ok(Vec::new()) })
+  }
+
+  #[inline]
+  fn query_string<'a>(&'a mut self, _: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+    Box::pin(async move { Ok(Vec::new()) })
+  }
+
+  #[inline]
+  fn tables<'a>(&'a mut self, _: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
     Box::pin(async move { Ok(Vec::new()) })
   }
 
