@@ -22,7 +22,7 @@ The CLI application expects a configuration file that contains a set of paths wh
 // oapth.cfg
 
 migrations/1__initial
-migrations/2__create_post
+migrations/2__fancy_stuff
 ```
 
 Each provided migration and group must contain an unique version and a name summarized by the following structure:
