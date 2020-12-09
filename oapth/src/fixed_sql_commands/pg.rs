@@ -63,7 +63,7 @@ where
 {
     let mut buffer = ArrayString::<[u8; 128]>::new();
     buffer.write_fmt(format_args!(
-            "SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = '{schema}'",
+            "SELECT sequence_name  AS generic_column FROM information_schema.sequences WHERE sequence_schema = '{schema}'",
             schema = schema
             ))?;
     Ok(back_end.query_string(&buffer).await?)
