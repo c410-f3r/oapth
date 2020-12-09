@@ -3,11 +3,11 @@ use core::fmt::Write;
 
 pub const CREATE_MIGRATION_TABLES: &str = concat!(
   "CREATE SCHEMA IF NOT EXISTS _oapth; \
-  
+
   CREATE TABLE IF NOT EXISTS _oapth._oapth_migration_group (",
   oapth_migration_group_columns!(),
   ");
-  
+
   CREATE TABLE IF NOT EXISTS _oapth._oapth_migration (",
   serial_id!(),
   "created_on TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,",
@@ -26,29 +26,49 @@ where
   for schema in schemas(back_end).await? {
     buffer.write_fmt(format_args!("DROP SCHEMA {} CASCADE;", schema))?;
   }
-  
+
   for domain in domains(back_end, "public").await? {
     buffer.write_fmt(format_args!("DROP DOMAIN {};", domain))?;
   }
-  
+
   for function in functions(back_end, "public").await? {
     buffer.write_fmt(format_args!("DROP FUNCTION {} CASCADE;", function))?;
   }
-  
+
   for table in back_end.tables("public").await? {
     buffer.write_fmt(format_args!("DROP TABLE {} CASCADE;", table))?;
   }
-  
+
   for procedure in procedures(back_end, "public").await? {
     buffer.write_fmt(format_args!("DROP PROCEDURE {} CASCADE;", procedure))?;
   }
-  
+
   for ty in types(back_end, "public").await? {
     buffer.write_fmt(format_args!("DROP TYPE {} CASCADE;", ty))?;
   }
 
+  for sequence in sequences(back_end, "public").await? {
+      buffer.write_fmt(format_args!("DROP SEQUENCE {};", sequence))?;
+  }
+
   Ok(buffer)
 }
+
+// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
+#[oapth_macros::dev_tools_]
+#[inline]
+pub async fn sequences<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
+where
+ B: crate::BackEnd
+{
+    let mut buffer = ArrayString::<[u8; 128]>::new();
+    buffer.write_fmt(format_args!(
+            "SELECT sequence_name  AS generic_column FROM information_schema.sequences WHERE sequence_schema = '{schema}'",
+            schema = schema
+            ))?;
+    Ok(back_end.query_string(&buffer).await?)
+}
+
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[oapth_macros::dev_tools_]
@@ -59,7 +79,7 @@ where
 {
   let mut buffer = ArrayString::<[u8; 512]>::new();
   buffer.write_fmt(format_args!(
-    "      
+    "
     SELECT
       t.typname AS generic_column
     FROM pg_catalog.pg_type t
@@ -154,11 +174,11 @@ where
       typname AS generic_column
     FROM
       pg_catalog.pg_type t
-      LEFT JOIN pg_depend dep ON dep.objid = t.oid and dep.deptype = 'e' 
+      LEFT JOIN pg_depend dep ON dep.objid = t.oid and dep.deptype = 'e'
     WHERE
       (t.typrelid = 0 OR (
         SELECT c.relkind = 'c' FROM pg_catalog.pg_class c WHERE c.oid = t.typrelid)
-      ) 
+      )
       AND NOT EXISTS(
         SELECT 1 FROM pg_catalog.pg_type el WHERE el.oid = t.typelem AND el.typarray = t.oid
       )
@@ -179,7 +199,7 @@ fn pg_proc(prokind: char, schema: &str) -> crate::Result<ArrayString<[u8; 512]>>
 {
   let mut buffer = ArrayString::new();
   buffer.write_fmt(format_args!(
-    "      
+    "
     SELECT
       proname AS generic_column
     FROM

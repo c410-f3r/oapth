@@ -14,6 +14,7 @@ pub async fn clean_drops_all_objs<B>(
   c.back_end.execute("CREATE FUNCTION time_subtype_diff(x time, y time) RETURNS float8 AS 'SELECT EXTRACT(EPOCH FROM (x - y))' LANGUAGE sql STRICT IMMUTABLE").await.unwrap();
   c.back_end.execute("CREATE PROCEDURE something() LANGUAGE SQL AS $$ $$").await.unwrap();
   c.back_end.execute("CREATE TYPE A_TYPE AS (field INTEGER[31])").await.unwrap();
+  c.back_end.execute("CREATE SEQUENCE serial START 101;").await.unwrap();
 
   assert_eq!(crate::fixed_sql_commands::pg::schemas(&mut c.back_end).await.unwrap().len(), 1);
   assert_eq!(c.back_end.tables(aux.default_schema).await.unwrap().len(), 1);
@@ -21,6 +22,7 @@ pub async fn clean_drops_all_objs<B>(
   assert_eq!(crate::fixed_sql_commands::pg::functions(&mut c.back_end, "public").await.unwrap().len(), 1);
   assert_eq!(crate::fixed_sql_commands::pg::procedures(&mut c.back_end, "public").await.unwrap().len(), 1);
   assert_eq!(crate::fixed_sql_commands::pg::types(&mut c.back_end, "public").await.unwrap().len(), 1);
+  assert_eq!(crate::fixed_sql_commands::pg::sequences(&mut c.back_end, "public").await.unwrap().len(), 1);
 
   c.clean().await.unwrap();
 
@@ -30,4 +32,5 @@ pub async fn clean_drops_all_objs<B>(
   assert_eq!(crate::fixed_sql_commands::pg::functions(&mut c.back_end, "public").await.unwrap().len(), 0);
   assert_eq!(crate::fixed_sql_commands::pg::procedures(&mut c.back_end, "public").await.unwrap().len(), 0);
   assert_eq!(crate::fixed_sql_commands::pg::types(&mut c.back_end, "public").await.unwrap().len(), 0);
+  assert_eq!(crate::fixed_sql_commands::pg::sequences(&mut c.back_end, "public").await.unwrap().len(), 0);
 }
