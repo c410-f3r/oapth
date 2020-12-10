@@ -35,6 +35,11 @@ where
     buffer.write_fmt(format_args!("DROP FUNCTION {} CASCADE;", function))?;
   }
 
+  for view in views(back_end, "public").await? {
+      buffer.write_fmt(format_args!("DROP VIEW {} CASCADE;", view))?;
+  }
+
+
   for table in back_end.tables("public").await? {
     buffer.write_fmt(format_args!("DROP TABLE {} CASCADE;", table))?;
   }
@@ -53,6 +58,32 @@ where
 
   Ok(buffer)
 }
+
+// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
+#[oapth_macros::dev_tools_]
+#[inline]
+pub async fn views<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
+where
+ B: crate::BackEnd
+{
+    let mut buffer = ArrayString::<[u8; 512]>::new();
+    buffer.write_fmt(format_args!(
+            "
+            SELECT
+             relname AS generic_column
+            FROM pg_catalog.pg_class c
+             JOIN pg_namespace n ON n.oid = c.relnamespace
+             LEFT JOIN pg_depend dep ON dep.objid = c.oid AND dep.deptype = 'e'
+            WHERE c.relkind = 'v'
+             AND  n.nspname = '{schema}'
+             AND dep.objid IS NULL
+            ",
+            schema = schema
+            ))?;
+    Ok(back_end.query_string(&buffer).await?)
+}
+
+
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[oapth_macros::dev_tools_]
