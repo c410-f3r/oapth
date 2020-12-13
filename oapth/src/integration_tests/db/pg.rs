@@ -36,5 +36,6 @@ pub async fn clean_drops_all_objs<B>(
   assert_eq!(crate::fixed_sql_commands::pg::types(&mut c.back_end, "public").await.unwrap().len(), 0);
   assert_eq!(crate::fixed_sql_commands::pg::sequences(&mut c.back_end, "public").await.unwrap().len(), 0);
   assert_eq!(crate::fixed_sql_commands::pg::views(&mut c.back_end, "public").await.unwrap().len(), 0);
+  assert_eq!(crate::fixed_sql_commands::pg::enums(&mut c.back_end, "public").await.unwrap().len(), 0);
 
 }

@@ -56,7 +56,32 @@ where
       buffer.write_fmt(format_args!("DROP SEQUENCE {};", sequence))?;
   }
 
+  for some_enum in enums(back_end, "public").await? {
+      buffer.write_fmt(format_args!("DROP ENUM {};", some_enum))?;
+  }
+
   Ok(buffer)
+}
+
+// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
+#[oapth_macros::dev_tools_]
+#[inline]
+pub async fn enums<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
+where
+ B: crate::BackEnd
+{
+    let mut buffer = ArrayString::<[u8; 512]>::new();
+    buffer.write_fmt(format_args!(
+            "SELECT
+                t.typname
+            FROM
+                pg_catalog.pg_type t
+                INNER JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+            WHERE n.nspname = '{schema}' AND  t.typtype = 'e'
+            ",
+            schema = schema
+            ))?;
+    Ok(back_end.query_string(&buffer).await?)
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
