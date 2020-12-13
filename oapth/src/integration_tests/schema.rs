@@ -8,7 +8,7 @@ async fn migrate_works<B>(c: &mut Commands<B>, aux: AuxTestParams, oapth_schema_
 where
   B: BackEnd
 {
-  let path = Path::new("../oapth-test-utils/oapth.cfg");
+  let path = Path::new("../oapth-test-utils/migrations.cfg");
   c.migrate_from_cfg(path, 128).await.unwrap();
   let initial = MigrationGroup::new(1, "initial");
   let initial_migrations = c.back_end.migrations(&initial).await.unwrap();

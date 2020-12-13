@@ -53,35 +53,33 @@ where
   }
 
   for sequence in sequences(back_end, "public").await? {
-      buffer.write_fmt(format_args!("DROP SEQUENCE {};", sequence))?;
-  }
-
-  for some_enum in enums(back_end, "public").await? {
-      buffer.write_fmt(format_args!("DROP ENUM {};", some_enum))?;
+    buffer.write_fmt(format_args!("DROP SEQUENCE {};", sequence))?;
   }
 
   Ok(buffer)
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
+#[cfg(test)]
 #[oapth_macros::dev_tools_]
 #[inline]
 pub async fn enums<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
 where
  B: crate::BackEnd
 {
-    let mut buffer = ArrayString::<[u8; 512]>::new();
-    buffer.write_fmt(format_args!(
-            "SELECT
-                t.typname
-            FROM
-                pg_catalog.pg_type t
-                INNER JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
-            WHERE n.nspname = '{schema}' AND  t.typtype = 'e'
-            ",
-            schema = schema
-            ))?;
-    Ok(back_end.query_string(&buffer).await?)
+  let mut buffer = ArrayString::<[u8; 512]>::new();
+  buffer.write_fmt(format_args!(
+    "SELECT
+      t.typname AS generic_column
+    FROM
+      pg_catalog.pg_type t
+      INNER JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+    WHERE
+      n.nspname = '{schema}' AND  t.typtype = 'e'
+    ",
+    schema = schema
+  ))?;
+  Ok(back_end.query_string(&buffer).await?)
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
@@ -91,24 +89,22 @@ pub async fn views<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<Stri
 where
  B: crate::BackEnd
 {
-    let mut buffer = ArrayString::<[u8; 512]>::new();
-    buffer.write_fmt(format_args!(
-            "
-            SELECT
-             relname AS generic_column
-            FROM pg_catalog.pg_class c
-             JOIN pg_namespace n ON n.oid = c.relnamespace
-             LEFT JOIN pg_depend dep ON dep.objid = c.oid AND dep.deptype = 'e'
-            WHERE c.relkind = 'v'
-             AND  n.nspname = '{schema}'
-             AND dep.objid IS NULL
-            ",
-            schema = schema
-            ))?;
-    Ok(back_end.query_string(&buffer).await?)
+  let mut buffer = ArrayString::<[u8; 512]>::new();
+  buffer.write_fmt(format_args!(
+    "
+    SELECT
+      relname AS generic_column
+    FROM pg_catalog.pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      LEFT JOIN pg_depend dep ON dep.objid = c.oid AND dep.deptype = 'e'
+    WHERE c.relkind = 'v'
+      AND  n.nspname = '{schema}'
+      AND dep.objid IS NULL
+    ",
+    schema = schema
+  ))?;
+  Ok(back_end.query_string(&buffer).await?)
 }
-
-
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[oapth_macros::dev_tools_]
@@ -117,14 +113,18 @@ pub async fn sequences<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<
 where
  B: crate::BackEnd
 {
-    let mut buffer = ArrayString::<[u8; 128]>::new();
-    buffer.write_fmt(format_args!(
-            "SELECT sequence_name  AS generic_column FROM information_schema.sequences WHERE sequence_schema = '{schema}'",
-            schema = schema
-            ))?;
-    Ok(back_end.query_string(&buffer).await?)
+  let mut buffer = ArrayString::<[u8; 256]>::new();
+  buffer.write_fmt(format_args!(
+    "SELECT
+      sequence_name AS generic_column
+    FROM
+      information_schema.sequences
+    WHERE
+      sequence_schema = '{schema}'",
+    schema = schema
+  ))?;
+  Ok(back_end.query_string(&buffer).await?)
 }
-
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[oapth_macros::dev_tools_]

@@ -22,10 +22,11 @@ where
     Self { back_end }
   }
 
-  fn filter_by_db<'a, I>(migrations: I) -> impl Clone + Iterator<Item = &'a Migration>
+  fn filter_by_db<'a, I>(migrations: I) -> impl Clone + Iterator<Item = &'a Migration> + 'a
   where
-    I: Clone + Iterator<Item = &'a Migration>,
+    I: Clone + Iterator<Item = &'a Migration> + 'a,
   {
-    migrations.filter(|m| if m.dbs().is_empty() { true } else { m.dbs().contains(&B::database()) })
+    let db = B::database();
+    migrations.filter(move |m| if m.dbs().is_empty() { true } else { m.dbs().contains(&db) })
   }
 }

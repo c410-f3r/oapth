@@ -1,7 +1,7 @@
 use crate::{BackEnd, Commands, Migration, MigrationGroup};
 #[oapth_macros::std_]
 use {
-  crate::{group_and_migrations_from_path, parse_cfg},
+  crate::{group_and_migrations_from_path, parse_root_cfg},
   std::{fs::File, path::Path},
 };
 
@@ -24,7 +24,7 @@ where
   {
     let db_migrations = self.back_end.migrations(mg).await?;
     let filtered_by_db = Self::filter_by_db(migrations);
-    self.do_validate(&db_migrations, filtered_by_db.clone())?;
+    Self::do_validate(&db_migrations, filtered_by_db.clone())?;
     let reverts_iter = filtered_by_db.map(|el| el.sql_down());
     self.back_end.transaction(reverts_iter).await?;
     self.back_end.delete_migrations(version, mg).await?;
@@ -45,7 +45,7 @@ where
     files_num: usize,
   ) -> crate::Result<()> {
     let cfg_dir = path.parent().unwrap_or_else(|| Path::new("."));
-    let mut dirs_str = parse_cfg(File::open(path)?, cfg_dir)?;
+    let mut dirs_str = parse_root_cfg(File::open(path)?, cfg_dir)?;
     if dirs_str.len() != versions.len() {
       return Err(crate::Error::DifferentRollbackVersions);
     }
