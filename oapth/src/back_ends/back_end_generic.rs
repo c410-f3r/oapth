@@ -17,13 +17,17 @@ pub trait BackEndGeneric {
 
   fn execute<'a>(&'a mut self, command: &'a str) -> BoxFut<'a, crate::Result<()>>;
 
-  fn insert_migrations<'a, I>(
+  fn insert_migrations<'a, 'b, 'c, 'ret, I>(
     &'a mut self,
     migrations: I,
-    mg: &'a MigrationGroup,
-  ) -> BoxFut<'a, crate::Result<()>>
+    mg: &'b MigrationGroup,
+  ) -> BoxFut<'ret, crate::Result<()>>
   where
-    I: Clone + Iterator<Item = &'a Migration> + 'a;
+    'a: 'ret,
+    'b: 'ret,
+    'c: 'ret,
+    I: Clone + Iterator<Item = &'c Migration> + 'ret,
+    Self: 'ret;
 
   fn migrations<'a>(
     &'a mut self,

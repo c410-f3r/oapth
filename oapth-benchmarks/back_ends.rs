@@ -161,47 +161,47 @@ fn criterion_benchmark(c: &mut Criterion) {
     c,
     migrate,
     |mut c: Commands<DieselMysql>| async move {
-      let cfg = Path::new("../oapth-test-utils/oapth.cfg");
+      let cfg = Path::new("../oapth-test-utils/migrations.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
     |mut c: Commands<DieselPg>| async move {
-      let cfg = Path::new("../oapth-test-utils/oapth.cfg");
+      let cfg = Path::new("../oapth-test-utils/migrations.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
     |mut c: Commands<DieselSqlite>| async move {
-      let cfg = Path::new("../oapth-test-utils/oapth.cfg");
+      let cfg = Path::new("../oapth-test-utils/migrations.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
     |mut c: Commands<MysqlAsync>| async move {
-      let cfg = Path::new("../oapth-test-utils/oapth.cfg");
+      let cfg = Path::new("../oapth-test-utils/migrations.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
     |mut c: Commands<Rusqlite>| async move {
-      let cfg = Path::new("../oapth-test-utils/oapth.cfg");
+      let cfg = Path::new("../oapth-test-utils/migrations.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
     |mut c: Commands<SqlxMssql>| async move {
-      let cfg = Path::new("../oapth-test-utils/oapth.cfg");
+      let cfg = Path::new("../oapth-test-utils/migrations.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
     |mut c: Commands<SqlxMysql>| async move {
-      let cfg = Path::new("../oapth-test-utils/oapth.cfg");
+      let cfg = Path::new("../oapth-test-utils/migrations.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
     |mut c: Commands<SqlxPg>| async move {
-      let cfg = Path::new("../oapth-test-utils/oapth.cfg");
+      let cfg = Path::new("../oapth-test-utils/migrations.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
     |mut c: Commands<SqlxSqlite>| async move {
-      let cfg = Path::new("../oapth-test-utils/oapth.cfg");
+      let cfg = Path::new("../oapth-test-utils/migrations.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
     |mut c: Commands<Tiberius<_>>| async move {
-      let cfg = Path::new("../oapth-test-utils/oapth.cfg");
+      let cfg = Path::new("../oapth-test-utils/migrations.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     },
     |mut c: Commands<TokioPostgres>| async move {
-      let cfg = Path::new("../oapth-test-utils/oapth.cfg");
+      let cfg = Path::new("../oapth-test-utils/migrations.cfg");
       c.migrate_from_cfg(cfg, black_box(128)).await.unwrap();
     }
   );

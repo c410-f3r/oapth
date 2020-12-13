@@ -2,7 +2,7 @@ pub mod db_migration;
 pub mod migration_common;
 pub mod migration_group;
 
-use crate::{Database, Dbs, MigrationCommon};
+use crate::{Database, Dbs, MigrationCommon, Repeatability};
 use alloc::string::{String, ToString};
 use core::hash::{Hash, Hasher};
 use siphasher::sip::SipHasher13;
@@ -19,7 +19,14 @@ pub struct Migration {
 impl Migration {
   /// Creates a new instance from all necessary input parameters.
   #[inline]
-  pub fn new<DI, IN, ISD, ISU>(dbs: DI, version: i32, name: IN, sql_up: ISU, sql_down: ISD) -> Self
+  pub fn new<DI, IN, ISD, ISU>(
+    dbs: DI,
+    repeatability: Option<Repeatability>,
+    version: i32,
+    name: IN,
+    sql_up: ISU,
+    sql_down: ISD,
+  ) -> Self
   where
     DI: Iterator<Item = Database>,
     IN: Into<String>,
@@ -45,7 +52,7 @@ impl Migration {
         }
         dedup_dbs
       },
-      common: MigrationCommon { checksum, name: _name, version },
+      common: MigrationCommon { checksum, name: _name, repeatability, version },
       sql_down: _sql_down,
       sql_up: _sql_up,
     }
@@ -77,6 +84,19 @@ impl Migration {
   #[inline]
   pub fn dbs(&self) -> &[Database] {
     &self.dbs
+  }
+
+  /// If this is a repeatable migration, returns its type.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use oapth::doc_tests::migration;
+  /// assert_eq!(migration().repeatability(), None)
+  /// ```
+  #[inline]
+  pub fn repeatability(&self) -> Option<Repeatability> {
+    self.common.repeatability
   }
 
   /// Name

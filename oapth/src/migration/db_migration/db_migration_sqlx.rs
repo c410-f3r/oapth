@@ -1,4 +1,4 @@
-use crate::{DbMigration, Database, MigrationCommon, MigrationGroup};
+use crate::{DbMigration, migration::db_migration::from_opt_i32, Database, MigrationCommon, MigrationGroup};
 
 #[oapth_macros::sqlx_mssql_]
 impl core::convert::TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
@@ -11,6 +11,7 @@ impl core::convert::TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
       common: MigrationCommon {
         checksum: from.try_get("checksum")?,
         name: from.try_get("name")?,
+        repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: from.try_get("version")?,
       },
       created_on: {
@@ -37,6 +38,7 @@ impl core::convert::TryFrom<sqlx_core::mysql::MySqlRow> for DbMigration {
       common: MigrationCommon {
         checksum: from.try_get("checksum")?,
         name: from.try_get("name")?,
+        repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: from.try_get("version")?,
       },
       created_on: from.try_get::<chrono::DateTime<chrono::Utc>, _>("created_on")?.into(),
@@ -60,6 +62,7 @@ impl core::convert::TryFrom<sqlx_core::postgres::PgRow> for DbMigration {
       common: MigrationCommon {
         checksum: from.try_get("checksum")?,
         name: from.try_get("name")?,
+        repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: from.try_get("version")?,
       },
       created_on: from.try_get("created_on")?,
@@ -83,6 +86,7 @@ impl core::convert::TryFrom<sqlx_core::sqlite::SqliteRow> for DbMigration {
       common: MigrationCommon {
         checksum: from.try_get("checksum")?,
         name: from.try_get("name")?,
+        repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: from.try_get("version")?,
       },
       created_on: from.try_get("created_on")?,

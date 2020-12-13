@@ -24,6 +24,7 @@ fuzz_target!(|data: Data| {
     let mg = MigrationGroup::new(data.mg_version, data.mg_name);
     let ms = [Migration::new(
       [].iter().copied(),
+      None,
       data.m_version,
       data.m_name,
       data.m_sql_down,

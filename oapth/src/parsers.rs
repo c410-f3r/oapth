@@ -9,7 +9,7 @@ use std::{
 
 /// All paths to directories that contain migrations
 #[inline]
-pub fn parse_cfg<R>(read: R, root: &Path) -> crate::Result<ArrayVec<[PathBuf; 16]>>
+pub fn parse_root_cfg<R>(read: R, root: &Path) -> crate::Result<ArrayVec<[PathBuf; 16]>>
 where
   R: Read,
 {
@@ -39,16 +39,16 @@ where
 
 #[cfg(test)]
 mod tests {
-  use crate::parse_cfg;
+  use crate::parse_root_cfg;
   use std::path::Path;
 
   #[test]
-  fn parse_cfg_works() {
+  fn parse_root_cfg_works() {
     let cfg = br#"
       ../oapth-test-utils/migrations/1__initial
       ../oapth-test-utils/migrations/2__more_stuff
     "#;
-    let groups = parse_cfg(&cfg[..], Path::new("../oapth-test-utils")).unwrap();
+    let groups = parse_root_cfg(&cfg[..], Path::new("../oapth-test-utils")).unwrap();
     assert_eq!(groups.len(), 2);
   }
 }

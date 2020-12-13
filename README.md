@@ -28,13 +28,15 @@ migrations/2__fancy_stuff
 Each provided migration and group must contain an unique version and a name summarized by the following structure:
 
 ```txt
+// Execution order between migrations and migration groups is dictated by their numeric declaration order.
+
 migrations
 +-- 1__initial (Group)
     +-- 1__create_author.sql (Migration)
     +-- 2__create_post.sql (Migration)
 +-- 2__fancy_stuff (Group)
     +-- 1__something_fancy.sql (Migration)
-oapth.cfg
+migrations.cfg
 ```
 
 The SQL file itself is composed by two parts, one for migrations (`-- oapth UP` section) and another for rollbacks (`-- oapth DOWN` section).
@@ -56,7 +58,36 @@ CREATE TABLE author (
 DROP TABLE author;
 ```
 
-Execution order between migrations and migration groups is dictated by their numeric declaration order.
+Another cool thing about the expected file configuration is that it can also be divided into smaller pieces, for example, the above migration could be transformed into `1__author_up.sql` and `1__author_down.sql`.
+
+```sql
+// 1__author_up.sql
+
+CREATE TABLE author (
+  id INT NOT NULL PRIMARY KEY,
+  added TIMESTAMP NOT NULL,
+  birthdate DATE NOT NULL,
+  email VARCHAR(100) NOT NULL,
+  first_name VARCHAR(50) NOT NULL,
+  last_name VARCHAR(50) NOT NULL
+);
+```
+
+```sql
+// 1__author_down.sql
+
+DROP TABLE author;
+```
+
+```txt
+migrations
++-- 1__some_group (Group)
+    +-- 1__author (Migration directory)
+        +-- 1__author_down.sql (Down migration)
+        +-- 1__author_up.sql (Up migration)
+        +-- 1__author.cfg (Optional configuration)
+migrations.cfg
+```
 
 ## Library
 
@@ -81,7 +112,7 @@ async fn main() -> oapth::Result<()> {
 
 One thing worth noting is that these mandatory dependencies might already be part of your application as transients. In case of doubt, check your `Cargo.lock` file or type `cargo tree` for analysis.
 
-## Conditional migration
+## Conditional migrations
 
 If one particular migration needs to be executed in a specific set of databases, then it is possible to use the `-- oapth dbs` parameter in a file.
 
@@ -95,6 +126,31 @@ CREATE SCHEMA foo;
 -- oapth DOWN
 
 DROP SCHEMA foo;
+```
+
+## Repeatable migrations
+
+Repeatability can be specified with `-- oapth repeatability SOME_VALUE` where `SOME_VALUE` can be either `always` (regardless of the checksum) or `on_checksum_change` (runs only when the checksums changes).
+
+```sql
+-- oapth dbs pg
+-- oapth repeatability always
+
+-- oapth UP
+
+CREATE OR REPLACE PROCEDURE something() LANGUAGE SQL AS $$ $$
+
+-- oapth DOWN
+
+DROP PROCEDURE something();
+```
+
+Keep in mind that repeatable migrations might break subsequent operations, therefore, you must known what you are doing. If desirable, they can be separated into dedicated groups. 
+
+```ini
+migrations/1__initial_repeatable_migrations
+migrations/2__normal_migrations
+migrations/3__final_repeatable_migrations
 ```
 
 ## Supported back ends

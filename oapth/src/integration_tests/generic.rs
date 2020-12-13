@@ -15,7 +15,7 @@ pub async fn rollback_works<B>(c: &mut Commands<B>, aux: AuxTestParams)
 where
   B: BackEnd
 {
-  let path = Path::new("../oapth-test-utils/oapth.cfg");
+  let path = Path::new("../oapth-test-utils/migrations.cfg");
   c.migrate_from_cfg(path, 128).await.unwrap();
   c.rollback_from_cfg(path, &[0, 0][..], 128).await.unwrap();
   let initial = MigrationGroup::new(1, "initial");

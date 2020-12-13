@@ -35,13 +35,17 @@ impl BackEndGeneric for () {
   }
 
   #[inline]
-  fn insert_migrations<'a, I>(
+  fn insert_migrations<'a, 'b, 'c, 'ret, I>(
     &'a mut self,
     _: I,
-    _: &'a MigrationGroup,
-  ) -> BoxFut<'a, crate::Result<()>>
+    _: &'b MigrationGroup,
+  ) -> BoxFut<'ret, crate::Result<()>>
   where
-    I: Clone + Iterator<Item = &'a Migration> + 'a,
+    'a: 'ret,
+    'b: 'ret,
+    'c: 'ret,
+    I: Clone + Iterator<Item = &'c Migration> + 'ret,
+    Self: 'ret,
   {
     Box::pin(async move { Ok(()) })
   }

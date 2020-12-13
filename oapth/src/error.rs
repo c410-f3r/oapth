@@ -155,7 +155,7 @@ impl fmt::Debug for Error {
       Self::IncompleteBuilder => write!(f, "It is necessary to provide all parameters to the migration builder"),
       Self::IncompleteSqlFile => write!(
         f,
-        "A migration file must contain '--oapth UP' and '--oapth DOWN'"
+        "A migration file must contain a '--oapth UP' section"
       ),
       Self::IncompleteMigrationBuilder => write!(
         f,

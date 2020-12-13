@@ -21,6 +21,7 @@ pub mod doc_tests;
 mod error;
 mod migration;
 oapth_macros::std! { mod parsers; }
+mod repeatability;
 
 #[oapth_macros::diesel_mysql_]
 pub use back_end_impls::diesel::DieselMysql;
@@ -50,9 +51,13 @@ pub use config::Config;
 pub use database::Database;
 pub use error::Error;
 pub use migration::{migration_group::MigrationGroup, Migration};
+pub use repeatability::Repeatability;
 
 #[oapth_macros::std_]
-pub use parsers::{parse_cfg, parse_migration::parse_migration};
+pub use parsers::{
+  parse_migration::{parse_migration_cfg, parse_unified_migration},
+  parse_root_cfg,
+};
 
 use alloc::boxed::Box;
 use arrayvec::ArrayVec;

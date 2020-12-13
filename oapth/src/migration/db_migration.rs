@@ -63,6 +63,7 @@ impl core::convert::TryFrom<mysql_async::Row> for DbMigration {
         common: MigrationCommon {
           checksum: from.get("checksum")?,
           name: from.get("name")?,
+          repeatability: from_opt_i32(from.get("repeatability")?),
           version: from.get("version")?,
         },
         created_on: _fixed_from_naive_utc(from.get::<NaiveDateTime, _>("created_on")?),
@@ -86,6 +87,7 @@ impl<'a> core::convert::TryFrom<&'a rusqlite::Row<'a>> for DbMigration {
       common: MigrationCommon {
         checksum: from.get("checksum")?,
         name: from.get("name")?,
+        repeatability: from_opt_i32(from.get("repeatability")?),
         version: from.get("version")?,
       },
       created_on: from.get::<_, DateTime<Utc>>("created_on")?.into(),
@@ -110,6 +112,7 @@ impl core::convert::TryFrom<tiberius::Row> for DbMigration {
       common: MigrationCommon {
         checksum: translate!(from.try_get::<&str, _>("checksum")).into(),
         name: translate!(from.try_get::<&str, _>("name")).into(),
+        repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: translate!(from.try_get("version")),
       },
       created_on: {
@@ -135,6 +138,7 @@ impl core::convert::TryFrom<tokio_postgres::Row> for DbMigration {
       common: MigrationCommon {
         checksum: from.try_get("checksum")?,
         name: from.try_get("name")?,
+        repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: from.try_get("version")?,
       },
       created_on: from.try_get("created_on")?,
@@ -156,4 +160,13 @@ fn mssql_date_hack(s: &str) -> crate::Result<DateTime<FixedOffset>> {
   let naive_rslt = NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S");
   let naive = naive_rslt.map_err(|_| crate::Error::Other("Invalid date for mssql"))?;
   Ok(_fixed_from_naive_utc(naive))
+}
+
+#[oapth_macros::any_db_]
+const fn from_opt_i32(n: Option<i32>) -> Option<crate::Repeatability> {
+  match n {
+    None => None,
+    Some(0) => Some(crate::Repeatability::Always),
+    Some(_) => Some(crate::Repeatability::OnChecksumChange),
+  }
 }

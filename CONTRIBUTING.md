@@ -15,6 +15,6 @@ In a testing environment, the following credentials are expected:
 - **MS-SQL**: A database `oapth` and an user `sa` with password `yourStrong_Password`
 - **Everything else**: A database `oapth` and an user `oapth` with password `oapth`
 
-#### Databases
+#### Containers
 
-If you don't want to manually install and configure all databases in your system, checkout `scripts/podman-start.sh` where each database image is pulled and executed automatically.
+If you don't want to manually install and configure all databases in your system, then check out `scripts/podman-start.sh` where each database image is pulled and executed automatically.
