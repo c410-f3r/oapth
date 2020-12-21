@@ -61,8 +61,7 @@ where
   fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
     Box::pin(
       async move {
-        let clean = crate::fixed_sql_commands::mssql::clean(self).await?;
-        Ok(self.execute(&clean).await?)
+        Ok(crate::fixed_sql_commands::mssql::clean(self).await?)
       },
     )
   }

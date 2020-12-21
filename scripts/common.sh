@@ -16,27 +16,23 @@ export RUSTFLAGS='
     -D warnings
 '
 
-test_package_with_feature() {
+check_package_generic() {
     local package=$1
-    local features=$2
 
-    /bin/echo -e "\e[0;33m***** Testing ${package} with features '${features}' *****\e[0m\n"
-    cargo test --manifest-path "${package}"/Cargo.toml --features "${features}" --no-default-features
+    /bin/echo -e "\e[0;33m***** Checking $package without features *****\e[0m\n"
+    cargo check --manifest-path "$(dirname "$0")/../$package/Cargo.toml" --no-default-features
 
-    tools $package "--features ${features}"
+    /bin/echo -e "\e[0;33m***** Checking ${package} with all features *****\e[0m\n"
+    cargo check --all-features --manifest-path "$(dirname "$0")/../$package/Cargo.toml"
 }
 
-tools() {
+test_package_with_features() {
     local package=$1
-    local features=$2
+    shift
+    local all_features=("$@")
 
-    /bin/echo -e "\e[0;33m***** Running Clippy on ${package} | ${features} *****\e[0m\n"
-    cargo clippy $features --manifest-path "${package}"/Cargo.toml -- \
-        -D clippy::restriction \
-        -D warnings \
-        -A clippy::implicit_return \
-        -A clippy::missing_docs_in_private_items
-
-    /bin/echo -e "\e[0;33m***** Running Rustfmt on ${package} *****\e[0m\n"
-    cargo fmt --all --manifest-path "${package}"/Cargo.toml
+    for features in "${all_features[@]}"; do
+        /bin/echo -e "\e[0;33m***** Testing $package with features '$features' *****\e[0m\n"
+        cargo test --features $features --manifest-path "$(dirname "$0")/../$package/Cargo.toml" --no-default-features
+    done
 }

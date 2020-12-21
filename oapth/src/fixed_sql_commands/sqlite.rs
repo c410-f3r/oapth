@@ -15,19 +15,19 @@ pub const CREATE_MIGRATION_TABLES: &str = concat!(
 
 #[oapth_macros::dev_tools_]
 #[inline]
-pub async fn clean<B>(_: &mut B) -> crate::Result<ArrayString<[u8; 256]>>
+pub async fn clean<B>(back_end: &mut B) -> crate::Result<()>
 where
 B: crate::BackEnd
 {
-  let mut buffer = ArrayString::new();
-  buffer.write_fmt(format_args!(
-    "
-    PRAGMA writable_schema = 1;
-    DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger');
-    PRAGMA writable_schema = 0;
-    ",
-  ))?;
-  Ok(buffer)
+  let mut buffer: ArrayString<[u8; 1024]> = ArrayString::new();
+
+  for table in back_end.tables("").await? {
+    buffer.write_fmt(format_args!("DROP TABLE {};", table))?;
+  }
+
+  back_end.execute(&buffer).await?;
+
+  Ok(())
 }
 
 #[inline]

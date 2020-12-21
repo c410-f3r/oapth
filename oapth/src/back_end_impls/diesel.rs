@@ -48,8 +48,7 @@ macro_rules! create_diesel_back_end {
       #[inline]
       fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
         Box::pin(async move {
-          let clean = $clean(self).await?;
-          Ok(self.execute(&clean).await?)
+          Ok($clean(self).await?)
         })
       }
 
