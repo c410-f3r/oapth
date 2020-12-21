@@ -43,9 +43,8 @@ impl BackEndGeneric for MysqlAsync {
   fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
     Box::pin(
       async move {
-        let clean = crate::fixed_sql_commands::mysql::clean(self).await?;
-        Ok(self.execute(&clean).await?)
-      },
+        Ok(crate::fixed_sql_commands::mysql::clean(self).await?)
+      }
     )
   }
 
@@ -70,7 +69,14 @@ impl BackEndGeneric for MysqlAsync {
 
   #[inline]
   fn execute<'a>(&'a mut self, command: &'a str) -> BoxFut<'a, crate::Result<()>> {
-    Box::pin(async move { Ok(self.conn.query_drop(command).await?) })
+    Box::pin(async move {
+      if command.is_empty() {
+        Ok(())
+      }
+      else {
+        Ok(self.conn.query_drop(command).await?)
+      }
+    })
   }
 
   #[inline]

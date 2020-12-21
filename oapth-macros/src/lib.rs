@@ -1,5 +1,7 @@
 //! Oapth macros
 
+#![allow(clippy::missing_inline_in_public_items)]
+
 use proc_macro::{Delimiter, Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree};
 
 const DEV_TOOLS: &str = "dev-tools";

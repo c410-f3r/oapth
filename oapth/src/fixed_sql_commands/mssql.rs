@@ -3,32 +3,32 @@ use core::fmt::Write;
 
 pub const CREATE_MIGRATION_TABLES: &str = concat!(
   "IF (NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = '_oapth'))
-    BEGIN
-      EXEC ('CREATE SCHEMA [_oapth]')
-    END
+  BEGIN
+    EXEC ('CREATE SCHEMA [_oapth]')
+  END
   
-    IF (NOT EXISTS (
-      SELECT
-        1
-      FROM
-        information_schema.tables
-      WHERE
-        table_name = '_oapth_migration_group' AND table_schema = '_oapth'
-    ))
+  IF (NOT EXISTS (
+    SELECT
+      1
+    FROM
+      information_schema.tables
+    WHERE
+      table_name = '_oapth_migration_group' AND table_schema = '_oapth'
+  ))
   BEGIN
   CREATE TABLE _oapth._oapth_migration_group (",
   oapth_migration_group_columns!(),
   ");
   END
-    
-    IF (NOT EXISTS (
-      SELECT
-        1
-      FROM
-        information_schema.tables
-      WHERE
-        table_name = '_oapth_migration' AND table_schema = '_oapth'
-    ))
+
+  IF (NOT EXISTS (
+    SELECT
+      1
+    FROM
+      information_schema.tables
+    WHERE
+      table_name = '_oapth_migration' AND table_schema = '_oapth'
+  ))
   BEGIN
   CREATE TABLE _oapth._oapth_migration (
   id INT NOT NULL IDENTITY PRIMARY KEY,
@@ -40,50 +40,54 @@ pub const CREATE_MIGRATION_TABLES: &str = concat!(
 
 #[oapth_macros::dev_tools_]
 #[inline]
-pub async fn clean<B>(_: &mut B) -> crate::Result<ArrayString<[u8; 2048]>>
+pub async fn clean<B>(back_end: &mut B) -> crate::Result<()>
 where
   B: crate::BackEnd
 {
-  let mut buffer = ArrayString::new();
-  buffer.write_fmt(format_args!(
-    r#"
-    EXECUTE sp_msforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT all"
+  let schemas = schemas(back_end).await?;
+  let schemas_with_dbo = schemas.iter().map(|s| s.as_str()).chain(core::iter::once("dbo"));
 
-    DECLARE @drop_tables NVARCHAR(max)='';
-    SELECT
-      @drop_tables += ' DROP TABLE ' + QUOTENAME(s.name) + '.'+ QUOTENAME(ifs.table_name) + '; '
-    FROM
-      sys.schemas s
-      INNER JOIN sys.sysusers u ON u.uid = s.principal_id
-      INNER JOIN information_schema.tables ifs ON ifs.table_schema = s.name
-    WHERE
-      u.issqluser = 1
-      AND ifs.table_type = 'BASE TABLE'
-      AND u.name NOT IN ('sys', 'guest', 'INFORMATION_SCHEMA');
-    EXECUTE sp_executesql @drop_tables;
+  for schema in schemas_with_dbo {
+    let mut buffer: ArrayString<[u8; 1024]> = ArrayString::new();
     
-    DECLARE @drop_schemas NVARCHAR(max)='';
+    for table in back_end.tables(&schema).await? {
+      buffer.write_fmt(format_args!("DROP TABLE {schema}.{};", table, schema = schema))?;
+    }
+
+    back_end.execute(&buffer).await?;
+  }
+
+  for schema in schemas {
+    let mut buffer: ArrayString<[u8; 128]> = ArrayString::new();
+    buffer.write_fmt(format_args!("DROP SCHEMA {};", schema))?;
+    back_end.execute(&buffer).await?;
+  }
+
+  Ok(())
+}
+
+#[oapth_macros::dev_tools_]
+#[inline]
+pub async fn schemas<B>(back_end: &mut B) -> crate::Result<Vec<String>>
+where
+  B: crate::BackEnd
+{
+  Ok(back_end.query_string("
     SELECT
-      @drop_schemas += 'DROP SCHEMA ' + QUOTENAME(s.name) + '; '
+      s.name
     FROM
       sys.schemas s
       INNER JOIN sys.sysusers u ON u.uid = s.principal_id
     WHERE
       u.issqluser = 1
-      AND u.name NOT IN ('dbo', 'sys', 'guest', 'INFORMATION_SCHEMA');
-    EXECUTE sp_executesql @drop_schemas; 
-
-    EXECUTE sp_msforeachtable "ALTER TABLE ? WITH CHECK CHECK CONSTRAINT all"
-    "#
-  ))?;
-  Ok(buffer)
+      AND s.name NOT IN ('dbo', 'sys', 'guest', 'INFORMATION_SCHEMA');
+  ").await?)
 }
 
 #[inline]
 pub fn tables(schema: &str) -> crate::Result<ArrayString<[u8; 512]>> {
   let mut buffer = ArrayString::new();
-  buffer.write_fmt(format_args!(
-    "
+  buffer.write_fmt(format_args!("
     SELECT
       tables.name AS generic_column
     FROM

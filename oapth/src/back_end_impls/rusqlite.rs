@@ -56,12 +56,9 @@ impl BackEndGeneric for Rusqlite {
   #[oapth_macros::dev_tools_]
   #[inline]
   fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
-    Box::pin(
-      async move {
-        let clean = crate::fixed_sql_commands::sqlite::clean(self).await?;
-        Ok(self.execute(&clean).await?)
-      },
-    )
+    Box::pin(async move {
+      Ok(crate::fixed_sql_commands::sqlite::clean(self).await?)
+    })
   }
 
   #[inline]

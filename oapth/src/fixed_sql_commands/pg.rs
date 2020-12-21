@@ -17,11 +17,11 @@ pub const CREATE_MIGRATION_TABLES: &str = concat!(
 
 #[oapth_macros::dev_tools_]
 #[inline]
-pub async fn clean<B>(back_end: &mut B) -> crate::Result<ArrayString<[u8; 2048]>>
+pub async fn clean<B>(back_end: &mut B) -> crate::Result<()>
 where
   B: crate::BackEnd
 {
-  let mut buffer = ArrayString::new();
+  let mut buffer: ArrayString<[u8; 2048]> = ArrayString::new();
 
   for schema in schemas(back_end).await? {
     buffer.write_fmt(format_args!("DROP SCHEMA {} CASCADE;", schema))?;
@@ -36,9 +36,8 @@ where
   }
 
   for view in views(back_end, "public").await? {
-      buffer.write_fmt(format_args!("DROP VIEW {} CASCADE;", view))?;
+    buffer.write_fmt(format_args!("DROP VIEW {} CASCADE;", view))?;
   }
-
 
   for table in back_end.tables("public").await? {
     buffer.write_fmt(format_args!("DROP TABLE {} CASCADE;", table))?;
@@ -56,7 +55,9 @@ where
     buffer.write_fmt(format_args!("DROP SEQUENCE {};", sequence))?;
   }
 
-  Ok(buffer)
+  back_end.execute(&buffer).await?;
+
+  Ok(())
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
