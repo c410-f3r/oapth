@@ -6,6 +6,6 @@ diesel::table! {
 
 #[derive(Debug, PartialEq, diesel::QueryableByName)]
 #[table_name = "generic_table"]
-pub struct GenericTable {
-  pub generic_column: String,
+pub(crate) struct GenericTable {
+  pub(crate) generic_column: String,
 }

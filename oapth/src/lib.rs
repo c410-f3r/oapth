@@ -9,67 +9,66 @@ extern crate alloc;
 #[macro_use]
 mod utils;
 
-oapth_macros::any_db! { mod fixed_sql_commands; }
+oapth_macros::_any_db_! { mod fixed_sql_commands; }
 #[cfg(all(feature = "_integration-tests", test))]
-oapth_macros::any_db! { mod integration_tests; }
+oapth_macros::_any_db_! { mod integration_tests; }
 mod back_end_impls;
 mod back_ends;
 mod commands;
 mod config;
-mod database;
 pub mod doc_tests;
 mod error;
 mod migration;
-oapth_macros::std! { mod parsers; }
-mod repeatability;
 
-#[oapth_macros::diesel_mysql_]
+#[oapth_macros::_diesel_mysql]
 pub use back_end_impls::diesel::DieselMysql;
-#[oapth_macros::diesel_pg_]
+#[oapth_macros::_diesel_pg]
 pub use back_end_impls::diesel::DieselPg;
-#[oapth_macros::diesel_sqlite_]
+#[oapth_macros::_diesel_sqlite]
 pub use back_end_impls::diesel::DieselSqlite;
-#[oapth_macros::mysql_async_]
+#[oapth_macros::_mysql_async]
 pub use back_end_impls::mysql_async::MysqlAsync;
-#[oapth_macros::rusqlite_]
+#[oapth_macros::_rusqlite]
 pub use back_end_impls::rusqlite::Rusqlite;
-#[oapth_macros::sqlx_mssql_]
+#[oapth_macros::_sqlx_mssql]
 pub use back_end_impls::sqlx::SqlxMssql;
-#[oapth_macros::sqlx_mysql_]
+#[oapth_macros::_sqlx_mysql]
 pub use back_end_impls::sqlx::SqlxMysql;
-#[oapth_macros::sqlx_pg_]
+#[oapth_macros::_sqlx_pg]
 pub use back_end_impls::sqlx::SqlxPg;
-#[oapth_macros::sqlx_sqlite_]
+#[oapth_macros::_sqlx_sqlite]
 pub use back_end_impls::sqlx::SqlxSqlite;
-#[oapth_macros::tiberius_]
+#[oapth_macros::_tiberius]
 pub use back_end_impls::tiberius::Tiberius;
-#[oapth_macros::tokio_postgres_]
+#[oapth_macros::_tokio_postgres]
 pub use back_end_impls::tokio_postgres::TokioPostgres;
 pub use back_ends::back_end::BackEnd;
 pub use commands::Commands;
 pub use config::Config;
-pub use database::Database;
 pub use error::Error;
-pub use migration::{migration_group::MigrationGroup, Migration};
-pub use repeatability::Repeatability;
-
-#[oapth_macros::std_]
-pub use parsers::{
-  parse_migration::{parse_migration_cfg, parse_unified_migration},
-  parse_root_cfg,
+pub use migration::{
+  migration_group::{MigrationGroup, MigrationGroupOwned, MigrationGroupRef},
+  Migration, MigrationOwned, MigrationRef,
 };
+#[oapth_macros::_embed_migrations]
+pub use oapth_macros::embed_migrations;
 
 use alloc::boxed::Box;
-use arrayvec::ArrayVec;
 use back_ends::back_end_generic::BackEndGeneric;
 use core::{future::Future, pin::Pin};
-use migration::{db_migration::DbMigration, migration_common::MigrationCommon};
+use migration::{
+  db_migration::DbMigration,
+  migration_common::{MigrationCommon, MigrationCommonOwned},
+};
 use utils::*;
 
-#[oapth_macros::with_schema_]
+/// Default batch size
+pub const DEFAULT_BATCH_SIZE: usize = 128;
+
+#[oapth_macros::_with_schema]
 const OAPTH_SCHEMA_PREFIX: &str = "_oapth.";
 
-type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + 'a>>;
-type Dbs = ArrayVec<[Database; 4]>;
 /// Alias for `core::result::Result<T, oapth::Error>`
 pub type Result<T> = core::result::Result<T, Error>;
+
+type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + 'a>>;

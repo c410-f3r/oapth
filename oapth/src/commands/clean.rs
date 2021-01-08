@@ -2,7 +2,7 @@ use crate::{BackEnd, Commands};
 
 impl<B> Commands<B>
 where
-  B: BackEnd
+  B: BackEnd,
 {
   /// Tries to clean all objects of a database, including separated namespaces/schemas.
   #[inline]

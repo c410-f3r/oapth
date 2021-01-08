@@ -1,23 +1,22 @@
 [dependencies]
-oapth-commons = { default-features = false, features = ["std"], optional = true, path = "../oapth-commons" }
+arrayvec = { default-features = false, version = "0.5" }
 proc-macro2 = { default-features = false, optional = true, version = "1.0" }
 quote = { default-features = false, features = ["proc-macro"], optional = true, version = "1.0" }
+siphasher = { default-features = false, version = "0.3" }
 
 [features]
 default = []
-embed-migrations = ["oapth-commons/with-quote", "proc-macro2", "quote"]
-
-[lib]
-proc-macro = true
+std = []
+with-quote = ["proc-macro2", "quote"]
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
 categories = ["database"]
-description = "Oapth macros"
+description = "Oapth commons"
 edition = "2018"
 keywords = ["database", "migration", "oapth", "sql"]
 license = "Apache-2.0"
-name = "oapth-macros"
+name = "oapth-commons"
 readme = "README.md"
 repository = "https://github.com/c410-f3r/oapth"
 version = "0.1.0"

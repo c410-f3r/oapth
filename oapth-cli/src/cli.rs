@@ -1,13 +1,14 @@
 use alloc::string::String;
 
 #[derive(Debug, clap::Clap)]
-pub struct Cli {
+pub(crate) struct Cli {
   #[clap(subcommand)]
   pub(crate) commands: Commands,
 
   /// The number of files (migrations or seeds) that is going to be sent to the database in a
   /// single transaction.
   #[clap(default_value = "128", long, short = 'f')]
+  // Default value must match oapth::DEFAULT_BATCH_SIZE
   pub(crate) files_num: usize,
 
   /// The configuration file or seeds directory
@@ -20,7 +21,7 @@ pub struct Cli {
 }
 
 #[derive(Debug, clap::Clap)]
-pub enum Commands {
+pub(crate) enum Commands {
   /// Tries to clean all objects of a database, including separated namespaces/schemas.
   #[cfg(feature = "dev-tools")]
   Clean,

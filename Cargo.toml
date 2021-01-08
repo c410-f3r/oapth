@@ -13,5 +13,6 @@ rpath = false
 members = [
     "oapth",
     "oapth-cli",
+    "oapth-commons",
     "oapth-macros"
 ]

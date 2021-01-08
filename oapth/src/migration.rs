@@ -1,61 +1,62 @@
-pub mod db_migration;
-pub mod migration_common;
-pub mod migration_group;
+pub(crate) mod db_migration;
+pub(crate) mod migration_common;
+pub(crate) mod migration_group;
 
-use crate::{Database, Dbs, MigrationCommon, Repeatability};
-use alloc::string::{String, ToString};
+use crate::MigrationCommon;
+use alloc::{string::String, vec::Vec};
 use core::hash::{Hash, Hasher};
+use oapth_commons::{Database, Repeatability};
 use siphasher::sip::SipHasher13;
 
-/// A migration that is intended to be inserted into a database
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Migration {
-  common: MigrationCommon,
-  dbs: Dbs,
-  sql_down: String,
-  sql_up: String,
+/// Migration - Owned
+pub type MigrationOwned = Migration<Vec<Database>, String>;
+/// Migration - Reference
+pub type MigrationRef<'dbs, 's> = Migration<&'dbs [Database], &'s str>;
+
+/// A migration that is intended to be inserted into a database.
+///
+/// * Types
+///
+/// DBS: Databases
+/// S: String
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct Migration<DBS, S> {
+  pub(crate) common: MigrationCommon<S>,
+  pub(crate) dbs: DBS,
+  pub(crate) sql_down: S,
+  pub(crate) sql_up: S,
 }
 
-impl Migration {
+impl<DBS, S> Migration<DBS, S>
+where
+  DBS: AsRef<[Database]>,
+  S: AsRef<str>,
+{
   /// Creates a new instance from all necessary input parameters.
   #[inline]
-  pub fn new<DI, IN, ISD, ISU>(
-    dbs: DI,
+  pub fn from_parts(
+    dbs: DBS,
     repeatability: Option<Repeatability>,
     version: i32,
-    name: IN,
-    sql_up: ISU,
-    sql_down: ISD,
-  ) -> Self
-  where
-    DI: Iterator<Item = Database>,
-    IN: Into<String>,
-    ISD: Into<String>,
-    ISU: Into<String>,
-  {
-    let _name = name.into();
-    let _sql_up = sql_up.into();
-    let _sql_down = sql_down.into();
-    let mut hasher = SipHasher13::new();
-    _name.hash(&mut hasher);
-    _sql_up.hash(&mut hasher);
-    _sql_down.hash(&mut hasher);
-    version.hash(&mut hasher);
-    let checksum = hasher.finish().to_string();
-    Self {
-      dbs: {
-        let mut dedup_dbs = Dbs::new();
-        for db in dbs {
-          if !dedup_dbs.contains(&db) {
-            dedup_dbs.push(db);
-          }
-        }
-        dedup_dbs
-      },
-      common: MigrationCommon { checksum, name: _name, repeatability, version },
-      sql_down: _sql_down,
-      sql_up: _sql_up,
+    name: S,
+    sql_up: S,
+    sql_down: S,
+  ) -> crate::Result<Self> {
+    if dbs.as_ref().windows(2).any(|s| s[0] >= s[1]) {
+      return Err(crate::Error::DatabasesMustBeSortedAndUnique);
     }
+    let mut hasher = SipHasher13::new();
+    name.as_ref().hash(&mut hasher);
+    sql_up.as_ref().hash(&mut hasher);
+    sql_down.as_ref().hash(&mut hasher);
+    version.hash(&mut hasher);
+    let checksum = hasher.finish();
+    Ok(Self {
+      dbs,
+      common: MigrationCommon { checksum, name, repeatability, version },
+      sql_down,
+      sql_up,
+    })
   }
 
   /// Checksum
@@ -64,11 +65,11 @@ impl Migration {
   ///
   /// ```rust
   /// use oapth::doc_tests::migration;
-  /// assert_eq!(migration().checksum(), "10126747658053090972")
+  /// assert_eq!(migration().checksum(), 10126747658053090972)
   /// ```
   #[inline]
-  pub fn checksum(&self) -> &str {
-    &self.common.checksum
+  pub fn checksum(&self) -> u64 {
+    self.common.checksum
   }
 
   /// Databases
@@ -83,7 +84,45 @@ impl Migration {
   /// ```
   #[inline]
   pub fn dbs(&self) -> &[Database] {
-    &self.dbs
+    self.dbs.as_ref()
+  }
+
+  /// Migration Reference
+  ///
+  /// Returns an instance of `MigrationRef`.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use oapth::doc_tests::migration;
+  /// let _ = migration().m_ref();
+  /// ```
+  #[inline]
+  pub fn m_ref(&self) -> MigrationRef<'_, '_> {
+    MigrationRef {
+      common: MigrationCommon {
+        checksum: self.common.checksum,
+        name: self.common.name.as_ref(),
+        repeatability: self.common.repeatability,
+        version: self.common.version,
+      },
+      dbs: self.dbs.as_ref(),
+      sql_down: self.sql_down.as_ref(),
+      sql_up: self.sql_up.as_ref(),
+    }
+  }
+
+  /// Name
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use oapth::doc_tests::migration;
+  /// assert_eq!(migration().name(), "create_author")
+  /// ```
+  #[inline]
+  pub fn name(&self) -> &str {
+    self.common.name.as_ref()
   }
 
   /// If this is a repeatable migration, returns its type.
@@ -99,19 +138,6 @@ impl Migration {
     self.common.repeatability
   }
 
-  /// Name
-  ///
-  /// # Example
-  ///
-  /// ```rust
-  /// use oapth::doc_tests::migration;
-  /// assert_eq!(migration().name(), "create_author")
-  /// ```
-  #[inline]
-  pub fn name(&self) -> &str {
-    &self.common.name
-  }
-
   /// Raw SQL for rollbacks
   ///
   /// # Example
@@ -122,7 +148,7 @@ impl Migration {
   /// ```
   #[inline]
   pub fn sql_down(&self) -> &str {
-    &self.sql_down
+    self.sql_down.as_ref()
   }
 
   /// Raw SQL for migrations
@@ -137,7 +163,7 @@ impl Migration {
   /// );
   #[inline]
   pub fn sql_up(&self) -> &str {
-    &self.sql_up
+    self.sql_up.as_ref()
   }
 
   /// Migration version
@@ -151,5 +177,34 @@ impl Migration {
   #[inline]
   pub fn version(&self) -> i32 {
     self.common.version
+  }
+}
+
+impl<'dbs, 's> MigrationRef<'dbs, 's> {
+  /// Creates a new instance from all necessary input references.
+  ///
+  /// # Safety
+  ///
+  /// The caller of this function must include a valid checksum.
+  #[allow(
+    // Not used internally
+    unsafe_code
+  )]
+  #[inline]
+  pub const unsafe fn new_ref(
+    checksum: u64,
+    dbs: &'dbs [Database],
+    name: &'s str,
+    repeatability: Option<Repeatability>,
+    sql_down: &'s str,
+    sql_up: &'s str,
+    version: i32,
+  ) -> Self {
+    Self {
+      dbs,
+      common: MigrationCommon { checksum, name, repeatability, version },
+      sql_down,
+      sql_up,
+    }
   }
 }

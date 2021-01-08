@@ -1,4 +1,4 @@
-use crate::{Dbs, Repeatability};
+use crate::{Database, Repeatability};
 use std::io::{BufRead, BufReader, Read};
 
 #[derive(Debug, Default)]
@@ -10,7 +10,7 @@ pub struct ParsedMigration {
 
 #[derive(Debug, Default)]
 pub struct MigrationCfg {
-  pub dbs: Dbs,
+  pub dbs: Vec<Database>,
   pub repeatability: Option<Repeatability>,
 }
 
@@ -65,14 +65,11 @@ where
     return Err(crate::Error::IncompleteSqlFile);
   }
 
-  iterations(&mut overall_buffer, &mut br, |str_read| {
-    str_read.find("-- oapth DOWN").is_none()
-  })?;
+  iterations(&mut overall_buffer, &mut br, |str_read| str_read.find("-- oapth DOWN").is_none())?;
 
   if let Some(rslt) = overall_buffer.rsplit("-- oapth DOWN").nth(1) {
     parsed_migration.sql_up = rslt.trim().into();
-  }
-  else {
+  } else {
     parsed_migration.sql_up = overall_buffer.trim().into();
     return Ok(parsed_migration);
   }
@@ -84,7 +81,7 @@ where
   if parsed_migration.sql_up.is_empty() {
     return Err(crate::Error::IncompleteSqlFile);
   }
-  
+
   Ok(parsed_migration)
 }
 
@@ -125,9 +122,13 @@ where
   Ok(())
 }
 
-fn parse_dbs<R>(br: &mut BufReader<R>, dbs: &mut Dbs, overall_buffer: &mut String) -> crate::Result<()>
+fn parse_dbs<R>(
+  br: &mut BufReader<R>,
+  dbs: &mut Vec<Database>,
+  overall_buffer: &mut String,
+) -> crate::Result<()>
 where
-  R: Read
+  R: Read,
 {
   if let Some(rslt) = overall_buffer.split("-- oapth dbs").nth(1) {
     for db_str in rslt.split(',') {
@@ -140,9 +141,13 @@ where
   Ok(())
 }
 
-fn parse_repeatability<R>(br: &mut BufReader<R>, overall_buffer: &mut String, repeatability: &mut Option<Repeatability>) -> crate::Result<()>
+fn parse_repeatability<R>(
+  br: &mut BufReader<R>,
+  overall_buffer: &mut String,
+  repeatability: &mut Option<Repeatability>,
+) -> crate::Result<()>
 where
-  R: Read
+  R: Read,
 {
   if let Some(repeatability_str) = overall_buffer.split("-- oapth repeatability").nth(1) {
     if let Ok(parsed_repeatability) = repeatability_str.trim().parse::<Repeatability>() {
@@ -155,7 +160,7 @@ where
 
 #[cfg(test)]
 mod tests {
-  use crate::{parse_unified_migration, Repeatability, Database};
+  use crate::{parse_unified_migration, Database, Repeatability};
 
   #[test]
   fn does_not_take_into_consideration_white_spaces_and_comments() {

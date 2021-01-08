@@ -1,7 +1,7 @@
 use arrayvec::ArrayString;
 use core::fmt::Write;
 
-pub const CREATE_MIGRATION_TABLES: &str = concat!(
+pub(crate) const CREATE_MIGRATION_TABLES: &str = concat!(
   "CREATE TABLE IF NOT EXISTS _oapth_migration_group (",
   oapth_migration_group_columns!(),
   "); \
@@ -13,11 +13,11 @@ pub const CREATE_MIGRATION_TABLES: &str = concat!(
   ");"
 );
 
-#[oapth_macros::dev_tools_]
+#[oapth_macros::_dev_tools]
 #[inline]
-pub async fn clean<B>(back_end: &mut B) -> crate::Result<()>
+pub(crate) async fn clean<B>(back_end: &mut B) -> crate::Result<()>
 where
-B: crate::BackEnd
+  B: crate::BackEnd,
 {
   let mut buffer: ArrayString<[u8; 1024]> = ArrayString::new();
 
@@ -36,7 +36,7 @@ B: crate::BackEnd
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/mysql/MySQLSchema.java
 #[inline]
-pub fn tables(_: &str) -> crate::Result<ArrayString<[u8; 256]>> {
+pub(crate) fn tables(_: &str) -> crate::Result<ArrayString<[u8; 256]>> {
   let mut buffer = ArrayString::new();
   buffer.write_fmt(format_args!(
     "

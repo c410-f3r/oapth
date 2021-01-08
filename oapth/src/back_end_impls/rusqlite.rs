@@ -3,8 +3,9 @@ use crate::{
     delete_migrations, insert_migrations, migrations_by_mg_version_query,
     sqlite::{tables, CREATE_MIGRATION_TABLES},
   },
-  BackEnd, BackEndGeneric, BoxFut, Config, DbMigration, Migration, MigrationGroup,  Database
+  BackEnd, BackEndGeneric, BoxFut, Config, DbMigration, MigrationRef, MigrationGroupRef,
 };
+use oapth_commons::Database;
 use alloc::string::String;
 use core::convert::TryFrom;
 use rusqlite::{Connection, Row, NO_PARAMS};
@@ -53,16 +54,24 @@ impl Rusqlite {
 impl BackEnd for Rusqlite {}
 
 impl BackEndGeneric for Rusqlite {
-  #[oapth_macros::dev_tools_]
+  #[oapth_macros::_dev_tools]
   #[inline]
-  fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+  fn clean<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move {
       Ok(crate::fixed_sql_commands::sqlite::clean(self).await?)
     })
   }
 
   #[inline]
-  fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+  fn create_oapth_tables<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    Self: 'ret,
+  {
     self.execute(CREATE_MIGRATION_TABLES)
   }
 
@@ -72,16 +81,26 @@ impl BackEndGeneric for Rusqlite {
   }
 
   #[inline]
-  fn delete_migrations<'a>(
+  fn delete_migrations<'a, 'b, 'ret>(
     &'a mut self,
     version: i32,
-    mg: &'a MigrationGroup,
-  ) -> BoxFut<'a, crate::Result<()>> {
+    mg: MigrationGroupRef<'b>,
+  ) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move { Ok(delete_migrations(self, mg, "", version).await?) })
   }
 
   #[inline]
-  fn execute<'a>(&'a mut self, command: &'a str) -> BoxFut<'a, crate::Result<()>> {
+  fn execute<'a, 'b, 'ret>(&'a mut self, command: &'b str) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move { Ok(self.conn.execute_batch(command)?) })
   }
 
@@ -89,23 +108,28 @@ impl BackEndGeneric for Rusqlite {
   fn insert_migrations<'a, 'b, 'c, 'ret, I>(
     &'a mut self,
     migrations: I,
-    mg: &'b MigrationGroup,
+    mg: MigrationGroupRef<'b>,
   ) -> BoxFut<'ret, crate::Result<()>>
   where
     'a: 'ret,
     'b: 'ret,
     'c: 'ret,
-    I: Clone + Iterator<Item = &'c Migration> + 'ret,
+    I: Clone + Iterator<Item = MigrationRef<'c, 'c>> + 'ret,
     Self: 'ret
   {
     Box::pin(insert_migrations(self, mg, "", migrations))
   }
 
   #[inline]
-  fn migrations<'a>(
+  fn migrations<'a, 'b, 'ret>(
     &'a mut self,
-    mg: &'a MigrationGroup,
-  ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
+    mg: MigrationGroupRef<'b>,
+  ) -> BoxFut<'ret, crate::Result<Vec<DbMigration>>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move {
       let fun = |e| {
         if let crate::Error::Rusqlite(inner) = e {
@@ -120,14 +144,27 @@ impl BackEndGeneric for Rusqlite {
   }
 
   #[inline]
-  fn query_string<'a>(&'a mut self, query: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+  fn query_string<'a, 'b, 'ret>(
+    &'a mut self,
+    query: &'b str,
+  ) -> BoxFut<'ret, crate::Result<Vec<String>>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move {
       Ok(self.query(query, |r| Ok(r.get::<_, String>(0)?)).await?)
     })
   }
 
   #[inline]
-  fn tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+  fn tables<'a, 'b, 'ret>(&'a mut self, schema: &'b str) -> BoxFut<'ret, crate::Result<Vec<String>>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move {
       let buffer = tables(schema)?;
       Ok(self.query(buffer.as_str(), |r| Ok(r.get::<_, String>(0)?)).await?)
@@ -135,10 +172,12 @@ impl BackEndGeneric for Rusqlite {
   }
 
   #[inline]
-  fn transaction<'a, I, S>(&'a mut self, commands: I) -> BoxFut<'a, crate::Result<()>>
+  fn transaction<'a, 'ret, I, S>(&'a mut self, commands: I) -> BoxFut<'ret, crate::Result<()>>
   where
-    I: Iterator<Item = S> + 'a,
+    'a: 'ret,
+    I: Iterator<Item = S> + 'ret,
     S: AsRef<str>,
+    Self: 'ret
   {
     Box::pin(async move {
       let transaction = self.conn.transaction()?;

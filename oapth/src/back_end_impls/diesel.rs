@@ -2,8 +2,9 @@ mod schemas;
 
 use crate::{
   fixed_sql_commands::{delete_migrations, insert_migrations, migrations_by_mg_version_query},
-  BackEnd, BackEndGeneric, BoxFut, Config, DbMigration,  MigrationGroup, Database, Migration
+  BackEnd, BackEndGeneric, BoxFut, Config, DbMigration, MigrationGroupRef, MigrationRef
 };
+use oapth_commons::Database;
 use alloc::string::String;
 use diesel::{
   connection::{SimpleConnection, TransactionManager},
@@ -40,20 +41,27 @@ macro_rules! create_diesel_back_end {
       }
     }
 
-    impl BackEnd for $back_end_name {
-    }
+    impl BackEnd for $back_end_name {}
 
     impl BackEndGeneric for $back_end_name {
-      #[oapth_macros::dev_tools_]
+      #[oapth_macros::_dev_tools]
       #[inline]
-      fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+      fn clean<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
+      where
+        'a: 'ret,
+        Self: 'ret,
+      {
         Box::pin(async move {
           Ok($clean(self).await?)
         })
       }
 
       #[inline]
-      fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+      fn create_oapth_tables<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
+      where
+        'a: 'ret,
+        Self: 'ret,
+      {
         self.execute($create_oapth_tables)
       }
 
@@ -63,16 +71,26 @@ macro_rules! create_diesel_back_end {
       }
 
       #[inline]
-      fn delete_migrations<'a>(
+      fn delete_migrations<'a, 'b, 'ret>(
         &'a mut self,
         version: i32,
-        mg: &'a MigrationGroup,
-      ) -> BoxFut<'a, crate::Result<()>> {
+        mg: MigrationGroupRef<'b>,
+      ) -> BoxFut<'ret, crate::Result<()>>
+      where
+        'a: 'ret,
+        'b: 'ret,
+        Self: 'ret,
+      {
         Box::pin(async move { Ok(delete_migrations(self, mg, $schema, version).await?) })
       }
 
       #[inline]
-      fn execute<'b>(&'b mut self, command: &'b str) -> BoxFut<'b, crate::Result<()>> {
+      fn execute<'a, 'b, 'ret>(&'a mut self, command: &'b str) -> BoxFut<'ret, crate::Result<()>>
+      where
+        'a: 'ret,
+        'b: 'ret,
+        Self: 'ret,
+      {
         Box::pin(async move {
           Ok(if command.is_empty() {
             ()
@@ -87,20 +105,28 @@ macro_rules! create_diesel_back_end {
       fn insert_migrations<'a, 'b, 'c, 'ret, I>(
         &'a mut self,
         migrations: I,
-        mg: &'b MigrationGroup,
+        mg: MigrationGroupRef<'b>,
       ) -> BoxFut<'ret, crate::Result<()>>
       where
         'a: 'ret,
         'b: 'ret,
         'c: 'ret,
-        I: Clone + Iterator<Item = &'c Migration> + 'ret,
+        I: Clone + Iterator<Item = MigrationRef<'c, 'c>> + 'ret,
         Self: 'ret
       {
         Box::pin(insert_migrations(self, mg, $schema, migrations))
       }
 
       #[inline]
-      fn migrations<'a>(&'a mut self, mg: &'a MigrationGroup,) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
+      fn migrations<'a, 'b, 'ret>(
+        &'a mut self,
+        mg: MigrationGroupRef<'b>,
+      ) -> BoxFut<'ret, crate::Result<Vec<DbMigration>>>
+      where
+        'a: 'ret,
+        'b: 'ret,
+        Self: 'ret,
+      {
         Box::pin(async move {
           let query = migrations_by_mg_version_query(mg.version(), $schema)?;
           let migrations = sql_query(query.as_str()).load(&self.conn)?;
@@ -109,7 +135,15 @@ macro_rules! create_diesel_back_end {
       }
 
       #[inline]
-      fn query_string<'a>(&'a mut self, query: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+      fn query_string<'a, 'b, 'ret>(
+        &'a mut self,
+        query: &'b str,
+      ) -> BoxFut<'ret, crate::Result<Vec<String>>>
+      where
+        'a: 'ret,
+        'b: 'ret,
+        Self: 'ret,
+      {
         Box::pin(async move {
           let tables: Vec<GenericTable> = sql_query(query).load(&self.conn)?;
           Ok(tables.into_iter().map(|el| el.generic_column).collect())
@@ -117,7 +151,12 @@ macro_rules! create_diesel_back_end {
       }
 
       #[inline]
-      fn tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+      fn tables<'a, 'b, 'ret>(&'a mut self, schema: &'b str) -> BoxFut<'ret, crate::Result<Vec<String>>>
+      where
+        'a: 'ret,
+        'b: 'ret,
+        Self: 'ret,
+      {
         Box::pin(async move {
           let tables: Vec<GenericTable> = sql_query($tables(schema)?.as_str()).load(&self.conn)?;
           Ok(tables.into_iter().map(|el| el.generic_column).collect())
@@ -125,10 +164,12 @@ macro_rules! create_diesel_back_end {
       }
 
       #[inline]
-      fn transaction<'a, I, S>(&'a mut self, commands: I) -> BoxFut<'a, crate::Result<()>>
+      fn transaction<'a, 'ret, I, S>(&'a mut self, commands: I) -> BoxFut<'ret, crate::Result<()>>
       where
-        I: Iterator<Item = S> + 'a,
+        'a: 'ret,
+        I: Iterator<Item = S> + 'ret,
         S: AsRef<str>,
+        Self: 'ret
       {
         Box::pin(async move {
           let conn = &mut self.conn;
@@ -145,7 +186,7 @@ macro_rules! create_diesel_back_end {
   };
 }
 
-#[oapth_macros::diesel_mysql_]
+#[oapth_macros::_diesel_mysql]
 create_diesel_back_end!(
   /// Creates a new instance from all necessary parameters.
   ///
@@ -166,7 +207,7 @@ create_diesel_back_end!(
   crate::fixed_sql_commands::mysql::tables,
 );
 
-#[oapth_macros::diesel_pg_]
+#[oapth_macros::_diesel_pg]
 create_diesel_back_end!(
   /// Creates a new instance from all necessary parameters.
   ///
@@ -187,7 +228,7 @@ create_diesel_back_end!(
   crate::fixed_sql_commands::pg::tables,
 );
 
-#[oapth_macros::diesel_sqlite_]
+#[oapth_macros::_diesel_sqlite]
 create_diesel_back_end!(
   /// Creates a new instance from all necessary parameters.
   ///

@@ -15,6 +15,7 @@ tokio-postgres = { default-features = false, features = ["runtime", "with-chrono
 
 arrayvec = { default-features = false, version = "0.5" }
 chrono = { default-features = false, version = "0.4" }
+oapth-commons = { default-features = false, path = "../oapth-commons" } 
 oapth-macros = { default-features = false, path = "../oapth-macros" }
 siphasher = { default-features = false, version = "0.3" }
 
@@ -25,9 +26,10 @@ tokio = { default-features = false, features = ["macros", "net", "rt-core"], ver
 tokio-util = { default-features = false, features = ["compat"], version = "0.3" }
 
 [features]
-default = ["std"]
+default = []
 dev-tools = []
-std = []
+embed-migrations = ["oapth-macros/embed-migrations"]
+std = ["oapth-commons/std"]
 with-diesel-mysql = ["diesel/mysql", "std"]
 with-diesel-pg = ["diesel/postgres", "std"]
 with-diesel-sqlite = ["diesel/sqlite", "std"]
@@ -35,7 +37,7 @@ with-mysql_async = ["mysql_async", "std"]
 with-rusqlite = ["rusqlite", "std"]
 with-sqlx-mssql = ["futures", "sqlx-core/mssql", "std"]
 with-sqlx-mysql = ["futures", "sqlx-core/mysql", "std"]
-with-sqlx-pg = ["futures", "sqlx-core/postgres", "std"]
+with-sqlx-pg = [ "futures", "sqlx-core/postgres", "std"]
 with-sqlx-sqlite = ["futures", "sqlx-core/sqlite", "std"]
 with-tiberius = ["futures", "std", "tiberius"]
 with-tokio-postgres = ["std", "tokio", "tokio-postgres"]

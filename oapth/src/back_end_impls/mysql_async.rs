@@ -3,8 +3,9 @@ use crate::{
     delete_migrations, insert_migrations, migrations_by_mg_version_query,
     mysql::{tables, CREATE_MIGRATION_TABLES},
   },
-  BackEnd, BackEndGeneric, BoxFut, Config, DbMigration, Migration, MigrationGroup, Database
+  BackEnd, BackEndGeneric, BoxFut, Config, DbMigration, MigrationRef, MigrationGroupRef,
 };
+use oapth_commons::Database;
 use alloc::string::String;
 use core::convert::TryFrom;
 use mysql_async::{prelude::Queryable, Conn, Pool, Row, TxOpts};
@@ -38,9 +39,13 @@ impl MysqlAsync {
 impl BackEnd for MysqlAsync {}
 
 impl BackEndGeneric for MysqlAsync {
-  #[oapth_macros::dev_tools_]
+  #[oapth_macros::_dev_tools]
   #[inline]
-  fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+  fn clean<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    Self: 'ret,
+  {
     Box::pin(
       async move {
         Ok(crate::fixed_sql_commands::mysql::clean(self).await?)
@@ -49,7 +54,11 @@ impl BackEndGeneric for MysqlAsync {
   }
 
   #[inline]
-  fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+  fn create_oapth_tables<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    Self: 'ret,
+  {
     self.execute(CREATE_MIGRATION_TABLES)
   }
 
@@ -59,16 +68,26 @@ impl BackEndGeneric for MysqlAsync {
   }
 
   #[inline]
-  fn delete_migrations<'a>(
+  fn delete_migrations<'a, 'b, 'ret>(
     &'a mut self,
     version: i32,
-    mg: &'a MigrationGroup,
-  ) -> BoxFut<'a, crate::Result<()>> {
+    mg: MigrationGroupRef<'b>,
+  ) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move { Ok(delete_migrations(self, mg, "", version).await?) })
   }
 
   #[inline]
-  fn execute<'a>(&'a mut self, command: &'a str) -> BoxFut<'a, crate::Result<()>> {
+  fn execute<'a, 'b, 'ret>(&'a mut self, command: &'b str) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move {
       if command.is_empty() {
         Ok(())
@@ -83,23 +102,28 @@ impl BackEndGeneric for MysqlAsync {
   fn insert_migrations<'a, 'b, 'c, 'ret, I>(
     &'a mut self,
     migrations: I,
-    mg: &'b MigrationGroup,
+    mg: MigrationGroupRef<'b>,
   ) -> BoxFut<'ret, crate::Result<()>>
   where
     'a: 'ret,
     'b: 'ret,
     'c: 'ret,
-    I: Clone + Iterator<Item = &'c Migration> + 'ret,
+    I: Clone + Iterator<Item = MigrationRef<'c, 'c>> + 'ret,
     Self: 'ret
   {
     Box::pin(insert_migrations(self, mg, "", migrations))
   }
 
   #[inline]
-  fn migrations<'a>(
+  fn migrations<'a, 'b, 'ret>(
     &'a mut self,
-    mg: &'a MigrationGroup,
-  ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
+    mg: MigrationGroupRef<'b>,
+  ) -> BoxFut<'ret, crate::Result<Vec<DbMigration>>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move {
       let buffer = migrations_by_mg_version_query(mg.version(), "")?;
       let vec: Vec<Row> = self.conn.query(buffer.as_str()).await?;
@@ -108,41 +132,56 @@ impl BackEndGeneric for MysqlAsync {
   }
 
   #[inline]
-  fn query_string<'a>(&'a mut self, query: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+  fn query_string<'a, 'b, 'ret>(
+    &'a mut self,
+    query: &'b str,
+  ) -> BoxFut<'ret, crate::Result<Vec<String>>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move {
       let rows: Vec<Row> = self.conn.query(query).await?;
       rows
         .into_iter()
         .map(|row| {
-          row.get::<String, _>(0).ok_or(crate::Error::MysqlAsync(mysql_async::Error::Driver(
+          row.get::<String, _>(0).ok_or_else(|| crate::Error::MysqlAsync(mysql_async::Error::Driver(
             mysql_async::DriverError::FromRow { row },
-          )))
+          ).into()))
         })
         .collect::<crate::Result<_>>()
     })
   }
   
   #[inline]
-  fn tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
+  fn tables<'a, 'b, 'ret>(&'a mut self, schema: &'b str) -> BoxFut<'ret, crate::Result<Vec<String>>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move {
       let buffer = tables(schema)?;
       let rows: Vec<Row> = self.conn.query(buffer.as_str()).await?;
       rows
         .into_iter()
         .map(|row| {
-          row.get::<String, _>(0).ok_or(crate::Error::MysqlAsync(mysql_async::Error::Driver(
+          row.get::<String, _>(0).ok_or_else(|| crate::Error::MysqlAsync(mysql_async::Error::Driver(
             mysql_async::DriverError::FromRow { row },
-          )))
+          ).into()))
         })
         .collect::<crate::Result<_>>()
     })
   }
 
   #[inline]
-  fn transaction<'a, I, S>(&'a mut self, commands: I) -> BoxFut<'a, crate::Result<()>>
+  fn transaction<'a, 'ret, I, S>(&'a mut self, commands: I) -> BoxFut<'ret, crate::Result<()>>
   where
-    I: Iterator<Item = S> + 'a,
+    'a: 'ret,
+    I: Iterator<Item = S> + 'ret,
     S: AsRef<str>,
+    Self: 'ret
   {
     Box::pin(async move {
       let mut transaction = self.conn.start_transaction(TxOpts::default()).await?;

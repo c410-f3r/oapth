@@ -1,17 +1,26 @@
-use crate::{BackEnd, BackEndGeneric, BoxFut, Database, DbMigration, Migration, MigrationGroup};
+use crate::{BackEnd, BackEndGeneric, BoxFut, DbMigration, MigrationGroupRef, MigrationRef};
 use alloc::{boxed::Box, string::String, vec::Vec};
+use oapth_commons::Database;
 
 impl BackEnd for () {}
 
 impl BackEndGeneric for () {
-  #[oapth_macros::dev_tools_]
+  #[oapth_macros::_dev_tools]
   #[inline]
-  fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+  fn clean<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move { Ok(()) })
   }
 
   #[inline]
-  fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>> {
+  fn create_oapth_tables<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move { Ok(()) })
   }
 
@@ -21,16 +30,26 @@ impl BackEndGeneric for () {
   }
 
   #[inline]
-  fn execute<'a>(&'a mut self, _: &'a str) -> BoxFut<'a, crate::Result<()>> {
+  fn delete_migrations<'a, 'b, 'ret>(
+    &'a mut self,
+    _: i32,
+    _: MigrationGroupRef<'b>,
+  ) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move { Ok(()) })
   }
 
   #[inline]
-  fn delete_migrations<'a>(
-    &'a mut self,
-    _: i32,
-    _: &'a MigrationGroup,
-  ) -> BoxFut<'a, crate::Result<()>> {
+  fn execute<'a, 'b, 'ret>(&'a mut self, _: &'b str) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
     Box::pin(async move { Ok(()) })
   }
 
@@ -38,41 +57,60 @@ impl BackEndGeneric for () {
   fn insert_migrations<'a, 'b, 'c, 'ret, I>(
     &'a mut self,
     _: I,
-    _: &'b MigrationGroup,
+    _: MigrationGroupRef<'b>,
   ) -> BoxFut<'ret, crate::Result<()>>
   where
     'a: 'ret,
     'b: 'ret,
     'c: 'ret,
-    I: Clone + Iterator<Item = &'c Migration> + 'ret,
+    I: Clone + Iterator<Item = MigrationRef<'c, 'c>> + 'ret,
     Self: 'ret,
   {
     Box::pin(async move { Ok(()) })
   }
 
   #[inline]
-  fn migrations<'a>(
+  fn migrations<'a, 'b, 'ret>(
     &'a mut self,
-    _: &'a MigrationGroup,
-  ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>> {
-    Box::pin(async move { Ok(Vec::new()) })
-  }
-
-  #[inline]
-  fn query_string<'a>(&'a mut self, _: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
-    Box::pin(async move { Ok(Vec::new()) })
-  }
-
-  #[inline]
-  fn tables<'a>(&'a mut self, _: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>> {
-    Box::pin(async move { Ok(Vec::new()) })
-  }
-
-  #[inline]
-  fn transaction<'a, I, S>(&'a mut self, _: I) -> BoxFut<'a, crate::Result<()>>
+    _: MigrationGroupRef<'b>,
+  ) -> BoxFut<'ret, crate::Result<Vec<DbMigration>>>
   where
-    I: Iterator<Item = S> + 'a,
-    S: AsRef<str>,
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
+    Box::pin(async move { Ok(Vec::new()) })
+  }
+
+  #[inline]
+  fn query_string<'a, 'b, 'ret>(
+    &'a mut self,
+    _: &'b str,
+  ) -> BoxFut<'ret, crate::Result<Vec<String>>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
+    Box::pin(async move { Ok(Vec::new()) })
+  }
+
+  #[inline]
+  fn tables<'a, 'b, 'ret>(&'a mut self, _: &'b str) -> BoxFut<'ret, crate::Result<Vec<String>>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret,
+  {
+    Box::pin(async move { Ok(Vec::new()) })
+  }
+
+  #[inline]
+  fn transaction<'a, 'ret, I, S>(&'a mut self, _: I) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    I: Iterator<Item = S> + 'ret,
+    Self: 'ret,
   {
     Box::pin(async move { Ok(()) })
   }

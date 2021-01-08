@@ -1,6 +1,7 @@
-use crate::{DbMigration, migration::db_migration::from_opt_i32, Database, MigrationCommon, MigrationGroup};
+use crate::{DbMigration, migration::db_migration::{checksum_from_str, from_opt_i32}, MigrationCommon, MigrationGroup};
+use oapth_commons::Database;
 
-#[oapth_macros::sqlx_mssql_]
+#[oapth_macros::_sqlx_mssql]
 impl core::convert::TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
   type Error = crate::Error;
 
@@ -9,7 +10,7 @@ impl core::convert::TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
     use sqlx_core::row::Row;
     Ok(Self {
       common: MigrationCommon {
-        checksum: from.try_get("checksum")?,
+        checksum: checksum_from_str(&from.try_get::<String, _>("checksum")?)?,
         name: from.try_get("name")?,
         repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: from.try_get("version")?,
@@ -27,7 +28,7 @@ impl core::convert::TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
   }
 }
 
-#[oapth_macros::sqlx_mysql_]
+#[oapth_macros::_sqlx_mysql]
 impl core::convert::TryFrom<sqlx_core::mysql::MySqlRow> for DbMigration {
   type Error = crate::Error;
 
@@ -36,7 +37,7 @@ impl core::convert::TryFrom<sqlx_core::mysql::MySqlRow> for DbMigration {
     use sqlx_core::row::Row;
     Ok(Self {
       common: MigrationCommon {
-        checksum: from.try_get("checksum")?,
+        checksum: checksum_from_str(&from.try_get::<String, _>("checksum")?)?,
         name: from.try_get("name")?,
         repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: from.try_get("version")?,
@@ -51,7 +52,7 @@ impl core::convert::TryFrom<sqlx_core::mysql::MySqlRow> for DbMigration {
   }
 }
 
-#[oapth_macros::sqlx_pg_]
+#[oapth_macros::_sqlx_pg]
 impl core::convert::TryFrom<sqlx_core::postgres::PgRow> for DbMigration {
   type Error = crate::Error;
 
@@ -60,7 +61,7 @@ impl core::convert::TryFrom<sqlx_core::postgres::PgRow> for DbMigration {
     use sqlx_core::row::Row;
     Ok(Self {
       common: MigrationCommon {
-        checksum: from.try_get("checksum")?,
+        checksum: checksum_from_str(&from.try_get::<String, _>("checksum")?)?,
         name: from.try_get("name")?,
         repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: from.try_get("version")?,
@@ -75,7 +76,7 @@ impl core::convert::TryFrom<sqlx_core::postgres::PgRow> for DbMigration {
   }
 }
 
-#[oapth_macros::sqlx_sqlite_]
+#[oapth_macros::_sqlx_sqlite]
 impl core::convert::TryFrom<sqlx_core::sqlite::SqliteRow> for DbMigration {
   type Error = crate::Error;
 
@@ -84,7 +85,7 @@ impl core::convert::TryFrom<sqlx_core::sqlite::SqliteRow> for DbMigration {
     use sqlx_core::row::Row;
     Ok(Self {
       common: MigrationCommon {
-        checksum: from.try_get("checksum")?,
+        checksum: checksum_from_str(&from.try_get::<String, _>("checksum")?)?,
         name: from.try_get("name")?,
         repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: from.try_get("version")?,

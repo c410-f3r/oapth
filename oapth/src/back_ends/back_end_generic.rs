@@ -1,45 +1,80 @@
-use crate::{BoxFut, Database, DbMigration, Migration, MigrationGroup};
+use crate::{BoxFut, DbMigration, MigrationGroupRef, MigrationRef};
 use alloc::{string::String, vec::Vec};
+use oapth_commons::Database;
 
 pub trait BackEndGeneric {
-  #[oapth_macros::dev_tools_]
-  fn clean<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>>;
+  #[oapth_macros::_dev_tools]
+  fn clean<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    Self: 'ret;
 
-  fn create_oapth_tables<'a>(&'a mut self) -> BoxFut<'a, crate::Result<()>>;
-
-  fn delete_migrations<'a>(
-    &'a mut self,
-    version: i32,
-    mg: &'a MigrationGroup,
-  ) -> BoxFut<'a, crate::Result<()>>;
+  fn create_oapth_tables<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    Self: 'ret;
 
   fn database() -> Database;
 
-  fn execute<'a>(&'a mut self, command: &'a str) -> BoxFut<'a, crate::Result<()>>;
+  fn delete_migrations<'a, 'b, 'ret>(
+    &'a mut self,
+    version: i32,
+    mg: MigrationGroupRef<'b>,
+  ) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret;
+
+  fn execute<'a, 'b, 'ret>(&'a mut self, command: &'b str) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret;
 
   fn insert_migrations<'a, 'b, 'c, 'ret, I>(
     &'a mut self,
     migrations: I,
-    mg: &'b MigrationGroup,
+    mg: MigrationGroupRef<'b>,
   ) -> BoxFut<'ret, crate::Result<()>>
   where
     'a: 'ret,
     'b: 'ret,
     'c: 'ret,
-    I: Clone + Iterator<Item = &'c Migration> + 'ret,
+    I: Clone + Iterator<Item = MigrationRef<'c, 'c>> + 'ret,
     Self: 'ret;
 
-  fn migrations<'a>(
+  fn migrations<'a, 'b, 'ret>(
     &'a mut self,
-    mg: &'a MigrationGroup,
-  ) -> BoxFut<'a, crate::Result<Vec<DbMigration>>>;
-
-  fn query_string<'a>(&'a mut self, query: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>>;
-
-  fn tables<'a>(&'a mut self, schema: &'a str) -> BoxFut<'a, crate::Result<Vec<String>>>;
-
-  fn transaction<'a, I, S>(&'a mut self, commands: I) -> BoxFut<'a, crate::Result<()>>
+    mg: MigrationGroupRef<'b>,
+  ) -> BoxFut<'ret, crate::Result<Vec<DbMigration>>>
   where
-    I: Iterator<Item = S> + 'a,
-    S: AsRef<str>;
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret;
+
+  fn query_string<'a, 'b, 'ret>(
+    &'a mut self,
+    query: &'b str,
+  ) -> BoxFut<'ret, crate::Result<Vec<String>>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret;
+
+  fn tables<'a, 'b, 'ret>(
+    &'a mut self,
+    schema: &'b str,
+  ) -> BoxFut<'ret, crate::Result<Vec<String>>>
+  where
+    'a: 'ret,
+    'b: 'ret,
+    Self: 'ret;
+
+  fn transaction<'a, 'ret, I, S>(&'a mut self, commands: I) -> BoxFut<'ret, crate::Result<()>>
+  where
+    'a: 'ret,
+    I: Iterator<Item = S> + 'ret,
+    S: AsRef<str>,
+    Self: 'ret;
 }

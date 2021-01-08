@@ -1,7 +1,7 @@
 use arrayvec::ArrayString;
 use core::fmt::Write;
 
-pub const CREATE_MIGRATION_TABLES: &str = concat!(
+pub(crate) const CREATE_MIGRATION_TABLES: &str = concat!(
   "IF (NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = '_oapth'))
   BEGIN
     EXEC ('CREATE SCHEMA [_oapth]')
@@ -38,11 +38,11 @@ pub const CREATE_MIGRATION_TABLES: &str = concat!(
   END"
 );
 
-#[oapth_macros::dev_tools_]
+#[oapth_macros::_dev_tools]
 #[inline]
-pub async fn clean<B>(back_end: &mut B) -> crate::Result<()>
+pub(crate) async fn clean<B>(back_end: &mut B) -> crate::Result<()>
 where
-  B: crate::BackEnd
+  B: crate::BackEnd,
 {
   let schemas = schemas(back_end).await?;
   let schemas_with_dbo = schemas.iter().map(|s| s.as_str()).chain(core::iter::once("dbo"));
@@ -66,11 +66,11 @@ where
   Ok(())
 }
 
-#[oapth_macros::dev_tools_]
+#[oapth_macros::_dev_tools]
 #[inline]
-pub async fn schemas<B>(back_end: &mut B) -> crate::Result<Vec<String>>
+pub(crate) async fn schemas<B>(back_end: &mut B) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd
+  B: crate::BackEnd,
 {
   Ok(back_end.query_string("
     SELECT
@@ -85,7 +85,7 @@ where
 }
 
 #[inline]
-pub fn tables(schema: &str) -> crate::Result<ArrayString<[u8; 512]>> {
+pub(crate) fn tables(schema: &str) -> crate::Result<ArrayString<[u8; 512]>> {
   let mut buffer = ArrayString::new();
   buffer.write_fmt(format_args!("
     SELECT
