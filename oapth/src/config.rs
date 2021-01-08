@@ -1,8 +1,5 @@
 use alloc::string::String;
 
-#[oapth_macros::_std]
-const DEFAULT_ENV_VAR: &str = "DATABASE_URL";
-
 /// Configuration to connect to a database
 #[derive(Debug)]
 pub struct Config {
@@ -34,7 +31,7 @@ impl Config {
   #[oapth_macros::_std]
   #[inline]
   pub fn with_url_from_default_var() -> crate::Result<Self> {
-    Self::with_url_from_var(DEFAULT_ENV_VAR)
+    Self::with_url_from_var(crate::DEFAULT_ENV_VAR)
   }
 
   /// Creates an instance with the contents of the environment variable `env_var`.
