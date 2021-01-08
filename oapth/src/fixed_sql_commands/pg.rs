@@ -24,35 +24,35 @@ where
   let mut buffer: ArrayString<[u8; 2048]> = ArrayString::new();
 
   for schema in schemas(back_end).await? {
-    buffer.write_fmt(format_args!("DROP SCHEMA {} CASCADE;", schema))?;
+    buffer.write_fmt(format_args!("DROP SCHEMA \"{}\" CASCADE;", schema))?;
   }
 
   for domain in domains(back_end, "public").await? {
-    buffer.write_fmt(format_args!("DROP DOMAIN {};", domain))?;
+    buffer.write_fmt(format_args!("DROP DOMAIN \"{}\";", domain))?;
   }
 
   for function in functions(back_end, "public").await? {
-    buffer.write_fmt(format_args!("DROP FUNCTION {} CASCADE;", function))?;
+    buffer.write_fmt(format_args!("DROP FUNCTION \"{}\" CASCADE;", function))?;
   }
 
   for view in views(back_end, "public").await? {
-    buffer.write_fmt(format_args!("DROP VIEW {} CASCADE;", view))?;
+    buffer.write_fmt(format_args!("DROP VIEW \"{}\" CASCADE;", view))?;
   }
 
   for table in back_end.tables("public").await? {
-    buffer.write_fmt(format_args!("DROP TABLE {} CASCADE;", table))?;
+    buffer.write_fmt(format_args!("DROP TABLE \"{}\" CASCADE;", table))?;
   }
 
   for procedure in procedures(back_end, "public").await? {
-    buffer.write_fmt(format_args!("DROP PROCEDURE {} CASCADE;", procedure))?;
+    buffer.write_fmt(format_args!("DROP PROCEDURE \"{}\" CASCADE;", procedure))?;
   }
 
   for ty in types(back_end, "public").await? {
-    buffer.write_fmt(format_args!("DROP TYPE {} CASCADE;", ty))?;
+    buffer.write_fmt(format_args!("DROP TYPE \"{}\" CASCADE;", ty))?;
   }
 
   for sequence in sequences(back_end, "public").await? {
-    buffer.write_fmt(format_args!("DROP SEQUENCE {};", sequence))?;
+    buffer.write_fmt(format_args!("DROP SEQUENCE \"{}\";", sequence))?;
   }
 
   back_end.execute(&buffer).await?;
