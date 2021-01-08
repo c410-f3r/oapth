@@ -8,6 +8,8 @@ use oapth::Config;
 
 #[tokio::main]
 async fn main() -> oapth::Result<()> {
+  #[cfg(feature = "log")]
+  env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
   let cli: cli::Cli = argh::from_env();
   let config = Config::with_url_from_var(&cli.var)?;
   match config.database()? {
