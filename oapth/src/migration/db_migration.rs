@@ -1,22 +1,23 @@
-oapth_macros::diesel! { mod db_migration_diesel; }
-oapth_macros::sqlx! { mod db_migration_sqlx; }
+oapth_macros::_diesel_! { mod db_migration_diesel; }
+oapth_macros::_sqlx_! { mod db_migration_sqlx; }
 
-use crate::{Database, MigrationCommon, MigrationGroup};
+use crate::{MigrationCommonOwned, MigrationGroupOwned};
 use chrono::{DateTime, FixedOffset, NaiveDateTime, Utc};
 use core::fmt;
+use oapth_commons::Database;
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct DbMigration {
-  common: MigrationCommon,
+  common: MigrationCommonOwned,
   created_on: DateTime<FixedOffset>,
   db: Database,
-  group: MigrationGroup,
+  group: MigrationGroupOwned,
 }
 
 impl DbMigration {
   #[inline]
-  pub fn checksum(&self) -> &str {
-    &self.common.checksum
+  pub fn checksum(&self) -> u64 {
+    self.common.checksum
   }
 
   #[inline]
@@ -30,7 +31,7 @@ impl DbMigration {
   }
 
   #[inline]
-  pub fn group(&self) -> &MigrationGroup {
+  pub fn group(&self) -> &MigrationGroupOwned {
     &self.group
   }
 
@@ -52,52 +53,65 @@ impl fmt::Display for DbMigration {
   }
 }
 
-#[oapth_macros::mysql_async_]
+#[oapth_macros::_mysql_async]
 impl core::convert::TryFrom<mysql_async::Row> for DbMigration {
   type Error = crate::Error;
 
   #[inline]
   fn try_from(from: mysql_async::Row) -> Result<Self, Self::Error> {
-    let self_opt = || {
-      Some(Self {
-        common: MigrationCommon {
-          checksum: from.get("checksum")?,
-          name: from.get("name")?,
-          repeatability: from_opt_i32(from.get("repeatability")?),
-          version: from.get("version")?,
-        },
-        created_on: _fixed_from_naive_utc(from.get::<NaiveDateTime, _>("created_on")?),
-        db: Database::Mysql,
-        group: MigrationGroup { version: from.get("omg_version")?, name: from.get("omg_name")? },
-      })
-    };
-    self_opt().ok_or(crate::Error::MysqlAsync(mysql_async::Error::Driver(
-      mysql_async::DriverError::FromRow { row: from },
-    )))
+    macro_rules! translate {
+      ($ty:ty, $name:expr) => {
+        from.get::<$ty, _>($name).ok_or_else(|| {
+          crate::Error::MysqlAsync(
+            mysql_async::Error::Driver(mysql_async::DriverError::MissingNamedParam {
+              name: $name.into(),
+            })
+            .into(),
+          )
+        })
+      };
+    }
+    Ok(Self {
+      common: MigrationCommonOwned {
+        checksum: checksum_from_str(&translate!(String, "checksum")?)?,
+        name: translate!(_, "name")?,
+        repeatability: from_opt_i32(translate!(_, "repeatability")?),
+        version: translate!(_, "version")?,
+      },
+      created_on: {
+        let ndt = translate!(NaiveDateTime, "created_on")?;
+        _fixed_from_naive_utc(ndt)
+      },
+      db: Database::Mysql,
+      group: MigrationGroupOwned {
+        version: translate!(_, "omg_version")?,
+        name: translate!(_, "omg_name")?,
+      },
+    })
   }
 }
 
-#[oapth_macros::rusqlite_]
-impl<'a> core::convert::TryFrom<&'a rusqlite::Row<'a>> for DbMigration {
+#[oapth_macros::_rusqlite]
+impl<'a, 'b> core::convert::TryFrom<&'a rusqlite::Row<'b>> for DbMigration {
   type Error = crate::Error;
 
   #[inline]
-  fn try_from(from: &'a rusqlite::Row<'a>) -> Result<Self, Self::Error> {
+  fn try_from(from: &'a rusqlite::Row<'b>) -> Result<Self, Self::Error> {
     Ok(Self {
-      common: MigrationCommon {
-        checksum: from.get("checksum")?,
+      common: MigrationCommonOwned {
+        checksum: checksum_from_str(&from.get::<_, String>("checksum")?)?,
         name: from.get("name")?,
         repeatability: from_opt_i32(from.get("repeatability")?),
         version: from.get("version")?,
       },
       created_on: from.get::<_, DateTime<Utc>>("created_on")?.into(),
       db: Database::Sqlite,
-      group: MigrationGroup { version: from.get("omg_version")?, name: from.get("omg_name")? },
+      group: MigrationGroupOwned { version: from.get("omg_version")?, name: from.get("omg_name")? },
     })
   }
 }
 
-#[oapth_macros::tiberius_]
+#[oapth_macros::_tiberius]
 impl core::convert::TryFrom<tiberius::Row> for DbMigration {
   type Error = crate::Error;
 
@@ -109,8 +123,11 @@ impl core::convert::TryFrom<tiberius::Row> for DbMigration {
       };
     }
     Ok(Self {
-      common: MigrationCommon {
-        checksum: translate!(from.try_get::<&str, _>("checksum")).into(),
+      common: MigrationCommonOwned {
+        checksum: {
+          let checksum_str = translate!(from.try_get::<&str, _>("checksum"));
+          checksum_from_str(checksum_str)?
+        },
         name: translate!(from.try_get::<&str, _>("name")).into(),
         repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: translate!(from.try_get("version")),
@@ -120,7 +137,7 @@ impl core::convert::TryFrom<tiberius::Row> for DbMigration {
         mssql_date_hack(s)?
       },
       db: Database::Mssql,
-      group: MigrationGroup {
+      group: MigrationGroupOwned {
         version: translate!(from.try_get("omg_version")),
         name: translate!(from.try_get::<&str, _>("omg_name")).into(),
       },
@@ -128,22 +145,22 @@ impl core::convert::TryFrom<tiberius::Row> for DbMigration {
   }
 }
 
-#[oapth_macros::tokio_postgres_]
+#[oapth_macros::_tokio_postgres]
 impl core::convert::TryFrom<tokio_postgres::Row> for DbMigration {
   type Error = crate::Error;
 
   #[inline]
   fn try_from(from: tokio_postgres::Row) -> Result<Self, Self::Error> {
     Ok(Self {
-      common: MigrationCommon {
-        checksum: from.try_get("checksum")?,
+      common: MigrationCommonOwned {
+        checksum: checksum_from_str(from.try_get("checksum")?)?,
         name: from.try_get("name")?,
         repeatability: from_opt_i32(from.try_get("repeatability")?),
         version: from.try_get("version")?,
       },
       created_on: from.try_get("created_on")?,
       db: Database::Pg,
-      group: MigrationGroup {
+      group: MigrationGroupOwned {
         version: from.try_get("omg_version")?,
         name: from.try_get("omg_name")?,
       },
@@ -151,22 +168,27 @@ impl core::convert::TryFrom<tokio_postgres::Row> for DbMigration {
   }
 }
 
+#[oapth_macros::_any_db]
+fn checksum_from_str(s: &str) -> crate::Result<u64> {
+  Ok(s.parse().map_err(|_e| crate::Error::Other("Database checksum is not a number"))?)
+}
+
 fn _fixed_from_naive_utc(naive: NaiveDateTime) -> DateTime<FixedOffset> {
   chrono::DateTime::<Utc>::from_utc(naive, Utc).into()
 }
 
-#[oapth_macros::mssql_]
+#[oapth_macros::_any_db]
+const fn from_opt_i32(n: Option<i32>) -> Option<oapth_commons::Repeatability> {
+  match n {
+    None => None,
+    Some(0) => Some(oapth_commons::Repeatability::Always),
+    Some(_) => Some(oapth_commons::Repeatability::OnChecksumChange),
+  }
+}
+
+#[oapth_macros::_mssql]
 fn mssql_date_hack(s: &str) -> crate::Result<DateTime<FixedOffset>> {
   let naive_rslt = NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S");
   let naive = naive_rslt.map_err(|_| crate::Error::Other("Invalid date for mssql"))?;
   Ok(_fixed_from_naive_utc(naive))
-}
-
-#[oapth_macros::any_db_]
-const fn from_opt_i32(n: Option<i32>) -> Option<crate::Repeatability> {
-  match n {
-    None => None,
-    Some(0) => Some(crate::Repeatability::Always),
-    Some(_) => Some(crate::Repeatability::OnChecksumChange),
-  }
 }

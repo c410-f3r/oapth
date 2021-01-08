@@ -3,6 +3,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
+use core::iter::once;
 use libfuzzer_sys::fuzz_target;
 use oapth::{Commands, Migration, MigrationGroup};
 use tokio::runtime::Runtime;
@@ -20,16 +21,22 @@ struct Data {
 fuzz_target!(|data: Data| {
   let mut rt = Runtime::new().unwrap();
   rt.block_on(async {
-    let mut c = Commands::new(());
-    let mg = MigrationGroup::new(data.mg_version, data.mg_name);
-    let ms = [Migration::new(
-      [].iter().copied(),
-      None,
-      data.m_version,
-      data.m_name,
-      data.m_sql_down,
-      data.m_sql_up,
-    )];
-    let _ = c.validate(&mg, ms.iter());
+    let mut c = Commands::with_back_end(());
+    let mg = MigrationGroup::new(data.mg_name, data.mg_version);
+    let _ = c.validate(
+      mg.m_g_ref(),
+      once(
+        Migration::from_parts(
+          &[][..],
+          None,
+          data.m_version,
+          data.m_name,
+          data.m_sql_up,
+          data.m_sql_down,
+        )
+        .unwrap()
+        .m_ref(),
+      ),
+    );
   });
 });

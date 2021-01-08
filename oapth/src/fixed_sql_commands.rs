@@ -19,31 +19,31 @@ macro_rules! oapth_migration_group_columns {
   };
 }
 
-#[oapth_macros::mysql_or_pg_]
+#[oapth_macros::_mysql_or_pg]
 macro_rules! serial_id {
   () => {
     "id SERIAL NOT NULL PRIMARY KEY,"
   };
 }
 
-oapth_macros::mssql! { pub(crate) mod mssql; }
-oapth_macros::mysql! { pub(crate) mod mysql; }
-oapth_macros::pg! { pub(crate) mod pg; }
-oapth_macros::sqlite! { pub(crate) mod sqlite; }
+oapth_macros::_mssql_! { pub(crate) mod mssql; }
+oapth_macros::_mysql_! { pub(crate) mod mysql; }
+oapth_macros::_pg_! { pub(crate) mod pg; }
+oapth_macros::_sqlite_! { pub(crate) mod sqlite; }
 
-use crate::{BackEnd, Migration, MigrationGroup};
+use crate::{BackEnd, MigrationRef,MigrationGroupRef};
 use arrayvec::ArrayString;
 use core::fmt::Write;
 
 #[inline]
-pub async fn delete_migrations<B>(
+pub(crate) async fn delete_migrations<B>(
   back_end: &mut B,
-  mg: &MigrationGroup,
+  mg: MigrationGroupRef<'_>,
   schema_prefix: &str,
   version: i32,
 ) -> crate::Result<()>
 where
-  B: BackEnd
+  B: BackEnd,
 {
   let mut buffer = ArrayString::<[u8; 128]>::new();
   buffer.write_fmt(format_args!(
@@ -57,15 +57,15 @@ where
 }
 
 #[inline]
-pub async fn insert_migrations<'a, 'b, B, I>(
+pub(crate) async fn insert_migrations<'a, 'b, B, I>(
   back_end: &mut B,
-  mg: &MigrationGroup,
+  mg: MigrationGroupRef<'_>,
   schema_prefix: &str,
   migrations: I,
 ) -> crate::Result<()>
 where
   B: BackEnd,
-  I: Clone + Iterator<Item = &'a Migration> + 'b,
+  I: Clone + Iterator<Item = MigrationRef<'a, 'a>> + 'b,
 {
   let mut insert_migration_group_str = ArrayString::<[u8; 512]>::new();
   insert_migration_group_str.write_fmt(format_args!(
@@ -80,8 +80,8 @@ where
   ))?;
   back_end.execute(&insert_migration_group_str).await?;
 
-  back_end.transaction(migrations.clone().map(|m| m.sql_up())).await?;
-  back_end.transaction(migrations.filter_map(|m| {
+  back_end.transaction(migrations.clone().map(|m| m.sql_up)).await?;
+  let f = |m: MigrationRef<'a, 'a>| {
     let mut buffer = ArrayString::<[u8; 512]>::new();
     buffer.write_fmt(format_args!(
       "INSERT INTO {schema_prefix}_oapth_migration (
@@ -96,13 +96,14 @@ where
       schema_prefix = schema_prefix,
     )).ok()?;
     Some(buffer)
-  })).await?;
+  };
+  back_end.transaction(migrations.filter_map(f)).await?;
 
   Ok(())
 }
 
 #[inline]
-pub fn migrations_by_mg_version_query(
+pub(crate) fn migrations_by_mg_version_query(
   mg_version: i32,
   schema_prefix: &str,
 ) -> crate::Result<ArrayString<[u8; 512]>> {

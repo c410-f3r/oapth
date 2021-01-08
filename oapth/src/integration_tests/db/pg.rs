@@ -1,6 +1,6 @@
-#[oapth_macros::dev_tools_]
-pub async fn clean_drops_all_objs<B>(
-  c: &mut crate::Commands<B>,
+#[oapth_macros::_dev_tools]
+pub(crate) async fn clean_drops_all_objs<B>(
+  c: &mut crate::Commands<B, >,
   _: crate::integration_tests::AuxTestParams,
 ) where
   B: crate::BackEnd

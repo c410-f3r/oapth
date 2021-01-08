@@ -1,10 +1,10 @@
 //! Instances mostly used for documentation tests
 
-use crate::{Migration, MigrationGroup};
+use crate::{MigrationGroupRef, MigrationRef};
 
 /// ```rust
-/// let _ = oapth::Migration::new(
-///   [].iter().copied(),
+/// let _ = oapth::MigrationRef::from_parts(
+///   &[],
 ///   None,
 ///   1,
 ///   "create_author",
@@ -13,21 +13,22 @@ use crate::{Migration, MigrationGroup};
 /// );
 /// ```
 #[inline]
-pub fn migration() -> Migration {
-  Migration::new(
-    [].iter().copied(),
+pub fn migration() -> MigrationRef<'static, 'static> {
+  MigrationRef::from_parts(
+    &[],
     None,
     1,
     "create_author",
     "CREATE TABLE author (id INT NOT NULL PRIMARY KEY, name VARCHAR(50) NOT NULL)",
     "DROP TABLE author",
   )
+  .unwrap()
 }
 
 /// ```rust
-/// let _ = oapth::MigrationGroup::new(1, "initial");
+/// let _ = oapth::MigrationGroupRef::new("initial", 1);
 /// ```
 #[inline]
-pub fn migration_group() -> MigrationGroup {
-  MigrationGroup::new(1, "initial")
+pub fn migration_group() -> MigrationGroupRef<'static> {
+  MigrationGroupRef::new("initial", 1)
 }

@@ -40,7 +40,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(DieselMysql::new(&mysql_config).await.unwrap());
+            let c = Commands::with_back_end(DieselMysql::new(&mysql_config).await.unwrap());
             $diesel_mysql(c).await;
           });
         })
@@ -50,7 +50,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(DieselPg::new(&pg_config).await.unwrap());
+            let c = Commands::with_back_end(DieselPg::new(&pg_config).await.unwrap());
             $diesel_pg(c).await;
           });
         })
@@ -60,7 +60,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(DieselSqlite::new(&sqlite_config).await.unwrap());
+            let c = Commands::with_back_end(DieselSqlite::new(&sqlite_config).await.unwrap());
             $diesel_sqlite(c).await;
           });
         })
@@ -70,7 +70,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(MysqlAsync::new(&mysql_config).await.unwrap());
+            let c = Commands::with_back_end(MysqlAsync::new(&mysql_config).await.unwrap());
             $mysql_async(c).await;
           });
         })
@@ -80,7 +80,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(Rusqlite::new(&sqlite_config).await.unwrap());
+            let c = Commands::with_back_end(Rusqlite::new(&sqlite_config).await.unwrap());
             $rusqlite(c).await;
           });
         })
@@ -90,7 +90,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(SqlxMssql::new(&mssql_config).await.unwrap());
+            let c = Commands::with_back_end(SqlxMssql::new(&mssql_config).await.unwrap());
             $sqlx_mssql(c).await;
           })
         })
@@ -100,7 +100,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(SqlxMysql::new(&mysql_config).await.unwrap());
+            let c = Commands::with_back_end(SqlxMysql::new(&mysql_config).await.unwrap());
             $sqlx_mysql(c).await;
           });
         })
@@ -110,7 +110,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(SqlxPg::new(&pg_config).await.unwrap());
+            let c = Commands::with_back_end(SqlxPg::new(&pg_config).await.unwrap());
             $sqlx_postgres(c).await;
           });
         })
@@ -120,7 +120,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(SqlxSqlite::new(&sqlite_config).await.unwrap());
+            let c = Commands::with_back_end(SqlxSqlite::new(&sqlite_config).await.unwrap());
             $sqlx_sqlite(c).await;
           });
         })
@@ -133,7 +133,7 @@ macro_rules! add_benchmark_group {
             use tokio_util::compat::Tokio02AsyncWriteCompatExt;
             let tcp =
               tokio::net::TcpStream::connect(mssql_config.full_host().unwrap()).await.unwrap();
-            let c = Commands::new(Tiberius::new(&mssql_config, tcp.compat_write()).await.unwrap());
+            let c = Commands::with_back_end(Tiberius::new(&mssql_config, tcp.compat_write()).await.unwrap());
             $tiberius(c).await;
           });
         })
@@ -143,7 +143,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::new(TokioPostgres::new(&pg_config).await.unwrap());
+            let c = Commands::with_back_end(TokioPostgres::new(&pg_config).await.unwrap());
             $tokio_postgres(c).await;
           });
         })

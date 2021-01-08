@@ -2,6 +2,8 @@ use core::fmt;
 
 /// Wraps all possible errors related to `oapth` or third-party crates.
 pub enum Error {
+  /// Databases must be sorted and unique
+  DatabasesMustBeSortedAndUnique,
   #[cfg(any(
     feature = "with-diesel-mysql",
     feature = "with-diesel-pg",
@@ -20,24 +22,15 @@ pub enum Error {
   DifferentRollbackVersions,
   /// Format error
   Fmt(fmt::Error),
-  /// Incomplete builder
-  IncompleteBuilder,
-  /// Incomplete SQL file
-  IncompleteSqlFile,
-  /// Incomplete migration builder
-  IncompleteMigrationBuilder,
-  /// Inexistent db migration
-  InexistentDbMigration(i32),
   /// Invalid URL
   InvalidUrl,
-  /// IO error
-  #[cfg(feature = "std")]
-  Io(std::io::Error),
   /// Missing environment variable
   MissingEnvVar,
   /// `mysql_async` error
   #[cfg(feature = "with-mysql_async")]
-  MysqlAsync(mysql_async::Error),
+  MysqlAsync(Box<mysql_async::Error>),
+  /// Oapth commons
+  OapthCommons(oapth_commons::Error),
   /// Other
   Other(&'static str),
   /// `rusqlite` error
@@ -53,7 +46,7 @@ pub enum Error {
   Sqlx(sqlx_core::error::Error),
   /// `tiberius` error
   #[cfg(feature = "with-tiberius")]
-  Tiberius(tiberius::error::Error),
+  Tiberius(Box<tiberius::error::Error>),
   /// `tokio-postgres` error
   #[cfg(feature = "with-tokio-postgres")]
   TokioPostgres(tokio_postgres::Error),
@@ -63,7 +56,7 @@ pub enum Error {
   ValidationLessMigrationsNum(usize, usize),
 }
 
-#[oapth_macros::diesel_]
+#[oapth_macros::_diesel]
 impl From<diesel::result::Error> for Error {
   #[inline]
   fn from(from: diesel::result::Error) -> Self {
@@ -71,7 +64,7 @@ impl From<diesel::result::Error> for Error {
   }
 }
 
-#[oapth_macros::diesel_]
+#[oapth_macros::_diesel]
 impl From<diesel::result::ConnectionError> for Error {
   #[inline]
   fn from(from: diesel::result::ConnectionError) -> Self {
@@ -90,7 +83,14 @@ impl From<fmt::Error> for Error {
 impl From<mysql_async::Error> for Error {
   #[inline]
   fn from(from: mysql_async::Error) -> Self {
-    Self::MysqlAsync(from)
+    Self::MysqlAsync(from.into())
+  }
+}
+
+impl From<oapth_commons::Error> for Error {
+  #[inline]
+  fn from(from: oapth_commons::Error) -> Self {
+    Self::OapthCommons(from)
   }
 }
 
@@ -102,7 +102,7 @@ impl From<rusqlite::Error> for Error {
   }
 }
 
-#[oapth_macros::sqlx_]
+#[oapth_macros::_sqlx]
 impl From<sqlx_core::error::Error> for Error {
   #[inline]
   fn from(from: sqlx_core::error::Error) -> Self {
@@ -110,23 +110,15 @@ impl From<sqlx_core::error::Error> for Error {
   }
 }
 
-#[cfg(feature = "std")]
-impl From<std::io::Error> for Error {
-  #[inline]
-  fn from(from: std::io::Error) -> Self {
-    Self::Io(from)
-  }
-}
-
-#[oapth_macros::tiberius_]
+#[oapth_macros::_tiberius]
 impl From<tiberius::error::Error> for Error {
   #[inline]
   fn from(from: tiberius::error::Error) -> Self {
-    Self::Tiberius(from)
+    Self::Tiberius(from.into())
   }
 }
 
-#[oapth_macros::tokio_postgres_]
+#[oapth_macros::_tokio_postgres]
 impl From<tokio_postgres::Error> for Error {
   #[inline]
   fn from(from: tokio_postgres::Error) -> Self {
@@ -138,6 +130,7 @@ impl fmt::Debug for Error {
   #[inline]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match *self {
+      Self::DatabasesMustBeSortedAndUnique => write!(f, "Databases must be sorted an unique"),
       #[cfg(any(
         feature = "with-diesel-mysql",
         feature = "with-diesel-pg",
@@ -152,24 +145,13 @@ impl fmt::Debug for Error {
       Self::DieselConnection(ref e) => write!(f, "Diesel connection: {}", e),
       Self::DifferentRollbackVersions => write!(f, "The number of rollback versions must be equal the number of migration groups"),
       Self::Fmt(ref e) => write!(f, "Fmt: {}", e),
-      Self::IncompleteBuilder => write!(f, "It is necessary to provide all parameters to the migration builder"),
-      Self::IncompleteSqlFile => write!(
-        f,
-        "A migration file must contain a '--oapth UP' section"
-      ),
-      Self::IncompleteMigrationBuilder => write!(
-        f,
-        "It is necessary to fill all the `MigrationBuilder` parameters"
-      ),
-      Self::InexistentDbMigration(version) => write!(f, "Migration #{} doesn't exist in the database", version),
       Self::InvalidUrl => write!(f, "Url must start with the database type followed by a '://'"),
-      #[cfg(feature = "std")]
-      Self::Io(ref e) => write!(f, "IO: {}", e),
       Self::MissingEnvVar => {
         write!(f, "The environnement variable that contains the database url must be set")
       }
       #[cfg(feature = "with-mysql_async")]
       Self::MysqlAsync(ref e) => write!(f, "MySql: {}", e),
+      Self::OapthCommons(ref e) => write!(f, "Oapth commons: {}", e),
       Self::Other(s) => write!(f, "Other: {}", s),
       #[cfg(feature = "with-rusqlite")]
       Self::Rusqlite(ref e) => write!(f, "Rusqlite: {}", e),
@@ -209,5 +191,5 @@ impl fmt::Display for Error {
   }
 }
 
-#[oapth_macros::std_]
+#[oapth_macros::_std]
 impl std::error::Error for Error {}

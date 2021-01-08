@@ -26,26 +26,27 @@ macro_rules! create_schema {
   };
 }
 
-#[oapth_macros::diesel_pg_]
+#[oapth_macros::_diesel_pg]
 create_schema!(schema_pg, Timestamptz);
-#[oapth_macros::diesel_minus_pg_]
+#[oapth_macros::_diesel_minus_pg]
 create_schema!(schema, Timestamp);
 
-#[oapth_macros::diesel_minus_pg_]
+#[oapth_macros::_diesel_minus_pg]
 use self::schema::{_oapth_migration as m, _oapth_migration_group as mg};
-#[oapth_macros::diesel_pg_]
+#[oapth_macros::_diesel_pg]
 use {
   chrono::{DateTime, Utc},
   schema_pg::{_oapth_migration as m_pg, _oapth_migration_group as mg_pg},
 };
-use crate::{DbMigration, migration::db_migration::from_opt_i32, Database, MigrationCommon, MigrationGroup};
+use oapth_commons::Database;
+use crate::{DbMigration, migration::db_migration::{checksum_from_str, from_opt_i32}, MigrationCommon, MigrationGroup};
 use diesel::{
   deserialize::{FromSql, QueryableByName},
   dsl::SqlTypeOf,
   row::NamedRow,
 };
 
-#[oapth_macros::diesel_mysql_]
+#[oapth_macros::_diesel_mysql]
 impl QueryableByName<diesel::mysql::Mysql> for DbMigration
 where
   chrono::NaiveDateTime: FromSql<SqlTypeOf<m::created_on>, diesel::mysql::Mysql>,
@@ -60,7 +61,10 @@ where
   fn build<'a>(row: &impl NamedRow<'a, diesel::mysql::Mysql>) -> diesel::deserialize::Result<Self> {
     Ok(Self {
       common: MigrationCommon {
-        checksum: NamedRow::get::<SqlTypeOf<m::checksum>, _>(row, "checksum")?,
+        checksum: {
+          let s = NamedRow::get::<SqlTypeOf<m::checksum>, String>(row, "checksum")?;
+          checksum_from_str(&s)?
+        },
         name: NamedRow::get::<SqlTypeOf<m::name>, _>(row, "name")?,
         repeatability: {
           let opt_i32 = NamedRow::get::<SqlTypeOf<m::repeatability>, _>(row, "repeatability")?;
@@ -81,7 +85,7 @@ where
   }
 }
 
-#[oapth_macros::diesel_pg_]
+#[oapth_macros::_diesel_pg]
 impl QueryableByName<diesel::pg::Pg> for DbMigration
 where
   i32: FromSql<SqlTypeOf<m_pg::omg_version>, diesel::pg::Pg>,
@@ -96,7 +100,10 @@ where
   fn build<'a>(row: &impl NamedRow<'a, diesel::pg::Pg>) -> diesel::deserialize::Result<Self> {
     Ok(Self {
       common: MigrationCommon {
-        checksum: NamedRow::get::<SqlTypeOf<m_pg::checksum>, _>(row, "checksum")?,
+        checksum: {
+          let s = NamedRow::get::<SqlTypeOf<m_pg::checksum>, String>(row, "checksum")?;
+          checksum_from_str(&s)?
+        },
         name: NamedRow::get::<SqlTypeOf<m_pg::name>, _>(row, "name")?,
         repeatability: {
           let opt_i32 = NamedRow::get::<SqlTypeOf<m_pg::repeatability>, _>(row, "repeatability")?;
@@ -114,7 +121,7 @@ where
   }
 }
 
-#[oapth_macros::diesel_sqlite_]
+#[oapth_macros::_diesel_sqlite]
 impl QueryableByName<diesel::sqlite::Sqlite> for DbMigration
 where
   chrono::NaiveDateTime: FromSql<SqlTypeOf<m::created_on>, diesel::sqlite::Sqlite>,
@@ -131,7 +138,10 @@ where
   ) -> diesel::deserialize::Result<Self> {
     Ok(Self {
       common: MigrationCommon {
-        checksum: NamedRow::get::<SqlTypeOf<m::checksum>, String>(row, "checksum")?,
+        checksum: {
+          let s = NamedRow::get::<SqlTypeOf<m::checksum>, String>(row, "checksum")?;
+          checksum_from_str(&s)?
+        },
         name: NamedRow::get::<SqlTypeOf<m::name>, String>(row, "name")?,
         repeatability: {
           let opt_i32 = NamedRow::get::<SqlTypeOf<m::repeatability>, _>(row, "repeatability")?;

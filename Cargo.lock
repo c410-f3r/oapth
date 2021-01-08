@@ -1386,6 +1386,7 @@ dependencies = [
  "env_logger",
  "futures",
  "mysql_async",
+ "oapth-commons",
  "oapth-macros",
  "rusqlite",
  "siphasher",
@@ -1407,8 +1408,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "oapth-commons"
+version = "0.1.0"
+dependencies = [
+ "arrayvec",
+ "proc-macro2",
+ "quote",
+ "siphasher",
+]
+
+[[package]]
 name = "oapth-macros"
 version = "0.1.0"
+dependencies = [
+ "oapth-commons",
+ "proc-macro2",
+ "quote",
+]
 
 [[package]]
 name = "once_cell"

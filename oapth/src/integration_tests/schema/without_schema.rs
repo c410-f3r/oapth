@@ -1,6 +1,6 @@
 use crate::{integration_tests::AuxTestParams, BackEnd, Commands};
 
-pub async fn migrate_works<B>(c: &mut Commands<B>, aux: AuxTestParams)
+pub(crate) async fn migrate_works<B>(c: &mut Commands<B>, aux: AuxTestParams)
 where
   B: BackEnd
 {

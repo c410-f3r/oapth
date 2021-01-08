@@ -4,6 +4,6 @@
 
 export DATABASE_URL='file::memory:'
 
-test_package_with_features "oapth" "_integration-tests,dev-tools,with-diesel-sqlite"
-test_package_with_features "oapth" "_integration-tests,dev-tools,with-rusqlite"
-#test_package_with_feature "oapth" "_integration-tests,dev-tools,with-sqlx-sqlite,_sqlx_hack"
+rust-tools test-with-features oapth _integration-tests,dev-tools,with-diesel-sqlite
+rust-tools test-with-features oapth _integration-tests,dev-tools,with-rusqlite
+#rust-tools test-with-features oapth _integration-tests,dev-tools,with-sqlx-sqlite,_sqlx_hack

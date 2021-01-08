@@ -2,6 +2,9 @@
 
 #![allow(clippy::missing_inline_in_public_items)]
 
+#[cfg(feature = "embed-migrations")]
+mod embed_migrations;
+
 use proc_macro::{Delimiter, Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree};
 
 const DEV_TOOLS: &str = "dev-tools";
@@ -18,8 +21,41 @@ const WITH_SQLX_SQLITE: &str = "with-sqlx-sqlite";
 const WITH_TIBERIUS: &str = "with-tiberius";
 const WITH_TOKIO_POSTGRES: &str = "with-tokio-postgres";
 
+/// Embed migrations
+#[cfg(feature = "embed-migrations")]
+#[proc_macro]
+pub fn embed_migrations(item: TokenStream) -> TokenStream {
+  let err_tt = |s: &str| quote::quote!(compile_error!(#s)).into();
+
+  macro_rules! manage_err {
+    ($rslt:expr) => {
+      match $rslt {
+        Err(e) => {
+          let s = e.to_string();
+          return err_tt(&s);
+        }
+        Ok(e) => e,
+      }
+    };
+  }
+
+  let invalid_path_msg = "Please, provide a valid configuration path";
+  let first_tt = manage_err!(item.into_iter().next().ok_or(invalid_path_msg));
+  let literal = match first_tt {
+    TokenTree::Literal(literal) => literal,
+    _ => return err_tt(invalid_path_msg),
+  };
+  let literal_string = literal.to_string();
+  let literal_str_opt = || {
+    let len_minus_one = literal_string.len().checked_sub(1)?;
+    literal_string.get(1..len_minus_one)
+  };
+  let literal_str = manage_err!(literal_str_opt().ok_or(invalid_path_msg));
+  manage_err!(embed_migrations::embed_migrations(literal_str))
+}
+
 macro_rules! create_cfg {
-  ($proc_macro:ident; $proc_macro_attribute:ident; $features:expr) => {
+  ($proc_macro_attribute:ident; $proc_macro:ident; $features:expr) => {
     /// Internal configuration. Doesn't have any meaningful public usage
     #[proc_macro]
     pub fn $proc_macro(item: TokenStream) -> TokenStream {
@@ -117,8 +153,8 @@ fn create_cfg_generic(features: TokenStream, item: TokenStream) -> TokenStream {
 // Any database
 
 create_cfg!(
-  any_db;
-  any_db_;
+  _any_db;
+  _any_db_;
   create_grouped_features!(
     "any";
     WITH_DIESEL_MYSQL,
@@ -137,17 +173,17 @@ create_cfg!(
 
 // Back end
 
-create_cfg!(diesel_mysql; diesel_mysql_; create_features!(WITH_DIESEL_MYSQL));
-create_cfg!(diesel_pg; diesel_pg_; create_features!(WITH_DIESEL_PG));
-create_cfg!(diesel_sqlite; diesel_sqlite_; create_features!(WITH_DIESEL_SQLITE));
-create_cfg!(mysql_async; mysql_async_; create_features!(WITH_MYSQL_ASYNC));
-create_cfg!(rusqlite; rusqlite_; create_features!(WITH_RUSQLITE));
-create_cfg!(sqlx_mssql; sqlx_mssql_; create_features!(WITH_SQLX_MSSQL));
-create_cfg!(sqlx_mysql; sqlx_mysql_; create_features!(WITH_SQLX_MYSQL));
-create_cfg!(sqlx_pg; sqlx_pg_; create_features!(WITH_SQLX_PG));
-create_cfg!(sqlx_sqlite; sqlx_sqlite_; create_features!(WITH_SQLX_SQLITE));
-create_cfg!(tiberius; tiberius_; create_features!(WITH_TIBERIUS));
-create_cfg!(tokio_postgres; tokio_postgres_; create_features!(WITH_TOKIO_POSTGRES));
+create_cfg!(_diesel_mysql; _diesel_mysql_; create_features!(WITH_DIESEL_MYSQL));
+create_cfg!(_diesel_pg; _diesel_pg_; create_features!(WITH_DIESEL_PG));
+create_cfg!(_diesel_sqlite; _diesel_sqlite_; create_features!(WITH_DIESEL_SQLITE));
+create_cfg!(_mysql_async; _mysql_async_; create_features!(WITH_MYSQL_ASYNC));
+create_cfg!(_rusqlite; _rusqlite_; create_features!(WITH_RUSQLITE));
+create_cfg!(_sqlx_mssql; _sqlx_mssql_; create_features!(WITH_SQLX_MSSQL));
+create_cfg!(_sqlx_mysql; _sqlx_mysql_; create_features!(WITH_SQLX_MYSQL));
+create_cfg!(_sqlx_pg; _sqlx_pg_; create_features!(WITH_SQLX_PG));
+create_cfg!(_sqlx_sqlite; _sqlx_sqlite_; create_features!(WITH_SQLX_SQLITE));
+create_cfg!(_tiberius; _tiberius_; create_features!(WITH_TIBERIUS));
+create_cfg!(_tokio_postgres; _tokio_postgres_; create_features!(WITH_TOKIO_POSTGRES));
 
 // Database
 
@@ -157,7 +193,7 @@ create_grouped_features!(
   WITH_SQLX_MSSQL, WITH_TIBERIUS
 );
 create_cfg!(
-  mssql; mssql_;
+  _mssql; _mssql_;
   mssql_any_features!()
 );
 
@@ -167,7 +203,7 @@ create_grouped_features!(
   WITH_DIESEL_MYSQL, WITH_MYSQL_ASYNC, WITH_SQLX_MYSQL
 );
 create_cfg!(
-  mysql; mysql_;
+  _mysql; _mysql_;
   mysql_any_features!()
 );
 
@@ -177,7 +213,7 @@ create_grouped_features!(
   WITH_DIESEL_PG, WITH_SQLX_PG, WITH_TOKIO_POSTGRES
 );
 create_cfg!(
-  pg; pg_;
+  _pg; _pg_;
   pg_any_features!()
 );
 
@@ -187,21 +223,21 @@ create_grouped_features!(
   WITH_DIESEL_SQLITE, WITH_RUSQLITE, WITH_SQLX_SQLITE
 );
 create_cfg!(
-  sqlite; sqlite_;
+  _sqlite; _sqlite_;
   sqlite_any_features!()
 );
 
 // Diesel and SQLx
 
 create_cfg!(
-  diesel; diesel_;
+  _diesel; _diesel_;
   create_grouped_features!(
     "any";
     WITH_DIESEL_MYSQL, WITH_DIESEL_PG, WITH_DIESEL_SQLITE
   )
 );
 create_cfg!(
-  sqlx; sqlx_;
+  _sqlx; _sqlx_;
   create_grouped_features!(
     "any";
     WITH_SQLX_MSSQL, WITH_SQLX_MYSQL, WITH_SQLX_PG, WITH_SQLX_SQLITE
@@ -210,18 +246,20 @@ create_cfg!(
 
 // Misc
 
-create_cfg!(dev_tools; dev_tools_; create_features!(DEV_TOOLS));
+create_cfg!(_dev_tools; _dev_tools_; create_features!(DEV_TOOLS));
 
 create_cfg!(
-  diesel_minus_pg; diesel_minus_pg_;
+  _diesel_minus_pg; _diesel_minus_pg_;
   create_grouped_features!(
     "any";
     WITH_DIESEL_MYSQL, WITH_DIESEL_SQLITE
   )
 );
 
+create_cfg!(_embed_migrations; _embed_migrations_; create_features!("embed-migrations"));
+
 create_cfg!(
-  mysql_or_pg; mysql_or_pg_;
+  _mysql_or_pg; _mysql_or_pg_;
   create_grouped_features!(
     "any",
     extend_features!(mysql_any_features!(), pg_any_features!())
@@ -229,7 +267,7 @@ create_cfg!(
 );
 
 create_cfg!(
-  with_schema; with_schema_;
+  _with_schema; _with_schema_;
   create_grouped_features!(
     "any";
     WITH_DIESEL_PG, WITH_SQLX_MSSQL, WITH_SQLX_PG, WITH_TIBERIUS, WITH_TOKIO_POSTGRES
@@ -237,11 +275,11 @@ create_cfg!(
 );
 
 create_cfg!(
-  without_schema; without_schema_;
+  _without_schema; _without_schema_;
   create_grouped_features!(
     "any";
     WITH_DIESEL_MYSQL, WITH_DIESEL_SQLITE, WITH_MYSQL_ASYNC, WITH_RUSQLITE, WITH_SQLX_MYSQL, WITH_SQLX_SQLITE
   )
 );
 
-create_cfg!(std; std_; create_features!(STD));
+create_cfg!(_std; _std_; create_features!(STD));

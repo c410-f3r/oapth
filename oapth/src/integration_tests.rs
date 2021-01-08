@@ -5,7 +5,7 @@ mod schema;
 
 use crate::{
   doc_tests::{migration, migration_group},
-  BackEnd, Commands, MigrationGroup,
+  BackEnd, Commands, MigrationGroupRef,
 };
 use arrayvec::ArrayString;
 use core::fmt::Write;
@@ -13,7 +13,7 @@ use core::fmt::Write;
 macro_rules! create_integration_test {
   ($back_end:expr, $aux:expr, $($fun:path),*) => {{
     $(
-      let mut commands = crate::Commands::new($back_end);
+      let mut commands = crate::Commands::with_back_end($back_end);
       commands.clean().await.unwrap();
       $fun(&mut commands, $aux).await;
     )*
@@ -42,15 +42,15 @@ macro_rules! create_integration_tests {
     tiberius: $($tiberius:path),*;
     tokio_postgres: $($tokio_postgres:path),*;
   ) => {
-    pub async fn $fn_name() {
-      oapth_macros::diesel_mysql! {
+    pub(crate) async fn $fn_name() {
+      oapth_macros::_diesel_mysql_! {
         create_integration_test!(
           _create_integration_test_back_end!(DieselMysql),
           _generic_schema(),
           $($diesel_mysql),*
         );
       }
-      oapth_macros::diesel_pg! {
+      oapth_macros::_diesel_pg_! {
         create_integration_test!(
           _create_integration_test_back_end!(DieselPg),
           _pg_schema(),
@@ -58,7 +58,7 @@ macro_rules! create_integration_tests {
         );
       }
 
-      oapth_macros::diesel_sqlite! {
+      oapth_macros::_diesel_sqlite_! {
         create_integration_test!(
           _create_integration_test_back_end!(DieselSqlite),
           _generic_schema(),
@@ -66,7 +66,7 @@ macro_rules! create_integration_tests {
         );
       }
 
-      oapth_macros::mysql_async! {
+      oapth_macros::_mysql_async_! {
         create_integration_test!(
           _create_integration_test_back_end!(MysqlAsync),
           _generic_schema(),
@@ -74,7 +74,7 @@ macro_rules! create_integration_tests {
         );
       }
 
-      oapth_macros::rusqlite! {
+      oapth_macros::_rusqlite_! {
         create_integration_test!(
           _create_integration_test_back_end!(Rusqlite),
           _generic_schema(),
@@ -82,7 +82,7 @@ macro_rules! create_integration_tests {
         );
       }
 
-      oapth_macros::sqlx_mssql! {
+      oapth_macros::_sqlx_mssql_! {
         create_integration_test!(
           _create_integration_test_back_end!(SqlxMssql),
           _mssql_schema(),
@@ -90,7 +90,7 @@ macro_rules! create_integration_tests {
         );
       }
 
-      oapth_macros::sqlx_mysql! {
+      oapth_macros::_sqlx_mysql_! {
         create_integration_test!(
           _create_integration_test_back_end!(SqlxMysql),
           _generic_schema(),
@@ -98,7 +98,7 @@ macro_rules! create_integration_tests {
         );
       }
 
-      oapth_macros::sqlx_pg! {
+      oapth_macros::_sqlx_pg_! {
         create_integration_test!(
           _create_integration_test_back_end!(SqlxPg),
           _pg_schema(),
@@ -106,7 +106,7 @@ macro_rules! create_integration_tests {
         );
       }
 
-      oapth_macros::sqlx_sqlite! {
+      oapth_macros::_sqlx_sqlite_! {
         create_integration_test!(
           _create_integration_test_back_end!(SqlxSqlite),
           _generic_schema(),
@@ -114,7 +114,7 @@ macro_rules! create_integration_tests {
         );
       }
 
-      oapth_macros::tiberius! {
+      oapth_macros::_tiberius_! {
         create_integration_test!(
           {
             use tokio_util::compat::Tokio02AsyncWriteCompatExt;
@@ -127,7 +127,7 @@ macro_rules! create_integration_tests {
         );
       }
 
-      oapth_macros::tokio_postgres! {
+      oapth_macros::_tokio_postgres_! {
         create_integration_test!(
           _create_integration_test_back_end!(TokioPostgres),
           _pg_schema(),
@@ -285,15 +285,13 @@ create_all_integration_tests!(
 );
 
 #[derive(Clone, Copy)]
-pub struct AuxTestParams {
-  pub default_schema: &'static str,
-  pub default_schema_prefix: &'static str,
-  pub oapth_schema: &'static str,
-  pub oapth_schema_prefix: &'static str,
-  pub schema_regulator: usize,
+pub(crate) struct AuxTestParams {
+  pub(crate) default_schema: &'static str,
+  pub(crate) oapth_schema: &'static str,
+  pub(crate) schema_regulator: usize,
 }
 
-pub async fn create_foo_table<B>(c: &mut Commands<B>, schema_prefix: &str)
+pub(crate) async fn create_foo_table<B>(c: &mut Commands<B>, schema_prefix: &str)
 where
   B: BackEnd,
 {
@@ -303,44 +301,38 @@ where
 }
 
 #[inline]
-pub fn _generic_schema() -> AuxTestParams {
+pub(crate) fn _generic_schema() -> AuxTestParams {
   AuxTestParams {
     default_schema: "",
-    default_schema_prefix: "",
     oapth_schema: "",
-    oapth_schema_prefix: "",
     schema_regulator: 2,
   }
 }
 
 #[inline]
-pub async fn _migrate_doc_test<B>(c: &mut Commands<B>) -> MigrationGroup
+pub(crate) async fn _migrate_doc_test<B>(c: &mut Commands<B>) -> MigrationGroupRef<'static>
 where
-  B: BackEnd
+  B: BackEnd,
 {
   let mg = migration_group();
-  c.migrate(&mg, [migration()].iter()).await.unwrap();
+  c.migrate(mg, core::iter::once(migration())).await.unwrap();
   mg
 }
 
 #[inline]
-pub fn _mssql_schema() -> AuxTestParams {
+pub(crate) fn _mssql_schema() -> AuxTestParams {
   AuxTestParams {
     default_schema: "dbo",
-    default_schema_prefix: "dbo.",
     oapth_schema: "_oapth",
-    oapth_schema_prefix: "_oapth.",
     schema_regulator: 0,
   }
 }
 
 #[inline]
-pub fn _pg_schema() -> AuxTestParams {
+pub(crate) fn _pg_schema() -> AuxTestParams {
   AuxTestParams {
     default_schema: "public",
-    default_schema_prefix: "public.",
     oapth_schema: "_oapth",
-    oapth_schema_prefix: "public.",
     schema_regulator: 0,
   }
 }

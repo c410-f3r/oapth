@@ -4,11 +4,12 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use oapth::{parse_root_cfg, parse_unified_migration, Config};
+use oapth::Config;
+use oapth_commons::{parse_root_cfg_raw, parse_unified_migration};
 use std::path::Path;
 
 fuzz_target!(|data: &[u8]| {
-  let _ = parse_root_cfg(data, &Path::new("."));
+  let _ = parse_root_cfg_raw(data, &Path::new("."));
   let _ = parse_unified_migration(data);
 
   let s = if let Ok(rslt) = core::str::from_utf8(data) {

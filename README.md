@@ -91,7 +91,7 @@ migrations.cfg
 
 ## Library
 
-The library gives freedom to arrange groups and uses `arrayvec`, `chrono`, `oapth-macros` and `siphash` as mandatory internal crates which brings a total of 7 dependencies into your application. If this behavior is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
+The library gives freedom to arrange groups and uses internally some external crates, bringing a total of 7 additional dependencies into your application. If this overhead is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
 
 ```rust
 // [dependencies]
@@ -103,14 +103,35 @@ use std::path::Path;
 
 #[async_std::main]
 async fn main() -> oapth::Result<()> {
-    let config = Config::with_url_from_default_var()?;
-    let mut commands = Commands::new(SqlxPg::new(&config).await?);
-    commands.migrate_from_dir(Path::new("my_custom_migration_group_path"), 128).await?;
-    Ok(())
+  let config = Config::with_url_from_default_var()?;
+  let mut commands = Commands::with_back_end(SqlxPg::new(&config).await?);
+  commands.migrate_from_dir(Path::new("my_custom_migration_group_path"), 128).await?;
+  Ok(())
 }
 ```
 
 One thing worth noting is that these mandatory dependencies might already be part of your application as transients. In case of doubt, check your `Cargo.lock` file or type `cargo tree` for analysis.
+
+## Embedded migrations
+
+To make deployment easier, the final binary of your application can embed all necessary migrations by using the `embed_migrations!` macro that is available when selecting the `embed-migrations` feature.
+
+```rust
+use oapth::{Commands, Config, MysqlAsync, embed_migrations};
+
+// This macro creates the constant `GROUPS` variable that holds all information
+// referred by `SOME_CONFIGURATION_FILE.cfg`.
+embed_migrations!("SOME_CONFIGURATION_FILE.cfg");
+
+#[async_std::main]
+async fn main() -> oapth::Result<()> {
+  let config = Config::with_url_from_default_var()?;
+  let mut commands = Commands::with_back_end(MysqlAsync::new(&config).await?);
+  let groups = GROUPS.iter().map(|e| (e.0, e.1.iter().cloned()));
+  commands.migrate_from_groups(groups).await?;
+  Ok(())
+}
+```
 
 ## Conditional migrations
 

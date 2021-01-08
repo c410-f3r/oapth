@@ -1,7 +1,7 @@
 use arrayvec::ArrayString;
 use core::fmt::Write;
 
-pub const CREATE_MIGRATION_TABLES: &str = concat!(
+pub(crate) const CREATE_MIGRATION_TABLES: &str = concat!(
   "CREATE SCHEMA IF NOT EXISTS _oapth; \
 
   CREATE TABLE IF NOT EXISTS _oapth._oapth_migration_group (",
@@ -15,11 +15,11 @@ pub const CREATE_MIGRATION_TABLES: &str = concat!(
   ");"
 );
 
-#[oapth_macros::dev_tools_]
 #[inline]
-pub async fn clean<B>(back_end: &mut B) -> crate::Result<()>
+#[oapth_macros::_dev_tools]
+pub(crate) async fn clean<B>(back_end: &mut B) -> crate::Result<()>
 where
-  B: crate::BackEnd
+  B: crate::BackEnd,
 {
   let mut buffer: ArrayString<[u8; 2048]> = ArrayString::new();
 
@@ -62,11 +62,11 @@ where
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[cfg(test)]
-#[oapth_macros::dev_tools_]
 #[inline]
-pub async fn enums<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
+#[oapth_macros::_dev_tools]
+pub(crate) async fn enums<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
 where
- B: crate::BackEnd
+  B: crate::BackEnd
 {
   let mut buffer = ArrayString::<[u8; 512]>::new();
   buffer.write_fmt(format_args!(
@@ -84,11 +84,11 @@ where
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
-#[oapth_macros::dev_tools_]
 #[inline]
-pub async fn views<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
+#[oapth_macros::_dev_tools]
+pub(crate) async fn views<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
 where
- B: crate::BackEnd
+ B: crate::BackEnd,
 {
   let mut buffer = ArrayString::<[u8; 512]>::new();
   buffer.write_fmt(format_args!(
@@ -108,11 +108,11 @@ where
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
-#[oapth_macros::dev_tools_]
 #[inline]
-pub async fn sequences<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
+#[oapth_macros::_dev_tools]
+pub(crate) async fn sequences<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
 where
- B: crate::BackEnd
+  B: crate::BackEnd,
 {
   let mut buffer = ArrayString::<[u8; 256]>::new();
   buffer.write_fmt(format_args!(
@@ -128,11 +128,11 @@ where
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
-#[oapth_macros::dev_tools_]
+#[oapth_macros::_dev_tools]
 #[inline]
-pub async fn domains<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
+pub(crate) async fn domains<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd
+  B: crate::BackEnd,
 {
   let mut buffer = ArrayString::<[u8; 512]>::new();
   buffer.write_fmt(format_args!(
@@ -151,29 +151,29 @@ where
   Ok(back_end.query_string(&buffer).await?)
 }
 
-#[oapth_macros::dev_tools_]
 #[inline]
-pub async fn functions<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
+#[oapth_macros::_dev_tools]
+pub(crate) async fn functions<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd
+  B: crate::BackEnd,
 {
   Ok(back_end.query_string(&pg_proc('f', schema)?).await?)
 }
 
-#[oapth_macros::dev_tools_]
 #[inline]
-pub async fn procedures<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
+#[oapth_macros::_dev_tools]
+pub(crate) async fn procedures<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd
+  B: crate::BackEnd,
 {
   Ok(back_end.query_string(&pg_proc('p', schema)?).await?)
 }
 
-#[oapth_macros::dev_tools_]
 #[inline]
-pub async fn schemas<B>(back_end: &mut B) -> crate::Result<Vec<String>>
+#[oapth_macros::_dev_tools]
+pub(crate) async fn schemas<B>(back_end: &mut B) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd
+  B: crate::BackEnd,
 {
   Ok(back_end.query_string("SELECT
     pc_ns.nspname AS generic_column
@@ -188,7 +188,7 @@ where
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[inline]
-pub fn tables(schema: &str) -> crate::Result<ArrayString<[u8; 1024]>> {
+pub(crate) fn tables(schema: &str) -> crate::Result<ArrayString<[u8; 1024]>> {
   let mut buffer = ArrayString::new();
   buffer.write_fmt(
     format_args!(
@@ -219,11 +219,11 @@ pub fn tables(schema: &str) -> crate::Result<ArrayString<[u8; 1024]>> {
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
-#[oapth_macros::dev_tools_]
+#[oapth_macros::_dev_tools]
 #[inline]
-pub async fn types<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
+pub(crate) async fn types<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd
+  B: crate::BackEnd,
 {
   let mut buffer = ArrayString::<[u8; 1024]>::new();
   buffer.write_fmt(format_args!(
@@ -250,7 +250,7 @@ where
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
-#[oapth_macros::dev_tools_]
+#[oapth_macros::_dev_tools]
 #[inline]
 fn pg_proc(prokind: char, schema: &str) -> crate::Result<ArrayString<[u8; 512]>>
 {

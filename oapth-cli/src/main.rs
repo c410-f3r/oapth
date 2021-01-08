@@ -28,7 +28,7 @@ async fn main() -> oapth::Result<()> {
         _handle_commands(&cli, back_end).await?
       }
       #[cfg(not(feature = "mssql"))]
-      eprintln!("No feature enabled for SQL Server");
+      eprintln!("No feature enabled for MS-SQL");
     }
     "postgres" | "postgresql" => {
       #[cfg(feature = "postgres")]
@@ -58,24 +58,24 @@ async fn _handle_commands<B>(cli: &cli::Cli, back_end: B) -> oapth::Result<()>
 where
   B: oapth::BackEnd,
 {
-  let mut commands = oapth::Commands::new(back_end);
+  let mut commands = oapth::Commands::new(back_end, cli.files_num);
   match cli.commands {
     #[cfg(feature = "dev-tools")]
     cli::Commands::Clean => {
       commands.clean().await?;
     }
     cli::Commands::Migrate => {
-      commands.migrate_from_cfg(&cli.path, cli.files_num).await?;
+      commands.migrate_from_cfg(&cli.path).await?;
     }
     cli::Commands::Rollback { ref versions } => {
-      commands.rollback_from_cfg(&cli.path, &versions, cli.files_num).await?;
+      commands.rollback_from_cfg(&cli.path, &versions).await?;
     }
     #[cfg(feature = "dev-tools")]
     cli::Commands::Seed => {
       commands.seed_from_dir(&cli.path).await?;
     }
     cli::Commands::Validate => {
-      commands.validate_from_cfg(&cli.path, cli.files_num).await?;
+      commands.validate_from_cfg(&cli.path).await?;
     }
   }
   Ok(())
