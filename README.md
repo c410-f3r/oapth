@@ -20,7 +20,7 @@ It is necessary to specify a desired feature to actually run the transactions, o
 # Example
 
 cargo install oapth-cli --features dev-tools,pg,log 
-RUST_LOG=debug DATABASE_URL="postgres://USER:PW@localhost:5432/DB" oapth-cli --path oapth.cfg migrate
+RUST_LOG=debug DATABASE_URL="postgres://USER:PW@localhost:5432/DB" oapth-cli -p oapth.cfg migrate
 ```
 
 The CLI application expects a configuration file that contains a set of paths where each path is a directory with multiple migrations.
@@ -35,7 +35,7 @@ migrations/2__fancy_stuff
 Each provided migration and group must contain an unique version and a name summarized by the following structure:
 
 ```txt
-// Execution order between migrations and migration groups is dictated by their numeric declaration order.
+// Execution order of migrations is dictated by their numeric declaration order.
 
 migrations
 +-- 1__initial (Group)
@@ -43,7 +43,7 @@ migrations
     +-- 2__create_post.sql (Migration)
 +-- 2__fancy_stuff (Group)
     +-- 1__something_fancy.sql (Migration)
-migrations.cfg
+oapth.cfg
 ```
 
 The SQL file itself is composed by two parts, one for migrations (`-- oapth UP` section) and another for rollbacks (`-- oapth DOWN` section).
@@ -93,7 +93,7 @@ migrations
         +-- 1__author_down.sql (Down migration)
         +-- 1__author_up.sql (Up migration)
         +-- 1__author.cfg (Optional configuration)
-migrations.cfg
+oapth.cfg
 ```
 
 ## Library

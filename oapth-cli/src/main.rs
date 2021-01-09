@@ -5,6 +5,7 @@ extern crate alloc;
 mod cli;
 
 use oapth::Config;
+use std::path::Path;
 
 #[tokio::main]
 async fn main() -> oapth::Result<()> {
@@ -66,18 +67,38 @@ where
       commands.clean().await?;
     }
     cli::Commands::Migrate(..) => {
-      commands.migrate_from_cfg(&cli.path).await?;
+      commands.migrate_from_cfg(_require_cfg(cli)?).await?;
+    }
+    #[cfg(feature = "dev-tools")]
+    cli::Commands::MigrateAndSeed(..) => {
+      commands.migrate_from_cfg(_require_cfg(cli)?).await?;
+      commands.seed_from_dir(_require_seeds(cli)?).await?;
     }
     cli::Commands::Rollback(ref rollback) => {
-      commands.rollback_from_cfg(&cli.path, &rollback.versions).await?;
+      commands.rollback_from_cfg(_require_cfg(cli)?, &rollback.versions).await?;
     }
     #[cfg(feature = "dev-tools")]
     cli::Commands::Seed(..) => {
-      commands.seed_from_dir(&cli.path).await?;
+      commands.seed_from_dir(_require_seeds(cli)?).await?;
     }
     cli::Commands::Validate(..) => {
-      commands.validate_from_cfg(&cli.path).await?;
+      commands.validate_from_cfg(_require_cfg(cli)?).await?;
     }
   }
   Ok(())
+}
+
+fn _require_cfg(cli: &cli::Cli) -> oapth::Result<&Path> {
+  cli
+    .cfg
+    .as_deref()
+    .ok_or(oapth::Error::Other("The requested command requires the `cfg` parameter"))
+}
+
+#[cfg(feature = "dev-tools")]
+fn _require_seeds(cli: &cli::Cli) -> oapth::Result<&Path> {
+  cli
+    .seeds
+    .as_deref()
+    .ok_or(oapth::Error::Other("The requested command requires the `seeds` parameter"))
 }

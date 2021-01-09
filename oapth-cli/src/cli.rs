@@ -4,20 +4,27 @@ use oapth::{DEFAULT_BATCH_SIZE, DEFAULT_ENV_VAR};
 #[derive(Debug, argh::FromArgs)]
 /// Oapth - CLI
 pub(crate) struct Cli {
+  /// configuration file path. This option is required by every command expect `clean` and
+  /// `seed`.
+  #[argh(option, short = 'c')]
+  pub(crate) cfg: Option<std::path::PathBuf>,
+
   #[argh(subcommand)]
   pub(crate) commands: Commands,
 
-  /// the number of files (migrations or seeds) that is going to be sent to the database in a
+  /// number of files (migrations or seeds) that is going to be sent to the database in a
   /// single transaction.
   #[argh(default = "DEFAULT_BATCH_SIZE", option, short = 'f')]
   // Default value must match oapth::DEFAULT_BATCH_SIZE
   pub(crate) files_num: usize,
 
-  /// the configuration file or seeds directory
-  #[argh(option, short = 'p')]
-  pub(crate) path: std::path::PathBuf,
+  /// seeds directory. This option is ignored by every command expect `migrate_and_seed` and
+  /// `seed`.
+  #[cfg(feature = "dev-tools")]
+  #[argh(option, short = 's')]
+  pub(crate) seeds: Option<std::path::PathBuf>,
 
-  /// the environment variable name that contains the database URL.
+  /// environment variable name that contains the database URL.
   #[argh(default = "DEFAULT_ENV_VAR.into()", option, short = 'v')]
   pub(crate) var: String,
 }
@@ -28,6 +35,8 @@ pub(crate) enum Commands {
   #[cfg(feature = "dev-tools")]
   Clean(Clean),
   Migrate(Migrate),
+  #[cfg(feature = "dev-tools")]
+  MigrateAndSeed(MigrateAndSeed),
   Rollback(Rollback),
   #[cfg(feature = "dev-tools")]
   Seed(Seed),
@@ -44,6 +53,11 @@ pub(crate) struct Clean {}
 #[argh(subcommand, name = "migrate")]
 #[derive(Debug, argh::FromArgs)]
 pub(crate) struct Migrate {}
+
+/// Combines `migrate` and `seed` into a single command
+#[argh(subcommand, name = "migrate-and-seed")]
+#[derive(Debug, argh::FromArgs)]
+pub(crate) struct MigrateAndSeed {}
 
 /// Rollbacks the migrations to a given version
 #[argh(subcommand, name = "rollback")]
