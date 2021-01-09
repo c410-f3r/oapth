@@ -18,8 +18,8 @@ pub(crate) struct Cli {
   // Default value must match oapth::DEFAULT_BATCH_SIZE
   pub(crate) files_num: usize,
 
-  /// seeds directory. This option is ignored by every command expect `clean` and
-  /// `migrate_and_seed`.
+  /// seeds directory. This option is ignored by every command expect `migrate_and_seed` and
+  /// `seed`.
   #[cfg(feature = "dev-tools")]
   #[argh(option, short = 's')]
   pub(crate) seeds: Option<std::path::PathBuf>,
