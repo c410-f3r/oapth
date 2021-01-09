@@ -16,6 +16,13 @@ It is necessary to specify a desired feature to actually run the transactions, o
 
 ## CLI
 
+```bash
+# Example
+
+cargo install oapth-cli --features dev-tools,pg,log 
+RUST_LOG=debug DATABASE_URL="postgres://USER:PW@localhost:5432/DB" oapth-cli --path oapth.cfg migrate
+```
+
 The CLI application expects a configuration file that contains a set of paths where each path is a directory with multiple migrations.
 
 ```ini
@@ -91,7 +98,7 @@ migrations.cfg
 
 ## Library
 
-The library gives freedom to arrange groups and uses internally some external crates, bringing a total of 7 additional dependencies into your application. If this overhead is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
+The library gives freedom to arrange groups and uses some external crates, bringing a total of 7 additional dependencies into your application. If this overhead is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
 
 ```rust
 // [dependencies]
