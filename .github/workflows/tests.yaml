@@ -69,6 +69,14 @@ jobs:
   internal:
     name: Internal tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scripts: [
+          "internal-tests-oapth-0",
+          "internal-tests-oapth-1",
+          "internal-tests-oapth-cli",
+          "internal-tests-oapth-misc",
+        ]
     steps:
       - uses: actions/checkout@v2
 
@@ -91,4 +99,4 @@ jobs:
           path: target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
-      - run: ./scripts/internal-tests.sh
+      - run: ./scripts/${{ matrix.scripts }}.sh
