@@ -1,5 +1,6 @@
 [dependencies]
 argh = { default-features = false, version = "0.1" }
+dotenv = { default-features = false, optional = true, version = "0.15" }
 env_logger = { default-features = false, optional = true, version = "0.8" }
 oapth = { default-features = false, features = ["std"], path = "../oapth", version = "0.1" }
 sqlx-core = { default-features = false, optional = true, version = "0.4" }
@@ -7,7 +8,7 @@ tokio = { default-features = false, features = ["macros", "rt-core"], version = 
 
 [features]
 default = []
-dev-tools = ["oapth/dev-tools"]
+dev-tools = ["dotenv", "oapth/dev-tools"]
 log = ["env_logger"]
 mssql = ["oapth/with-sqlx-mssql", "sqlx-core/runtime-tokio-rustls"]
 mysql = ["oapth/with-mysql_async"]
