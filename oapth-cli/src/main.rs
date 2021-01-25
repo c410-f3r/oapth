@@ -11,8 +11,12 @@ use std::path::Path;
 async fn main() -> oapth::Result<()> {
   #[cfg(feature = "log")]
   env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+  #[cfg(feature = "dev-tools")]
+  let _ = dotenv::dotenv().ok();
+
   let cli: cli::Cli = argh::from_env();
   let config = Config::with_url_from_var(&cli.var)?;
+
   match config.database()? {
     "mariadb" | "mysql" => {
       #[cfg(feature = "mysql")]

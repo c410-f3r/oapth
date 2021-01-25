@@ -253,7 +253,14 @@ For PostgreSQL (except Diesel), migration timestamps are stored and retrieved wi
 
 ## Development tools
 
+These development tools are enabled with the `dev-tools` feature.
+
+### CLI
+
+- `.env`: Loads environment variables from an `.env` file.
+
+### CLI/Library
+
 - `clean`: Tries to clean all objects of a database, including separated namespaces/schemas.
 - `seed`: Executes arbitrary code that is intended to populate data for tests.
 
-These development tools are enabled with the `dev-tools` feature in both library and CLI.
