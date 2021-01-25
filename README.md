@@ -20,7 +20,8 @@ It is necessary to specify a desired feature to actually run the transactions, o
 # Example
 
 cargo install oapth-cli --features dev-tools,pg,log 
-RUST_LOG=debug DATABASE_URL="postgres://USER:PW@localhost:5432/DB" oapth-cli -p oapth.cfg migrate
+echo DATABASE_URL="postgres://USER:PW@localhost:5432/DB" > .env
+RUST_LOG=debug oapth-cli -p oapth.cfg migrate
 ```
 
 The CLI application expects a configuration file that contains a set of paths where each path is a directory with multiple migrations.
@@ -255,11 +256,11 @@ For PostgreSQL (except Diesel), migration timestamps are stored and retrieved wi
 
 These development tools are enabled with the `dev-tools` feature.
 
-### CLI
+#### CLI
 
 - `.env`: Loads environment variables from an `.env` file.
 
-### CLI/Library
+#### CLI/Library
 
 - `clean`: Tries to clean all objects of a database, including separated namespaces/schemas.
 - `seed`: Executes arbitrary code that is intended to populate data for tests.

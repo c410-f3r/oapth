@@ -65,7 +65,7 @@ use utils::*;
 /// Default batch size
 pub const DEFAULT_BATCH_SIZE: usize = 128;
 #[oapth_macros::_std]
-/// Default environment variable name for database URL
+/// Default environment variable name for the database URL
 pub const DEFAULT_ENV_VAR: &str = "DATABASE_URL";
 
 #[oapth_macros::_with_schema]
