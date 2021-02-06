@@ -5,9 +5,9 @@ path = "back_ends.rs"
 
 [dependencies]
 criterion = { default-features = false, version = "0.3" }
-sqlx-core = { default-features = false, features = ["runtime-tokio-rustls"], version = "0.4" }
-tokio = { default-features = false, features = ["macros", "net", "rt-threaded"], version = "0.2" }
-tokio-util = { default-features = false, features = ["compat"], version = "0.3" }
+sqlx-core = { default-features = false, features = ["runtime-tokio-rustls"], version = "0.5" }
+tokio = { default-features = false, features = ["macros", "net", "rt-multi-thread"], version = "1.0" }
+tokio-util = { default-features = false, features = ["compat"], version = "0.6" }
 
 [dependencies.oapth]
 default-features = false

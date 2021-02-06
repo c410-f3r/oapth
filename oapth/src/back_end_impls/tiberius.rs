@@ -34,7 +34,7 @@ where
   #[cfg_attr(not(feature = "_integration-tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
   /// use oapth::{Config, Tiberius};
-  /// use tokio_util::compat::Tokio02AsyncWriteCompatExt;
+  /// use tokio_util::compat::TokioAsyncWriteCompatExt;
   /// let c = Config::with_url_from_default_var().unwrap();
   /// let tcp = tokio::net::TcpStream::connect(c.full_host().unwrap()).await.unwrap();
   /// let _ = Tiberius::new(&c, tcp.compat_write()).await.unwrap();
@@ -46,8 +46,18 @@ where
     config.authentication(AuthMethod::sql_server(oapth_config.user()?, oapth_config.password()?));
     config.host(oapth_config.host()?);
     config.port(oapth_config.port()?);
+    Self::manage_trust_server_certificate(&mut config, oapth_config.url());
     let conn = Client::connect(config, tcp).await?;
     Ok(Self { conn })
+  }
+
+  fn manage_trust_server_certificate(c: &mut Config, url: &str) {
+    let opt = || url.split("trustServerCertificate").nth(1)?.get(1..)?.parse::<bool>().ok();
+    if let Some(e) = opt() {
+      if e {
+        c.trust_cert();
+      }
+    }
   }
 }
 
@@ -67,11 +77,7 @@ where
     'a: 'ret,
     Self: 'ret,
   {
-    Box::pin(
-      async move {
-        Ok(crate::fixed_sql_commands::mssql::clean(self).await?)
-      },
-    )
+    Box::pin(crate::fixed_sql_commands::mssql::clean(self))
   }
 
   #[inline]
@@ -99,7 +105,7 @@ where
     'b: 'ret,
     Self: 'ret,
   {
-    Box::pin(async move { Ok(delete_migrations(self, mg, OAPTH_SCHEMA_PREFIX, version).await?) })
+    Box::pin(delete_migrations(self, mg, OAPTH_SCHEMA_PREFIX, version))
   }
 
   #[inline]

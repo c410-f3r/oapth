@@ -19,7 +19,7 @@ It is necessary to specify a desired feature to actually run the transactions, o
 ```bash
 # Example
 
-cargo install oapth-cli --features dev-tools,pg,log 
+cargo install oapth-cli --features dev-tools,log,pg
 echo DATABASE_URL="postgres://USER:PW@localhost:5432/DB" > .env
 RUST_LOG=debug oapth-cli -p oapth.cfg migrate
 ```
@@ -66,7 +66,7 @@ CREATE TABLE author (
 DROP TABLE author;
 ```
 
-Another cool thing about the expected file configuration is that it can also be divided into smaller pieces, for example, the above migration could be transformed into `1__author_up.sql` and `1__author_down.sql`.
+One cool thing about the expected file configuration is that it can also be divided into smaller pieces, for example, the above migration could be transformed into `1__author_up.sql` and `1__author_down.sql`.
 
 ```sql
 // 1__author_up.sql

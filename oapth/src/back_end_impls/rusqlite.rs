@@ -61,9 +61,7 @@ impl BackEndGeneric for Rusqlite {
     'a: 'ret,
     Self: 'ret,
   {
-    Box::pin(async move {
-      Ok(crate::fixed_sql_commands::sqlite::clean(self).await?)
-    })
+    Box::pin(crate::fixed_sql_commands::sqlite::clean(self))
   }
 
   #[inline]
@@ -91,7 +89,7 @@ impl BackEndGeneric for Rusqlite {
     'b: 'ret,
     Self: 'ret,
   {
-    Box::pin(async move { Ok(delete_migrations(self, mg, "", version).await?) })
+    Box::pin(delete_migrations(self, mg, "", version))
   }
 
   #[inline]
@@ -139,7 +137,7 @@ impl BackEndGeneric for Rusqlite {
         }
       };
       let buffer = migrations_by_mg_version_query(mg.version(), "")?;
-      Ok(self.query(buffer.as_str(), |row| DbMigration::try_from(row).map_err(fun)).await?)
+      self.query(buffer.as_str(), |row| DbMigration::try_from(row).map_err(fun)).await
     })
   }
 
@@ -153,9 +151,7 @@ impl BackEndGeneric for Rusqlite {
     'b: 'ret,
     Self: 'ret,
   {
-    Box::pin(async move {
-      Ok(self.query(query, |r| Ok(r.get::<_, String>(0)?)).await?)
-    })
+    Box::pin(self.query(query, |r| r.get::<_, String>(0)))
   }
 
   #[inline]
@@ -167,7 +163,7 @@ impl BackEndGeneric for Rusqlite {
   {
     Box::pin(async move {
       let buffer = tables(schema)?;
-      Ok(self.query(buffer.as_str(), |r| Ok(r.get::<_, String>(0)?)).await?)
+      self.query(buffer.as_str(), |r| r.get::<_, String>(0)).await
     })
   }
 

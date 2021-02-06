@@ -1,4 +1,4 @@
-Before submitting a PR, and should probably run `./scripts/internal-tests-all.sh` and/or `./scripts/integration-tests-all.sh` to make sure everything is fine.
+Before submitting a PR, you should probably run `./scripts/internal-tests-all.sh` and/or `./scripts/integration-tests-all.sh` to make sure everything is fine.
 
 #### Integration tests
 

@@ -4,12 +4,12 @@
 
 diesel = { default-features = false, features = ["chrono"], git = "https://github.com/diesel-rs/diesel", optional = true }
 futures = { default-features = false, optional = true, version = "0.3" }
-mysql_async = { default-features = false, optional = true, version = "0.25" }
+mysql_async = { default-features = false, optional = true, version = "0.26" }
 rusqlite = { default-features = false, features = ["chrono", "trace"], optional = true, version = "0.24" }
-sqlx-core = { default-features = false, features = ["chrono"], optional = true, version = "0.4" }
-tiberius = { default-features = false, optional = true, version = "0.4" }
-tokio = { default-features = false, optional = true, version = "0.2" }
-tokio-postgres = { default-features = false, features = ["runtime", "with-chrono-0_4"], optional = true, version = "0.5" }
+sqlx-core = { default-features = false, features = ["chrono"], optional = true, version = "0.5" }
+tiberius = { default-features = false, optional = true, version = "0.5" }
+tokio = { default-features = false, optional = true, version = "1.0" }
+tokio-postgres = { default-features = false, features = ["runtime", "with-chrono-0_4"], optional = true, version = "0.7" }
 
 # Internals
 
@@ -22,8 +22,8 @@ siphasher = { default-features = false, version = "0.3" }
 [dev-dependencies]
 chrono = { default-features = false, features = ["clock"], version = "0.4" }
 env_logger = { default-features = false, version = "0.8" }
-tokio = { default-features = false, features = ["macros", "net", "rt-core"], version = "0.2" }
-tokio-util = { default-features = false, features = ["compat"], version = "0.3" }
+tokio = { default-features = false, features = ["macros", "net", "rt-multi-thread"], version = "1.0" }
+tokio-util = { default-features = false, features = ["compat"], version = "0.6" }
 
 [features]
 default = []

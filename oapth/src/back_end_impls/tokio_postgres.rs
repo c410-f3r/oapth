@@ -51,9 +51,7 @@ impl BackEndGeneric for TokioPostgres {
     'a: 'ret,
     Self: 'ret,
   {
-    Box::pin(async move {
-      Ok(crate::fixed_sql_commands::pg::clean(self).await?)
-    })
+    Box::pin(crate::fixed_sql_commands::pg::clean(self))
   }
 
   #[inline]
@@ -81,7 +79,7 @@ impl BackEndGeneric for TokioPostgres {
     'b: 'ret,
     Self: 'ret,
   {
-    Box::pin(async move { Ok(delete_migrations(self, mg, OAPTH_SCHEMA_PREFIX, version).await?) })
+    Box::pin(delete_migrations(self, mg, OAPTH_SCHEMA_PREFIX, version))
   }
 
   #[inline]
@@ -107,9 +105,7 @@ impl BackEndGeneric for TokioPostgres {
     I: Clone + Iterator<Item = MigrationRef<'c, 'c>> + 'ret,
     Self: 'ret
   {
-    Box::pin(async move {
-      Ok(insert_migrations(self, mg, OAPTH_SCHEMA_PREFIX, migrations).await?)
-    })
+    Box::pin(insert_migrations(self, mg, OAPTH_SCHEMA_PREFIX, migrations))
   }
 
   #[inline]
