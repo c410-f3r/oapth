@@ -12,7 +12,7 @@ use sqlx_core::{connection::Connection, executor::Executor, row::Row};
 macro_rules! query {
   ($conn:expr, $query:expr, $cb:expr) => {{
     let rows = sqlx_core::query::query($query).fetch($conn);
-    Ok(rows.map($cb).try_collect::<Vec<_>>().await?)
+    rows.map($cb).try_collect::<Vec<_>>().await
   }};
 }
 
@@ -52,9 +52,7 @@ macro_rules! create_sqlx_back_end {
         'a: 'ret,
         Self: 'ret,
       {
-        Box::pin(async move {
-          Ok($clean(self).await?)
-        })
+        Box::pin($clean(self))
       }
 
       #[inline]
@@ -82,7 +80,7 @@ macro_rules! create_sqlx_back_end {
         'b: 'ret,
         Self: 'ret,
       {
-        Box::pin(async move { Ok(delete_migrations(self, mg, $schema, version).await?) })
+        Box::pin(delete_migrations(self, mg, $schema, version))
       }
 
       #[inline]

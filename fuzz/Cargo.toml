@@ -11,7 +11,7 @@ arbitrary = { default-features = false, features = ["derive"], version = "0.4" }
 libfuzzer-sys = { default-features = false, version = "0.3" }
 oapth = { default-features = false, features = ["std"], path = "../oapth" }
 oapth-commons = { default-features = false, features = ["std"], path = "../oapth-commons" }
-tokio = { default-features = false, features = ["rt-core"], version = "0.2" }
+tokio = { default-features = false, features = ["rt-multi-thread"], version = "1.0" }
 
 [package]
 edition = "2018"

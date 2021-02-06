@@ -170,7 +170,7 @@ impl core::convert::TryFrom<tokio_postgres::Row> for DbMigration {
 
 #[oapth_macros::_any_db]
 fn checksum_from_str(s: &str) -> crate::Result<u64> {
-  Ok(s.parse().map_err(|_e| crate::Error::Other("Database checksum is not a number"))?)
+  s.parse().map_err(|_e| crate::Error::Other("Database checksum is not a number"))
 }
 
 fn _fixed_from_naive_utc(naive: NaiveDateTime) -> DateTime<FixedOffset> {

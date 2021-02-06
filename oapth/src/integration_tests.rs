@@ -117,7 +117,7 @@ macro_rules! create_integration_tests {
       oapth_macros::_tiberius_! {
         create_integration_test!(
           {
-            use tokio_util::compat::Tokio02AsyncWriteCompatExt;
+            use tokio_util::compat::TokioAsyncWriteCompatExt;
             let c = crate::Config::with_url_from_default_var().unwrap();
             let tcp = tokio::net::TcpStream::connect(c.full_host().unwrap()).await.unwrap();
             crate::Tiberius::new(&c, tcp.compat_write()).await.unwrap()

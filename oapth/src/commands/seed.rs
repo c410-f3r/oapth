@@ -27,7 +27,7 @@ where
   pub async fn seed_from_dir(&mut self, dir: &Path) -> crate::Result<()> {
     let iter = oapth_commons::files(dir)?.filter_map(|el_rslt| {
       let el = el_rslt.ok()?;
-      Some(read_to_string(el.path()).ok()?)
+      read_to_string(el.path()).ok()
     });
     self.seed(iter).await
   }

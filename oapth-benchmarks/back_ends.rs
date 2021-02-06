@@ -130,7 +130,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let mut rt = Runtime::new().unwrap();
           rt.block_on(async {
-            use tokio_util::compat::Tokio02AsyncWriteCompatExt;
+            use tokio_util::compat::TokioAsyncWriteCompatExt;
             let tcp =
               tokio::net::TcpStream::connect(mssql_config.full_host().unwrap()).await.unwrap();
             let c = Commands::with_back_end(Tiberius::new(&mssql_config, tcp.compat_write()).await.unwrap());

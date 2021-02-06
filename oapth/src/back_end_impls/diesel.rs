@@ -51,9 +51,7 @@ macro_rules! create_diesel_back_end {
         'a: 'ret,
         Self: 'ret,
       {
-        Box::pin(async move {
-          Ok($clean(self).await?)
-        })
+        Box::pin($clean(self))
       }
 
       #[inline]
@@ -81,7 +79,7 @@ macro_rules! create_diesel_back_end {
         'b: 'ret,
         Self: 'ret,
       {
-        Box::pin(async move { Ok(delete_migrations(self, mg, $schema, version).await?) })
+        Box::pin(delete_migrations(self, mg, $schema, version))
       }
 
       #[inline]

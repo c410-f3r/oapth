@@ -46,11 +46,7 @@ impl BackEndGeneric for MysqlAsync {
     'a: 'ret,
     Self: 'ret,
   {
-    Box::pin(
-      async move {
-        Ok(crate::fixed_sql_commands::mysql::clean(self).await?)
-      }
-    )
+    Box::pin(crate::fixed_sql_commands::mysql::clean(self))
   }
 
   #[inline]
@@ -78,7 +74,7 @@ impl BackEndGeneric for MysqlAsync {
     'b: 'ret,
     Self: 'ret,
   {
-    Box::pin(async move { Ok(delete_migrations(self, mg, "", version).await?) })
+    Box::pin(delete_migrations(self, mg, "", version))
   }
 
   #[inline]
