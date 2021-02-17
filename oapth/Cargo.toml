@@ -3,13 +3,21 @@
 # Back ends
 
 diesel = { default-features = false, features = ["chrono"], git = "https://github.com/diesel-rs/diesel", optional = true }
-futures = { default-features = false, optional = true, version = "0.3" }
+
 mysql_async = { default-features = false, optional = true, version = "0.26" }
+
 rusqlite = { default-features = false, features = ["chrono", "trace"], optional = true, version = "0.24" }
+
 sqlx-core = { default-features = false, features = ["chrono"], optional = true, version = "0.5" }
+
 tiberius = { default-features = false, optional = true, version = "0.5" }
+
+native-tls = { default-features = false, optional = true, version = "0.2" }
+postgres-native-tls = { default-features = false, features = ["runtime"], optional = true, version = "0.5" }
 tokio = { default-features = false, optional = true, version = "1.0" }
 tokio-postgres = { default-features = false, features = ["runtime", "with-chrono-0_4"], optional = true, version = "0.7" }
+
+futures = { default-features = false, optional = true, version = "0.3" }
 
 # Internals
 
@@ -26,6 +34,9 @@ tokio = { default-features = false, features = ["macros", "net", "rt-multi-threa
 tokio-util = { default-features = false, features = ["compat"], version = "0.6" }
 
 [features]
+
+# Public features
+
 default = []
 dev-tools = []
 embed-migrations = ["oapth-macros/embed-migrations"]
@@ -40,12 +51,12 @@ with-sqlx-mysql = ["futures", "sqlx-core/mysql", "std"]
 with-sqlx-pg = [ "futures", "sqlx-core/postgres", "std"]
 with-sqlx-sqlite = ["futures", "sqlx-core/sqlite", "std"]
 with-tiberius = ["futures", "std", "tiberius"]
-with-tokio-postgres = ["std", "tokio", "tokio-postgres"]
+with-tokio-postgres = ["native-tls", "postgres-native-tls", "std", "tokio", "tokio-postgres"]
 
-# Internal "private" features that should be meaningless for public usage
+# Private features
 
 _integration-tests = ["std"]
-_sqlx_hack = ["sqlx-core/runtime-tokio-rustls"]
+_sqlx_hack = ["sqlx-core/runtime-tokio-native-tls"]
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]

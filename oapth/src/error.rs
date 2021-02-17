@@ -33,6 +33,9 @@ pub enum Error {
   OapthCommons(oapth_commons::Error),
   /// Other
   Other(&'static str),
+  /// rust-native-tls
+  #[cfg(feature = "with-tokio-postgres")]
+  RustNativeTls(native_tls::Error),
   /// `rusqlite` error
   #[cfg(feature = "with-rusqlite")]
   Rusqlite(rusqlite::Error),
@@ -91,6 +94,14 @@ impl From<oapth_commons::Error> for Error {
   #[inline]
   fn from(from: oapth_commons::Error) -> Self {
     Self::OapthCommons(from)
+  }
+}
+
+#[cfg(feature = "with-tokio-postgres")]
+impl From<native_tls::Error> for Error {
+  #[inline]
+  fn from(from: native_tls::Error) -> Self {
+    Self::RustNativeTls(from)
   }
 }
 
@@ -153,6 +164,8 @@ impl fmt::Debug for Error {
       Self::MysqlAsync(ref e) => write!(f, "MySql: {}", e),
       Self::OapthCommons(ref e) => write!(f, "Oapth commons: {}", e),
       Self::Other(s) => write!(f, "Other: {}", s),
+      #[cfg(feature = "with-tokio-postgres")]
+      Self::RustNativeTls(ref e) => write!(f, "rust-native-tls: {}", e),
       #[cfg(feature = "with-rusqlite")]
       Self::Rusqlite(ref e) => write!(f, "Rusqlite: {}", e),
       #[cfg(any(

@@ -44,24 +44,24 @@ pub(crate) enum Commands {
 }
 
 /// Tries to clean all objects of a database, including separated namespaces/schemas.
+#[derive(Debug, argh::FromArgs)]
 #[argh(subcommand, name = "clean")]
 #[cfg(feature = "dev-tools")]
-#[derive(Debug, argh::FromArgs)]
 pub(crate) struct Clean {}
 
 /// Migrates everything that is greater than the last migration version within the database
-#[argh(subcommand, name = "migrate")]
 #[derive(Debug, argh::FromArgs)]
+#[argh(subcommand, name = "migrate")]
 pub(crate) struct Migrate {}
 
 /// Combines `migrate` and `seed` into a single command
-#[argh(subcommand, name = "migrate-and-seed")]
 #[derive(Debug, argh::FromArgs)]
+#[argh(subcommand, name = "migrate-and-seed")]
 pub(crate) struct MigrateAndSeed {}
 
 /// Rollbacks the migrations to a given version
-#[argh(subcommand, name = "rollback")]
 #[derive(Debug, argh::FromArgs)]
+#[argh(subcommand, name = "rollback")]
 pub(crate) struct Rollback {
   /// versions
   #[argh(option)]
@@ -69,12 +69,12 @@ pub(crate) struct Rollback {
 }
 
 /// Seeds the database with arbitrary SQL
+#[derive(Debug, argh::FromArgs)]
 #[argh(subcommand, name = "seed")]
 #[cfg(feature = "dev-tools")]
-#[derive(Debug, argh::FromArgs)]
 pub(crate) struct Seed {}
 
 /// Verifies if all provided migrations exist in the database and have the same checksum
-#[argh(subcommand, name = "validate")]
 #[derive(Debug, argh::FromArgs)]
+#[argh(subcommand, name = "validate")]
 pub(crate) struct Validate {}
