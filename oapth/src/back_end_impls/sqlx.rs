@@ -8,7 +8,6 @@ use futures::{StreamExt, TryStreamExt};
 use oapth_commons::Database;
 use sqlx_core::{connection::Connection, executor::Executor, row::Row};
 
-#[inline]
 macro_rules! query {
   ($conn:expr, $query:expr, $cb:expr) => {{
     let rows = sqlx_core::query::query($query).fetch($conn);

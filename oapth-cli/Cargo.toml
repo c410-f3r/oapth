@@ -10,7 +10,7 @@ tokio = { default-features = false, features = ["macros", "rt-multi-thread"], ve
 default = []
 dev-tools = ["dotenv", "oapth/dev-tools"]
 log = ["env_logger"]
-mssql = ["oapth/with-sqlx-mssql", "sqlx-core/runtime-tokio-rustls"]
+mssql = ["oapth/with-sqlx-mssql", "sqlx-core/runtime-tokio-native-tls"]
 mysql = ["oapth/with-mysql_async"]
 pg = ["oapth/with-tokio-postgres"]
 sqlite = ["oapth/with-rusqlite"]

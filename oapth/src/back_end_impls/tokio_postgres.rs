@@ -1,3 +1,5 @@
+use alloc::string::String;
+use core::{convert::TryFrom, str::FromStr};
 use crate::{
   fixed_sql_commands::{
     delete_migrations, insert_migrations, migrations_by_mg_version_query,
@@ -6,9 +8,9 @@ use crate::{
   BackEnd, BackEndGeneric, BoxFut, DbMigration, MigrationRef, OAPTH_SCHEMA_PREFIX
 };
 use oapth_commons::Database;
-use alloc::string::String;
-use core::{convert::TryFrom, str::FromStr};
-use tokio_postgres::{Client, Config, NoTls};
+use native_tls::TlsConnector;
+use postgres_native_tls::MakeTlsConnector;
+use tokio_postgres::{Client, Config};
 
 /// Wraps functionalities for the `tokio-postgres` crate
 #[derive(Debug)]
@@ -31,7 +33,8 @@ impl TokioPostgres {
   #[inline]
   pub async fn new(oapth_config: &crate::Config) -> crate::Result<Self> {
     let config = Config::from_str(oapth_config.url())?;
-    let (client, conn) = config.connect(NoTls).await?;
+    let connector = MakeTlsConnector::new(TlsConnector::builder().build()?);
+    let (client, conn) = config.connect(connector).await?;
     let _ = tokio::spawn(async move {
       if let Err(e) = conn.await {
         eprintln!("Connection error: {}", e);
