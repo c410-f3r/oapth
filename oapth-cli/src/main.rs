@@ -20,37 +20,25 @@ async fn main() -> oapth::Result<()> {
   match config.database()? {
     "mariadb" | "mysql" => {
       #[cfg(feature = "mysql")]
-      {
-        let back_end = oapth::MysqlAsync::new(&config).await?;
-        _handle_commands(&cli, back_end).await?
-      }
+      _handle_commands(&cli, oapth::MysqlAsync::new(&config).await?).await?;
       #[cfg(not(feature = "mysql"))]
       eprintln!("No feature enabled for MySQL-like databases");
     }
     "mssql" | "sqlserver" => {
       #[cfg(feature = "mssql")]
-      {
-        let back_end = oapth::SqlxMssql::new(&config).await?;
-        _handle_commands(&cli, back_end).await?
-      }
+      _handle_commands(&cli, oapth::SqlxMssql::new(&config).await?).await?;
       #[cfg(not(feature = "mssql"))]
       eprintln!("No feature enabled for MS-SQL");
     }
     "postgres" | "postgresql" => {
       #[cfg(feature = "pg")]
-      {
-        let back_end = oapth::TokioPostgres::new(&config).await?;
-        _handle_commands(&cli, back_end).await?
-      }
+      _handle_commands(&cli, oapth::SqlxPg::new(&config).await?).await?;
       #[cfg(not(feature = "pg"))]
       eprintln!("No feature enabled for PostgreSQL");
     }
     "sqlite" => {
       #[cfg(feature = "sqlite")]
-      {
-        let back_end = oapth::Rusqlite::new(&config).await?;
-        _handle_commands(&cli, back_end).await?
-      }
+      _handle_commands(&cli, oapth::Rusqlite::new(&config).await?).await?;
       #[cfg(not(feature = "sqlite"))]
       eprintln!("No feature enabled for SQLite");
     }

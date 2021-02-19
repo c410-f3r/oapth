@@ -56,7 +56,7 @@ impl Config {
   ///
   /// ```rust
   /// use oapth::Config;
-  /// let c = Config::with_url("postgres://user_name:password@endpoint:1234/database_name");
+  /// let c = Config::with_url("postgres://user:password@endpoint:1234/db");
   /// assert_eq!(c.database().unwrap(), "postgres");
   /// ```
   #[inline]
@@ -69,9 +69,9 @@ impl Config {
   ///
   /// ```rust
   /// use oapth::Config;
-  /// let c0 = Config::with_url("postgres://user_name:password@endpoint/database_name");
+  /// let c0 = Config::with_url("postgres://user:password@endpoint/db");
   /// assert_eq!(c0.full_host().unwrap(), "endpoint");
-  /// let c1 = Config::with_url("postgres://user_name:password@endpoint:1234/database_name");
+  /// let c1 = Config::with_url("postgres://user:password@endpoint:1234/db");
   /// assert_eq!(c1.full_host().unwrap(), "endpoint:1234");
   /// ```
   #[inline]
@@ -89,9 +89,9 @@ impl Config {
   ///
   /// ```rust
   /// use oapth::Config;
-  /// let c0 = Config::with_url("postgres://user_name:password@endpoint/database_name");
+  /// let c0 = Config::with_url("postgres://user:password@endpoint/db");
   /// assert_eq!(c0.host().unwrap(), "endpoint");
-  /// let c1 = Config::with_url("postgres://user_name:password@endpoint:1234/database_name");
+  /// let c1 = Config::with_url("postgres://user:password@endpoint:1234/db");
   /// assert_eq!(c1.host().unwrap(), "endpoint");
   /// ```
   #[inline]
@@ -109,8 +109,8 @@ impl Config {
   ///
   /// ```rust
   /// use oapth::Config;
-  /// let c = Config::with_url("postgres://user_name:password@endpoint/database_name");
-  /// assert_eq!(c.name().unwrap(), "database_name");
+  /// let c = Config::with_url("postgres://user:password@endpoint/db");
+  /// assert_eq!(c.name().unwrap(), "db");
   /// ```
   #[inline]
   pub fn name(&self) -> crate::Result<&str> {
@@ -125,7 +125,7 @@ impl Config {
   ///
   /// ```rust
   /// use oapth::Config;
-  /// let c = Config::with_url("postgres://user_name:password@endpoint:1234/database_name");
+  /// let c = Config::with_url("postgres://user:password@endpoint:1234/db");
   /// assert_eq!(c.password().unwrap(), "password");
   /// ```
   #[inline]
@@ -142,7 +142,7 @@ impl Config {
   ///
   /// ```rust
   /// use oapth::Config;
-  /// let c = Config::with_url("postgres://user_name:password@endpoint:1234/database_name");
+  /// let c = Config::with_url("postgres://user:password@endpoint:1234/db");
   /// assert_eq!(c.port().unwrap(), 1234);
   /// ```
   #[inline]
@@ -154,12 +154,40 @@ impl Config {
     s.parse().map_err(|_| crate::Error::Other("Invalid URL - Port is not an integer"))
   }
 
+  /// SSL mode
+  ///
+  /// ```rust
+  /// use oapth::Config;
+  /// let c = Config::with_url("postgres://user:password@endpoint:1234/db?sslmode=verify-ca");
+  /// assert_eq!(c.sslmode().unwrap(), "verify-ca");
+  /// ```
+  #[oapth_macros::_pg]
+  #[inline]
+  pub fn sslmode(&self) -> crate::Result<&str> {
+    let opt = || self.url.split("sslmode=").nth(1)?.split('&').next();
+    opt().ok_or(crate::Error::Other("Invalid URL - Couldn't parse sslmode"))
+  }
+
+  /// SSL root certificate
+  ///
+  /// ```rust
+  /// use oapth::Config;
+  /// let c = Config::with_url("postgres://user:password@endpoint:1234/db?sslrootcert=foo.crt");
+  /// assert_eq!(c.sslrootcert().unwrap(), "foo.crt");
+  /// ```
+  #[oapth_macros::_pg]
+  #[inline]
+  pub fn sslrootcert(&self) -> crate::Result<&str> {
+    let opt = || self.url.split("sslrootcert=").nth(1)?.split('&').next();
+    opt().ok_or(crate::Error::Other("Invalid URL - Couldn't parse sslrootcert"))
+  }
+
   /// Url
   ///
   /// ```rust
   /// use oapth::Config;
-  /// let c = Config::with_url("postgres://user_name:password@endpoint/database_name");
-  /// assert_eq!(c.url(), "postgres://user_name:password@endpoint/database_name");
+  /// let c = Config::with_url("postgres://user:password@endpoint/db");
+  /// assert_eq!(c.url(), "postgres://user:password@endpoint/db");
   /// ```
   #[inline]
   pub fn url(&self) -> &str {
@@ -170,8 +198,8 @@ impl Config {
   ///
   /// ```rust
   /// use oapth::Config;
-  /// let c = Config::with_url("postgres://user_name:password@endpoint:1234/database_name");
-  /// assert_eq!(c.user().unwrap(), "user_name");
+  /// let c = Config::with_url("postgres://user:password@endpoint:1234/db");
+  /// assert_eq!(c.user().unwrap(), "user");
   /// ```
   #[inline]
   pub fn user(&self) -> crate::Result<&str> {
