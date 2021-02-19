@@ -52,7 +52,7 @@ where
   }
 
   fn manage_trust_server_certificate(c: &mut Config, url: &str) {
-    let opt = || url.split("trustServerCertificate").nth(1)?.get(1..)?.parse::<bool>().ok();
+    let opt = || url.split("trustServerCertificate=").nth(1)?.parse::<bool>().ok();
     if let Some(e) = opt() {
       if e {
         c.trust_cert();
