@@ -51,6 +51,7 @@ where
     Ok(Self { conn })
   }
 
+  #[inline]
   fn manage_trust_server_certificate(c: &mut Config, url: &str) {
     let opt = || url.split("trustServerCertificate=").nth(1)?.parse::<bool>().ok();
     if let Some(e) = opt() {
