@@ -12,7 +12,7 @@ dev-tools = ["dotenv", "oapth/dev-tools"]
 log = ["env_logger"]
 mssql = ["oapth/with-sqlx-mssql", "sqlx-core/runtime-tokio-native-tls"]
 mysql = ["oapth/with-mysql_async"]
-pg = ["oapth/with-sqlx-pg", "sqlx-core/runtime-tokio-native-tls"]
+pg = ["oapth/with-tokio-postgres"]
 sqlite = ["oapth/with-rusqlite"]
 
 [package]

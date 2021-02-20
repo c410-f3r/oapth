@@ -32,7 +32,7 @@ async fn main() -> oapth::Result<()> {
     }
     "postgres" | "postgresql" => {
       #[cfg(feature = "pg")]
-      _handle_commands(&cli, oapth::SqlxPg::new(&config).await?).await?;
+      _handle_commands(&cli, oapth::TokioPostgres::new(&config).await?).await?;
       #[cfg(not(feature = "pg"))]
       eprintln!("No feature enabled for PostgreSQL");
     }

@@ -7,8 +7,9 @@ use crate::{
   },MigrationGroupRef,
   BackEnd, BackEndGeneric, BoxFut, DbMigration, MigrationRef, OAPTH_SCHEMA_PREFIX
 };
+use std::fs;
 use oapth_commons::Database;
-use native_tls::TlsConnector;
+use native_tls::{Certificate, TlsConnector, TlsConnectorBuilder};
 use postgres_native_tls::MakeTlsConnector;
 use tokio_postgres::{Client, Config};
 
@@ -32,8 +33,10 @@ impl TokioPostgres {
   /// ```
   #[inline]
   pub async fn new(oapth_config: &crate::Config) -> crate::Result<Self> {
-    let config = Config::from_str(oapth_config.url())?;
-    let connector = MakeTlsConnector::new(TlsConnector::builder().build()?);
+    let mut tcb = TlsConnector::builder();
+    let actual_oapth_config = Self::manage_sslrootcert(oapth_config.url(), &mut tcb)?;
+    let config = Config::from_str(actual_oapth_config.url())?;
+    let connector = MakeTlsConnector::new(tcb.build()?);
     let (client, conn) = config.connect(connector).await?;
     let _ = tokio::spawn(async move {
       if let Err(e) = conn.await {
@@ -41,6 +44,37 @@ impl TokioPostgres {
       }
     });
     Ok(Self { conn: client })
+  }
+
+  // tokio-postgres triggers an error when sslrootcert is present, threfore, a new "splitted"
+  // instance is necessary
+  #[inline]
+  fn manage_sslrootcert(orig_url: &str, tcb: &mut TlsConnectorBuilder) -> crate::Result<crate::Config> {
+    let mut url = String::new();
+    let mut first_iter = orig_url.split("sslrootcert=");
+    if let Some(before_sslrootcert) = first_iter.next() {
+      url.push_str(before_sslrootcert);
+      if let Some(after_sslrootcert) = first_iter.next() {
+        let mut second_iter = after_sslrootcert.split('&');
+        if let Some(before_first_ampersand) = second_iter.next() {
+          let read_rslt = fs::read(before_first_ampersand);
+          let cert = read_rslt.map_err(|e| crate::Error::OapthCommons(e.into()))?;
+          let root_ca = Certificate::from_pem(&cert)?;
+          let _ = tcb.add_root_certificate(root_ca);
+        }
+        if let Some(after_first_ampersand) = second_iter.next() {
+          url.push_str(after_first_ampersand);
+        }
+        for s in second_iter {
+          url.push('&');
+          url.push_str(s);
+        }
+      }
+    }
+    else {
+      url = orig_url.into();
+    }
+    Ok(crate::Config::with_url(url))
   }
 }
 
