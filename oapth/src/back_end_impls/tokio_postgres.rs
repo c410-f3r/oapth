@@ -34,7 +34,7 @@ impl TokioPostgres {
   #[inline]
   pub async fn new(oapth_config: &crate::Config) -> crate::Result<Self> {
     let mut tcb = TlsConnector::builder();
-    let actual_oapth_config = Self::manage_sslrootcert(&oapth_config, &mut tcb)?;
+    let actual_oapth_config = Self::manage_sslrootcert(oapth_config.url(), &mut tcb)?;
     let config = Config::from_str(actual_oapth_config.url())?;
     let connector = MakeTlsConnector::new(tcb.build()?);
     let (client, conn) = config.connect(connector).await?;
@@ -49,9 +49,9 @@ impl TokioPostgres {
   // tokio-postgres triggers an error when sslrootcert is present, threfore, a new "splitted"
   // instance is necessary
   #[inline]
-  fn manage_sslrootcert(oapth_config: &crate::Config, tcb: &mut TlsConnectorBuilder) -> crate::Result<crate::Config> {
+  fn manage_sslrootcert(orig_url: &str, tcb: &mut TlsConnectorBuilder) -> crate::Result<crate::Config> {
     let mut url = String::new();
-    let mut first_iter = oapth_config.url().split("sslrootcert=");
+    let mut first_iter = orig_url.split("sslrootcert=");
     if let Some(before_sslrootcert) = first_iter.next() {
       url.push_str(before_sslrootcert);
       if let Some(after_sslrootcert) = first_iter.next() {
@@ -59,7 +59,7 @@ impl TokioPostgres {
         if let Some(before_first_ampersand) = second_iter.next() {
           let read_rslt = fs::read(before_first_ampersand);
           let cert = read_rslt.map_err(|e| crate::Error::OapthCommons(e.into()))?;
-          let root_ca = Certificate::from_der(&cert)?;
+          let root_ca = Certificate::from_pem(&cert)?;
           let _ = tcb.add_root_certificate(root_ca);
         }
         if let Some(after_first_ampersand) = second_iter.next() {
@@ -72,7 +72,7 @@ impl TokioPostgres {
       }
     }
     else {
-      url = oapth_config.url().into();
+      url = orig_url.into();
     }
     Ok(crate::Config::with_url(url))
   }
