@@ -2,7 +2,7 @@ use crate::{DbMigration, migration::db_migration::{checksum_from_str, from_opt_i
 use oapth_commons::Database;
 
 #[oapth_macros::_sqlx_mssql]
-impl core::convert::TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
+impl TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
   type Error = crate::Error;
 
   #[inline]
@@ -29,7 +29,7 @@ impl core::convert::TryFrom<sqlx_core::mssql::MssqlRow> for DbMigration {
 }
 
 #[oapth_macros::_sqlx_mysql]
-impl core::convert::TryFrom<sqlx_core::mysql::MySqlRow> for DbMigration {
+impl TryFrom<sqlx_core::mysql::MySqlRow> for DbMigration {
   type Error = crate::Error;
 
   #[inline]
@@ -53,7 +53,7 @@ impl core::convert::TryFrom<sqlx_core::mysql::MySqlRow> for DbMigration {
 }
 
 #[oapth_macros::_sqlx_pg]
-impl core::convert::TryFrom<sqlx_core::postgres::PgRow> for DbMigration {
+impl TryFrom<sqlx_core::postgres::PgRow> for DbMigration {
   type Error = crate::Error;
 
   #[inline]
@@ -77,7 +77,7 @@ impl core::convert::TryFrom<sqlx_core::postgres::PgRow> for DbMigration {
 }
 
 #[oapth_macros::_sqlx_sqlite]
-impl core::convert::TryFrom<sqlx_core::sqlite::SqliteRow> for DbMigration {
+impl TryFrom<sqlx_core::sqlite::SqliteRow> for DbMigration {
   type Error = crate::Error;
 
   #[inline]

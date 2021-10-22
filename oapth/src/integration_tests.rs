@@ -315,7 +315,7 @@ where
   B: BackEnd,
 {
   let mg = migration_group();
-  c.migrate(mg, core::iter::once(migration())).await.unwrap();
+  c.migrate(mg, [migration()].into_iter()).await.unwrap();
   mg
 }
 

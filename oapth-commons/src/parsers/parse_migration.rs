@@ -61,11 +61,11 @@ where
     iterations(&mut overall_buffer, &mut br, |_| false)?;
   }
 
-  if overall_buffer.find("-- oapth UP").is_none() {
+  if !overall_buffer.contains("-- oapth UP") {
     return Err(crate::Error::IncompleteSqlFile);
   }
 
-  iterations(&mut overall_buffer, &mut br, |str_read| str_read.find("-- oapth DOWN").is_none())?;
+  iterations(&mut overall_buffer, &mut br, |str_read| !str_read.contains("-- oapth DOWN"))?;
 
   if let Some(rslt) = overall_buffer.rsplit("-- oapth DOWN").nth(1) {
     parsed_migration.sql_up = rslt.trim().into();

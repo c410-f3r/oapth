@@ -7,7 +7,6 @@ use crate::{
 };
 use oapth_commons::Database;
 use alloc::string::String;
-use core::convert::TryFrom;
 use rusqlite::{Connection, Row, NO_PARAMS};
 
 /// Wraps functionalities for the `rusqlite` crate

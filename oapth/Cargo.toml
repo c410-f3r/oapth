@@ -4,7 +4,7 @@
 
 diesel = { default-features = false, features = ["chrono"], git = "https://github.com/diesel-rs/diesel", optional = true }
 
-mysql_async = { default-features = false, optional = true, version = "0.26" }
+mysql_async = { default-features = false, optional = true, version = "0.27" }
 
 rusqlite = { default-features = false, features = ["chrono", "trace"], optional = true, version = "0.24" }
 
@@ -62,12 +62,13 @@ _sqlx_hack = ["sqlx-core/runtime-tokio-native-tls"]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
 categories = ["database"]
 description = "Flexible version control for databases through SQL migrations"
-edition = "2018"
+edition = "2021"
 keywords = ["database", "migration", "oapth", "sql"]
 license = "Apache-2.0"
 name = "oapth"
 readme = "README.md"
 repository = "https://github.com/c410-f3r/oapth"
+rust-version = "1.56"
 version = "0.1.0"
 
 [package.metadata.docs.rs]

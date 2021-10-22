@@ -54,7 +54,7 @@ impl fmt::Display for DbMigration {
 }
 
 #[oapth_macros::_mysql_async]
-impl core::convert::TryFrom<mysql_async::Row> for DbMigration {
+impl TryFrom<mysql_async::Row> for DbMigration {
   type Error = crate::Error;
 
   #[inline]
@@ -92,7 +92,7 @@ impl core::convert::TryFrom<mysql_async::Row> for DbMigration {
 }
 
 #[oapth_macros::_rusqlite]
-impl<'a, 'b> core::convert::TryFrom<&'a rusqlite::Row<'b>> for DbMigration {
+impl<'a, 'b> TryFrom<&'a rusqlite::Row<'b>> for DbMigration {
   type Error = crate::Error;
 
   #[inline]
@@ -112,7 +112,7 @@ impl<'a, 'b> core::convert::TryFrom<&'a rusqlite::Row<'b>> for DbMigration {
 }
 
 #[oapth_macros::_tiberius]
-impl core::convert::TryFrom<tiberius::Row> for DbMigration {
+impl TryFrom<tiberius::Row> for DbMigration {
   type Error = crate::Error;
 
   #[inline]
@@ -146,7 +146,7 @@ impl core::convert::TryFrom<tiberius::Row> for DbMigration {
 }
 
 #[oapth_macros::_tokio_postgres]
-impl core::convert::TryFrom<tokio_postgres::Row> for DbMigration {
+impl TryFrom<tokio_postgres::Row> for DbMigration {
   type Error = crate::Error;
 
   #[inline]

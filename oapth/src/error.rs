@@ -154,7 +154,9 @@ impl fmt::Debug for Error {
         feature = "with-diesel-sqlite",
       ))]
       Self::DieselConnection(ref e) => write!(f, "Diesel connection: {}", e),
-      Self::DifferentRollbackVersions => write!(f, "The number of rollback versions must be equal the number of migration groups"),
+      Self::DifferentRollbackVersions => {
+        write!(f, "The number of rollback versions must be equal the number of migration groups")
+      }
       Self::Fmt(ref e) => write!(f, "Fmt: {}", e),
       Self::InvalidUrl => write!(f, "Url must start with the database type followed by a '://'"),
       Self::MissingEnvVar => {
@@ -182,17 +184,17 @@ impl fmt::Debug for Error {
       Self::ValidationDivergentMigrations(version) => {
         write!(
           f,
-          "The provided migration #{version} has a checksum or name that is different than \
-          the same #{version} migration in the database",
-          version={version}
+          "The provided migration #{version} has a checksum or name that is different than the \
+           same #{version} migration in the database",
+          version = { version }
         )
-      },
+      }
       Self::ValidationLessMigrationsNum(db_num, provided_num) => write!(
         f,
-        "The number of provided migrations ({}) is less than the number of migrations in the database ({})",
-        provided_num,
-        db_num
-      )
+        "The number of provided migrations ({}) is less than the number of migrations in the \
+         database ({})",
+        provided_num, db_num
+      ),
     }
   }
 }

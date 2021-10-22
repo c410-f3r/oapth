@@ -10,6 +10,10 @@ use crate::{BackEnd, MigrationRef, DEFAULT_BATCH_SIZE};
 #[derive(Debug)]
 pub struct Commands<B> {
   pub(crate) back_end: B,
+  #[allow(
+    // An important part of the public interface but only used on std environments
+    dead_code
+  )]
   pub(crate) batch_size: usize,
 }
 

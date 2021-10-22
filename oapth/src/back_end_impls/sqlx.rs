@@ -3,7 +3,6 @@ use crate::{
   BackEnd, BackEndGeneric, BoxFut, Config, DbMigration, MigrationGroupRef, MigrationRef,
 };
 use alloc::string::String;
-use core::convert::TryFrom;
 use futures::{StreamExt, TryStreamExt};
 use oapth_commons::Database;
 use sqlx_core::{connection::Connection, executor::Executor, row::Row};

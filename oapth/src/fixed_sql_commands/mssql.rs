@@ -45,12 +45,12 @@ where
   B: crate::BackEnd,
 {
   let schemas = schemas(back_end).await?;
-  let schemas_with_dbo = schemas.iter().map(|s| s.as_str()).chain(core::iter::once("dbo"));
+  let schemas_with_dbo = schemas.iter().map(|s| s.as_str()).chain(["dbo"]);
 
   for schema in schemas_with_dbo {
     let mut buffer: ArrayString<[u8; 1024]> = ArrayString::new();
     
-    for table in back_end.tables(&schema).await? {
+    for table in back_end.tables(schema).await? {
       buffer.write_fmt(format_args!("DROP TABLE {schema}.{};", table, schema = schema))?;
     }
 

@@ -3,11 +3,9 @@ use core::fmt::Write;
 
 pub(crate) const CREATE_MIGRATION_TABLES: &str = concat!(
   "CREATE SCHEMA IF NOT EXISTS _oapth; \
-
   CREATE TABLE IF NOT EXISTS _oapth._oapth_migration_group (",
   oapth_migration_group_columns!(),
   ");
-
   CREATE TABLE IF NOT EXISTS _oapth._oapth_migration (",
   serial_id!(),
   "created_on TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,",

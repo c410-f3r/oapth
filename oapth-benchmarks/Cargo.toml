@@ -31,11 +31,8 @@ path = "../oapth"
 default = []
 
 [package]
-name = "oapth-benchmarks"
-version = "0.0.0"
 authors = ["Automatically generated"]
+edition = "2021"
+name = "oapth-benchmarks"
 publish = false
-edition = "2018"
-
-[workspace]
-
+version = "0.0.0"

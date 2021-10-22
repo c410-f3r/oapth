@@ -7,7 +7,6 @@ use crate::{
 };
 use alloc::string::String;
 use oapth_commons::Database;
-use core::convert::TryFrom;
 use futures::{AsyncRead, AsyncWrite};
 use tiberius::{AuthMethod, Client, Config};
 
