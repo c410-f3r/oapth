@@ -5,7 +5,6 @@ pub(crate) const CREATE_MIGRATION_TABLES: &str = concat!(
   "CREATE TABLE IF NOT EXISTS _oapth_migration_group (",
   oapth_migration_group_columns!(),
   "); \
-  
   CREATE TABLE IF NOT EXISTS _oapth_migration (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     created_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,",

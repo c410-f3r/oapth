@@ -10,14 +10,14 @@ use std::{
 
 /// All paths to directories that contain migrations
 #[inline]
-pub fn parse_root_cfg(cfg_path: &Path) -> crate::Result<ArrayVec<[PathBuf; 16]>> {
+pub fn parse_root_cfg(cfg_path: &Path) -> crate::Result<ArrayVec<PathBuf, 16>> {
   let cfg_dir = cfg_path.parent().unwrap_or_else(|| Path::new("."));
   parse_root_cfg_raw(File::open(cfg_path)?, cfg_dir)
 }
 
 /// Similar to `parse_root_cfg`, takes a stream of bytes and a base path as arguments.
 #[inline]
-pub fn parse_root_cfg_raw<R>(read: R, root: &Path) -> crate::Result<ArrayVec<[PathBuf; 16]>>
+pub fn parse_root_cfg_raw<R>(read: R, root: &Path) -> crate::Result<ArrayVec<PathBuf, 16>>
 where
   R: Read,
 {

@@ -17,15 +17,14 @@ jobs:
         with:
           override: true
           profile: minimal
-          toolchain: nightly-2021-01-31
+          toolchain: nightly-2021-10-10
 
       - uses: actions-rs/install@v0.1
         with:
           crate: cargo-fuzz
           use-tool-cache: true
 
-      - run: cargo fuzz run parsers -- -max_len=10 -runs=100000
-      - run: cargo fuzz run validate -- -runs=100000
+      - run: ./scripts/fuzz.sh
 
   integration:
     name: Integration tests
@@ -46,19 +45,9 @@ jobs:
         with:
           override: true
           profile: minimal
-          toolchain: nightly-2021-01-31
+          toolchain: stable
 
-      - uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - uses: actions/cache@v2
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      - uses: Swatinem/rust-cache@v1
 
       - run: docker-compose -f oapth-test-utils/docker-compose.yml up -d
 
@@ -85,18 +74,8 @@ jobs:
           components: clippy, rustfmt
           override: true
           profile: minimal
-          toolchain: nightly-2021-01-31
+          toolchain: stable
 
-      - uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - uses: actions/cache@v2
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      - uses: Swatinem/rust-cache@v1
 
       - run: ./scripts/${{ matrix.scripts }}.sh

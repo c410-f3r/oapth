@@ -12,7 +12,9 @@ rpath = false
 [workspace]
 members = [
     "oapth",
+    "oapth-benchmarks",
     "oapth-cli",
     "oapth-commons",
+    "oapth-fuzz",
     "oapth-macros"
 ]

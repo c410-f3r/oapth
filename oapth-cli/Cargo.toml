@@ -1,7 +1,7 @@
 [dependencies]
 argh = { default-features = false, version = "0.1" }
 dotenv = { default-features = false, optional = true, version = "0.15" }
-env_logger = { default-features = false, optional = true, version = "0.8" }
+env_logger = { default-features = false, optional = true, version = "0.9" }
 oapth = { default-features = false, features = ["std"], path = "../oapth", version = "0.1" }
 sqlx-core = { default-features = false, optional = true, version = "0.5" }
 tokio = { default-features = false, features = ["macros", "rt-multi-thread"], version = "1.0" }
@@ -19,12 +19,13 @@ sqlite = ["oapth/with-rusqlite"]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
 categories = ["command-line-utilities", "database"]
 description = "Oapth CLI"
-edition = "2018"
+edition = "2021"
 keywords = ["cli", "database", "migration", "oapth", "sql"]
 license = "Apache-2.0"
 name = "oapth-cli"
 readme = "README.md"
 repository = "https://github.com/c410-f3r/oapth"
+rust-version = "1.56"
 version = "0.1.0"
 
 [package.metadata.docs.rs]

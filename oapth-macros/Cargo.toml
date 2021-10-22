@@ -14,12 +14,13 @@ proc-macro = true
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
 categories = ["database"]
 description = "Oapth macros"
-edition = "2018"
+edition = "2021"
 keywords = ["database", "migration", "oapth", "sql"]
 license = "Apache-2.0"
 name = "oapth-macros"
 readme = "README.md"
 repository = "https://github.com/c410-f3r/oapth"
+rust-version = "1.56"
 version = "0.1.0"
 
 [package.metadata.docs.rs]

@@ -71,13 +71,13 @@ where
       name = parts.0;
       version = parts.1;
 
-      let mut cfg_file_name = ArrayString::<[u8; 64]>::new();
+      let mut cfg_file_name = ArrayString::<64>::new();
       cfg_file_name.write_fmt(format_args!("{}.cfg", dir_name))?;
 
-      let mut down_file_name = ArrayString::<[u8; 64]>::new();
+      let mut down_file_name = ArrayString::<64>::new();
       down_file_name.write_fmt(format_args!("{}_down.sql", dir_name))?;
 
-      let mut up_file_name = ArrayString::<[u8; 64]>::new();
+      let mut up_file_name = ArrayString::<64>::new();
       up_file_name.write_fmt(format_args!("{}_up.sql", dir_name))?;
 
       for file_rslt in files(path.as_path())? {

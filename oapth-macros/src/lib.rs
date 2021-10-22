@@ -81,7 +81,7 @@ macro_rules! create_grouped_features {
   ($mac_name:ident; $group_name:literal; $($feature:expr),+) => {
     macro_rules! $mac_name {
       () => {
-        create_grouped_features!($group_name; $($feature),+);
+        create_grouped_features!($group_name; $($feature),+)
       }
     }
   };

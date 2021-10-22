@@ -91,7 +91,6 @@ macro_rules! create_diesel_back_end {
       {
         Box::pin(async move {
           Ok(if command.is_empty() {
-            ()
           }
           else {
             self.conn.batch_execute(command).map(|_| {})?
@@ -127,7 +126,7 @@ macro_rules! create_diesel_back_end {
       {
         Box::pin(async move {
           let query = migrations_by_mg_version_query(mg.version(), $schema)?;
-          let migrations = sql_query(query.as_str()).load(&self.conn)?;
+          let migrations = sql_query(query.as_str()).load(&mut self.conn)?;
           Ok(migrations)
         })
       }
@@ -143,7 +142,7 @@ macro_rules! create_diesel_back_end {
         Self: 'ret,
       {
         Box::pin(async move {
-          let tables: Vec<GenericTable> = sql_query(query).load(&self.conn)?;
+          let tables: Vec<GenericTable> = sql_query(query).load(&mut self.conn)?;
           Ok(tables.into_iter().map(|el| el.generic_column).collect())
         })
       }
@@ -156,7 +155,7 @@ macro_rules! create_diesel_back_end {
         Self: 'ret,
       {
         Box::pin(async move {
-          let tables: Vec<GenericTable> = sql_query($tables(schema)?.as_str()).load(&self.conn)?;
+          let tables: Vec<GenericTable> = sql_query($tables(schema)?.as_str()).load(&mut self.conn)?;
           Ok(tables.into_iter().map(|el| el.generic_column).collect())
         })
       }
@@ -171,12 +170,11 @@ macro_rules! create_diesel_back_end {
       {
         Box::pin(async move {
           let conn = &mut self.conn;
-          let transaction_manager = conn.transaction_manager();
-          transaction_manager.begin_transaction(conn)?;
+          <$conn_ty as Connection>::TransactionManager::begin_transaction(conn)?;
           for command in commands {
             conn.batch_execute(command.as_ref())?;
           }
-          transaction_manager.commit_transaction(conn)?;
+          <$conn_ty as Connection>::TransactionManager::commit_transaction(conn)?;
           Ok(())
         })
       }

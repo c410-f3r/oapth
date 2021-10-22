@@ -1,12 +1,10 @@
 macro_rules! oapth_migration_columns {
   () => {
     "_oapth_migration_omg_version INT NOT NULL, \
-
     checksum VARCHAR(20) NOT NULL, \
     name VARCHAR(128) NOT NULL, \
     repeatability INTEGER NULL, \
     version INT NOT NULL, \
-
     CONSTRAINT _oapth_migration_unq UNIQUE (version, _oapth_migration_omg_version)"
   };
 }
@@ -14,7 +12,6 @@ macro_rules! oapth_migration_columns {
 macro_rules! oapth_migration_group_columns {
   () => {
     "version INT NOT NULL PRIMARY KEY, \
-
     name VARCHAR(128) NOT NULL"
   };
 }
@@ -112,7 +109,6 @@ pub(crate) fn migrations_by_mg_version_query(
     "SELECT \
       _oapth_migration.version, \
       _oapth_migration_group.version as omg_version, \
-
       _oapth_migration_group.name as omg_name, \
       _oapth_migration.checksum, \
       _oapth_migration.created_on, \

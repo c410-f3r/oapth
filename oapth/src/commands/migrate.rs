@@ -75,7 +75,7 @@ where
     I: Clone + Iterator<Item = MigrationRef<'a, 'a>> + 'b,
   {
     let filtered_by_db = Self::filter_by_db(migrations);
-    Self::do_validate(&db_migrations, filtered_by_db.clone())?;
+    Self::do_validate(db_migrations, filtered_by_db.clone())?;
     let last_db_mig_version_opt = db_migrations.last().map(|e| e.version());
     if let Some(last_db_mig_version) = last_db_mig_version_opt {
       let to_apply = filtered_by_db.filter(move |e| e.version() > last_db_mig_version);

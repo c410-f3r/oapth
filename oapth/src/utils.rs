@@ -39,7 +39,7 @@ pub(crate) fn is_migration_divergent(
   migration: &MigrationRef<'_, '_>,
 ) -> bool {
   let version = migration.version();
-  let opt = binary_seach_migration_by_version(version, &db_migrations);
+  let opt = binary_seach_migration_by_version(version, db_migrations);
   let db_migration = if let Some(rslt) = opt {
     rslt
   } else {

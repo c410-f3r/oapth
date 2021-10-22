@@ -1,5 +1,5 @@
 use alloc::string::String;
-use core::{convert::TryFrom, str::FromStr};
+use core::str::FromStr;
 use crate::{
   fixed_sql_commands::{
     delete_migrations, insert_migrations, migrations_by_mg_version_query,

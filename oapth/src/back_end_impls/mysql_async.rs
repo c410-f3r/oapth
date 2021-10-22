@@ -7,7 +7,6 @@ use crate::{
 };
 use oapth_commons::Database;
 use alloc::string::String;
-use core::convert::TryFrom;
 use mysql_async::{prelude::Queryable, Conn, Pool, Row, TxOpts};
 
 /// Wraps functionalities for the `mysql_async` crate
