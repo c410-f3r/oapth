@@ -21,7 +21,7 @@ It is necessary to specify a desired feature to actually run the transactions, o
 
 cargo install oapth-cli --features dev-tools,log,pg
 echo DATABASE_URL="postgres://USER:PW@localhost:5432/DB" > .env
-RUST_LOG=debug oapth-cli -p oapth.cfg migrate
+RUST_LOG=debug oapth-cli migrate
 ```
 
 The CLI application expects a configuration file that contains a set of paths where each path is a directory with multiple migrations.
