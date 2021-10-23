@@ -5,7 +5,7 @@ mod cli;
 use oapth::Config;
 use std::{borrow::Cow, env::current_dir, path::Path};
 
-const DEFAULT_CFG_FILE_NAME: &str = "oapth.cfg";
+const _DEFAULT_CFG_FILE_NAME: &str = "oapth.cfg";
 
 #[tokio::main]
 async fn main() -> oapth::Result<()> {
@@ -52,7 +52,7 @@ fn _cfg_file_path(cli: &cli::Cli) -> oapth::Result<Cow<'_, Path>> {
     Cow::Borrowed(el)
   } else {
     let mut path_buf = current_dir()?;
-    path_buf.push(DEFAULT_CFG_FILE_NAME);
+    path_buf.push(_DEFAULT_CFG_FILE_NAME);
     Cow::Owned(path_buf)
   })
 }
