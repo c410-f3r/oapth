@@ -1,11 +1,10 @@
-use alloc::string::String;
 use oapth::{DEFAULT_BATCH_SIZE, DEFAULT_ENV_VAR};
+use std::string::String;
 
 #[derive(Debug, argh::FromArgs)]
 /// Oapth - CLI
 pub(crate) struct Cli {
-  /// configuration file path. This option is required by every command expect `clean` and
-  /// `seed`.
+  /// configuration file path. If not specified, defaults to "oapth.cfg" in the current directory.
   #[argh(option, short = 'c')]
   pub(crate) cfg: Option<std::path::PathBuf>,
 
@@ -14,8 +13,8 @@ pub(crate) struct Cli {
 
   /// number of files (migrations or seeds) that is going to be sent to the database in a
   /// single transaction.
-  #[argh(default = "DEFAULT_BATCH_SIZE", option, short = 'f')]
   // Default value must match oapth::DEFAULT_BATCH_SIZE
+  #[argh(default = "DEFAULT_BATCH_SIZE", option, short = 'f')]
   pub(crate) files_num: usize,
 
   /// seeds directory. This option is ignored by every command expect `migrate_and_seed` and

@@ -24,6 +24,9 @@ pub enum Error {
   Fmt(fmt::Error),
   /// Invalid URL
   InvalidUrl,
+  /// Bad Input/Output operation
+  #[cfg(feature = "std")]
+  Io(std::io::Error),
   /// Missing environment variable
   MissingEnvVar,
   /// `mysql_async` error
@@ -87,6 +90,14 @@ impl From<mysql_async::Error> for Error {
   #[inline]
   fn from(from: mysql_async::Error) -> Self {
     Self::MysqlAsync(from.into())
+  }
+}
+
+#[oapth_macros::_std]
+impl From<std::io::Error> for Error {
+  #[inline]
+  fn from(from: std::io::Error) -> Self {
+    Self::Io(from)
   }
 }
 
@@ -159,6 +170,8 @@ impl fmt::Debug for Error {
       }
       Self::Fmt(ref e) => write!(f, "Fmt: {}", e),
       Self::InvalidUrl => write!(f, "Url must start with the database type followed by a '://'"),
+      #[cfg(feature = "std")]
+      Self::Io(ref e) => write!(f, "{}", e),
       Self::MissingEnvVar => {
         write!(f, "The environnement variable that contains the database url must be set")
       }

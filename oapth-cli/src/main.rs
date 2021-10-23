@@ -1,11 +1,11 @@
 //! oapth - CLI
 
-extern crate alloc;
-
 mod cli;
 
 use oapth::Config;
-use std::path::Path;
+use std::{borrow::Cow, env::current_dir, path::Path};
+
+const _DEFAULT_CFG_FILE_NAME: &str = "oapth.cfg";
 
 #[tokio::main]
 async fn main() -> oapth::Result<()> {
@@ -47,6 +47,16 @@ async fn main() -> oapth::Result<()> {
   Ok(())
 }
 
+fn _cfg_file_path(cli: &cli::Cli) -> oapth::Result<Cow<'_, Path>> {
+  Ok(if let Some(el) = cli.cfg.as_deref() {
+    Cow::Borrowed(el)
+  } else {
+    let mut path_buf = current_dir()?;
+    path_buf.push(_DEFAULT_CFG_FILE_NAME);
+    Cow::Owned(path_buf)
+  })
+}
+
 #[inline]
 async fn _handle_commands<B>(cli: &cli::Cli, back_end: B) -> oapth::Result<()>
 where
@@ -59,32 +69,25 @@ where
       commands.clean().await?;
     }
     cli::Commands::Migrate(..) => {
-      commands.migrate_from_cfg(_require_cfg(cli)?).await?;
+      commands.migrate_from_cfg(&_cfg_file_path(cli)?).await?;
     }
     #[cfg(feature = "dev-tools")]
     cli::Commands::MigrateAndSeed(..) => {
-      commands.migrate_from_cfg(_require_cfg(cli)?).await?;
+      commands.migrate_from_cfg(&_cfg_file_path(cli)?).await?;
       commands.seed_from_dir(_require_seeds(cli)?).await?;
     }
     cli::Commands::Rollback(ref rollback) => {
-      commands.rollback_from_cfg(_require_cfg(cli)?, &rollback.versions).await?;
+      commands.rollback_from_cfg(&_cfg_file_path(cli)?, &rollback.versions).await?;
     }
     #[cfg(feature = "dev-tools")]
     cli::Commands::Seed(..) => {
       commands.seed_from_dir(_require_seeds(cli)?).await?;
     }
     cli::Commands::Validate(..) => {
-      commands.validate_from_cfg(_require_cfg(cli)?).await?;
+      commands.validate_from_cfg(&_cfg_file_path(cli)?).await?;
     }
   }
   Ok(())
-}
-
-fn _require_cfg(cli: &cli::Cli) -> oapth::Result<&Path> {
-  cli
-    .cfg
-    .as_deref()
-    .ok_or(oapth::Error::Other("The requested command requires the `cfg` parameter"))
 }
 
 #[cfg(feature = "dev-tools")]
