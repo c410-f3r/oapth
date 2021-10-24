@@ -3,13 +3,14 @@ pub(crate) mod migration_common;
 pub(crate) mod migration_group;
 
 use crate::MigrationCommon;
-use alloc::{string::String, vec::Vec};
+use alloc::string::String;
+use arrayvec::ArrayVec;
 use core::hash::{Hash, Hasher};
 use oapth_commons::{Database, Repeatability};
 use siphasher::sip::SipHasher13;
 
 /// Migration - Owned
-pub type MigrationOwned = Migration<Vec<Database>, String>;
+pub type MigrationOwned = Migration<ArrayVec<Database, { Database::len() }>, String>;
 /// Migration - Reference
 pub type MigrationRef<'dbs, 's> = Migration<&'dbs [Database], &'s str>;
 

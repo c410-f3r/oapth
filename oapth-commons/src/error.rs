@@ -11,8 +11,10 @@ pub enum Error {
   /// IO error
   #[cfg(feature = "std")]
   Io(std::io::Error),
-  /// Maximum number of groups
-  MaxNumGroups,
+  /// TOML parser only supports a subset of the official TOML specification
+  TomlParserOnlySupportsStringsAndArraysOfStrings,
+  /// TOML parser only supports a subset of the official TOML specification
+  TomlValueIsTooLarge,
 }
 
 impl From<fmt::Error> for Error {
@@ -39,7 +41,10 @@ impl fmt::Debug for Error {
       Self::InvalidMigration => write!(f, "Invalid migration"),
       #[cfg(feature = "std")]
       Self::Io(ref e) => write!(f, "IO: {}", e),
-      Self::MaxNumGroups => write!(f, "There can't be more than 16 groups in a configuration"),
+      Self::TomlParserOnlySupportsStringsAndArraysOfStrings => {
+        write!(f, "TOML parser only supports strings and arrays of strings")
+      }
+      Self::TomlValueIsTooLarge => write!(f, "TOML value is too large to store"),
     }
   }
 }

@@ -5,7 +5,7 @@ mod cli;
 use oapth::Config;
 use std::{borrow::Cow, env::current_dir, path::Path};
 
-const _DEFAULT_CFG_FILE_NAME: &str = "oapth.cfg";
+const _DEFAULT_CFG_FILE_NAME: &str = "oapth.toml";
 
 #[tokio::main]
 async fn main() -> oapth::Result<()> {
@@ -15,7 +15,7 @@ async fn main() -> oapth::Result<()> {
   let _ = dotenv::dotenv().ok();
 
   let cli: cli::Cli = argh::from_env();
-  let config = Config::with_url_from_var(&cli.var)?;
+  let config = Config::with_url_from_var(&cli._var)?;
 
   match config.database()? {
     "mariadb" | "mysql" => {
@@ -48,7 +48,7 @@ async fn main() -> oapth::Result<()> {
 }
 
 fn _cfg_file_path(cli: &cli::Cli) -> oapth::Result<Cow<'_, Path>> {
-  Ok(if let Some(el) = cli.cfg.as_deref() {
+  Ok(if let Some(el) = cli._cfg.as_deref() {
     Cow::Borrowed(el)
   } else {
     let mut path_buf = current_dir()?;
@@ -62,26 +62,28 @@ async fn _handle_commands<B>(cli: &cli::Cli, back_end: B) -> oapth::Result<()>
 where
   B: oapth::BackEnd,
 {
-  let mut commands = oapth::Commands::new(back_end, cli.files_num);
-  match cli.commands {
+  let mut commands = oapth::Commands::new(back_end, cli._files_num);
+  match cli._commands {
     #[cfg(feature = "dev-tools")]
     cli::Commands::Clean(..) => {
       commands.clean().await?;
     }
     cli::Commands::Migrate(..) => {
-      commands.migrate_from_cfg(&_cfg_file_path(cli)?).await?;
+      commands.migrate_from_cfg_path(&_cfg_file_path(cli)?).await?;
     }
     #[cfg(feature = "dev-tools")]
     cli::Commands::MigrateAndSeed(..) => {
-      commands.migrate_from_cfg(&_cfg_file_path(cli)?).await?;
-      commands.seed_from_dir(_require_seeds(cli)?).await?;
+      let (migration_groups, seeds) = oapth_commons::parse_root_toml(&_cfg_file_path(cli)?)?;
+      commands.migrate_from_groups_paths(migration_groups).await?;
+      commands.seed_from_dir(_seeds_file_path(cli, seeds.as_deref())?).await?;
     }
     cli::Commands::Rollback(ref rollback) => {
-      commands.rollback_from_cfg(&_cfg_file_path(cli)?, &rollback.versions).await?;
+      commands.rollback_from_cfg(&_cfg_file_path(cli)?, &rollback._versions).await?;
     }
     #[cfg(feature = "dev-tools")]
     cli::Commands::Seed(..) => {
-      commands.seed_from_dir(_require_seeds(cli)?).await?;
+      let (_, seeds) = oapth_commons::parse_root_toml(&_cfg_file_path(cli)?)?;
+      commands.seed_from_dir(_seeds_file_path(cli, seeds.as_deref())?).await?;
     }
     cli::Commands::Validate(..) => {
       commands.validate_from_cfg(&_cfg_file_path(cli)?).await?;
@@ -91,9 +93,21 @@ where
 }
 
 #[cfg(feature = "dev-tools")]
-fn _require_seeds(cli: &cli::Cli) -> oapth::Result<&Path> {
-  cli
-    .seeds
-    .as_deref()
-    .ok_or(oapth::Error::Other("The requested command requires the `seeds` parameter"))
+fn _seeds_file_path<'a, 'b, 'c>(
+  cli: &'a cli::Cli,
+  seeds_cfg: Option<&'b Path>,
+) -> oapth::Result<&'c Path>
+where
+  'a: 'c,
+  'b: 'c,
+{
+  if let Some(el) = cli._seeds.as_deref() {
+    return Ok(el);
+  }
+  if let Some(el) = seeds_cfg {
+    return Ok(el);
+  }
+  Err(oapth::Error::Other(
+    "The `seeds` parameter must be provided through the CLI or the configuration file",
+  ))
 }

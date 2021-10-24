@@ -18,6 +18,18 @@ macro_rules! create_enum {
                     $(Self::$variant_ident => stringify!($variant_ident),)*
                 }
             }
+
+            #[allow(non_snake_case)]
+            #[inline]
+            /// The total number of variants
+            pub const fn len() -> usize {
+                let mut len = 0;
+                $(
+                    let $variant_ident = 1;
+                    len += $variant_ident;
+                )*
+                len
+            }
         }
 
         #[cfg(feature = "with-quote")]

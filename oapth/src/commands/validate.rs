@@ -5,7 +5,7 @@ use oapth_commons::Repeatability;
 #[oapth_macros::_std]
 use {
   crate::{group_and_migrations_from_path, MigrationOwned},
-  oapth_commons::parse_root_cfg,
+  oapth_commons::parse_root_toml,
   std::path::Path,
 };
 
@@ -33,10 +33,10 @@ where
   #[oapth_macros::_std]
   pub async fn validate_from_cfg(&mut self, path: &Path) -> crate::Result<()> {
     let mut buffer = Vec::with_capacity(16);
-    let mut dirs_str = parse_root_cfg(path)?;
-    dirs_str.sort();
-    for dir_str in dirs_str {
-      self.do_validate_from_dir(&mut buffer, &dir_str).await?;
+    let (mut migration_groups, _) = parse_root_toml(path)?;
+    migration_groups.sort();
+    for mg in migration_groups {
+      self.do_validate_from_dir(&mut buffer, &mg).await?;
     }
     Ok(())
   }

@@ -2,8 +2,9 @@ use crate::{BackEnd, Commands, DbMigration, MigrationGroupRef, MigrationRef};
 #[oapth_macros::_std]
 use {
   crate::{group_and_migrations_from_path, MigrationOwned},
-  oapth_commons::parse_root_cfg,
-  std::path::Path,
+  arrayvec::ArrayVec,
+  oapth_commons::parse_root_toml,
+  std::path::{Path, PathBuf},
 };
 
 impl<B> Commands<B>
@@ -26,17 +27,12 @@ where
     self.do_migrate(&db_migrations, mg, migrations).await
   }
 
-  /// Applies `migrate` to a set of groups according to the configuration file
+  /// Applies `migrate` to a set of migration groups according to the configuration file.
   #[oapth_macros::_std]
   #[inline]
-  pub async fn migrate_from_cfg(&mut self, path: &Path) -> crate::Result<()> {
-    self.back_end.create_oapth_tables().await?;
-    let mut buffer = Vec::with_capacity(16);
-    let mut dirs_str = parse_root_cfg(path)?;
-    dirs_str.sort();
-    for dir_str in dirs_str {
-      self.do_migrate_from_dir(&mut buffer, &dir_str).await?;
-    }
+  pub async fn migrate_from_cfg_path(&mut self, path: &Path) -> crate::Result<()> {
+    let (migration_groups, _) = parse_root_toml(path)?;
+    self.migrate_from_groups_paths(migration_groups).await?;
     Ok(())
   }
 
@@ -60,6 +56,22 @@ where
     for (mg, m) in groups {
       let db_migrations = self.back_end.migrations(mg).await?;
       self.do_migrate(&db_migrations, mg, m).await?;
+    }
+    Ok(())
+  }
+
+  /// Applies `migrate` to the set of provided migration groups paths.
+  #[oapth_macros::_std]
+  #[inline]
+  pub async fn migrate_from_groups_paths(
+    &mut self,
+    mut migration_groups: ArrayVec<PathBuf, 8>,
+  ) -> crate::Result<()> {
+    self.back_end.create_oapth_tables().await?;
+    let mut buffer = Vec::with_capacity(16);
+    migration_groups.sort();
+    for mg in migration_groups {
+      self.do_migrate_from_dir(&mut buffer, &mg).await?;
     }
     Ok(())
   }

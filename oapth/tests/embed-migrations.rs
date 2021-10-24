@@ -2,7 +2,7 @@
 
 use oapth::Commands;
 
-oapth::embed_migrations!("oapth-test-utils/migrations.cfg");
+oapth::embed_migrations!("oapth-test-utils/migrations.toml");
 
 async fn _it_works() {
   let mut commands = Commands::with_back_end(());

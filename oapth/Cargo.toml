@@ -21,7 +21,7 @@ futures = { default-features = false, optional = true, version = "0.3" }
 
 # Internals
 
-arrayvec = { default-features = false, version = "0.5" }
+arrayvec = { default-features = false, version = "0.7" }
 chrono = { default-features = false, version = "0.4" }
 oapth-commons = { default-features = false, path = "../oapth-commons" } 
 oapth-macros = { default-features = false, path = "../oapth-macros" }

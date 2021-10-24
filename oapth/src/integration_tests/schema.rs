@@ -8,8 +8,8 @@ pub(crate) async fn migrate_works<B>(c: &mut Commands<B>, aux: AuxTestParams, oa
 where
   B: BackEnd
 {
-  let path = Path::new("../oapth-test-utils/migrations.cfg");
-  c.migrate_from_cfg(path).await.unwrap();
+  let path = Path::new("../oapth-test-utils/migrations.toml");
+  c.migrate_from_cfg_path(path).await.unwrap();
   let initial = MigrationGroup::new("initial", 1);
   let initial_migrations = c.back_end.migrations(initial).await.unwrap();
   assert_eq!(initial_migrations[0].checksum(), 12056372945923863254);

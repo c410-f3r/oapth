@@ -18,7 +18,7 @@ pub(crate) async fn clean<B>(back_end: &mut B) -> crate::Result<()>
 where
   B: crate::BackEnd,
 {
-  let mut buffer: ArrayString<[u8; 1024]> = ArrayString::new();
+  let mut buffer: ArrayString<1024> = ArrayString::new();
 
   buffer.write_fmt(format_args!("SET FOREIGN_KEY_CHECKS = 0;"))?;
 
@@ -35,7 +35,7 @@ where
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/mysql/MySQLSchema.java
 #[inline]
-pub(crate) fn tables(_: &str) -> crate::Result<ArrayString<[u8; 256]>> {
+pub(crate) fn tables(_: &str) -> crate::Result<ArrayString<256>> {
   let mut buffer = ArrayString::new();
   buffer.write_fmt(format_args!(
     "

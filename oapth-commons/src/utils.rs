@@ -1,5 +1,9 @@
-use crate::{parse_migration_cfg, parse_unified_migration, Database, Repeatability};
-use arrayvec::ArrayString;
+use crate::{
+  parse_migration_cfg, parse_unified_migration,
+  toml_parser::{toml, Expr, EXPR_ARRAY_MAX_LEN},
+  Database, Repeatability,
+};
+use arrayvec::{ArrayString, ArrayVec};
 use core::{
   cmp::Ordering,
   fmt::Write,
@@ -8,11 +12,20 @@ use core::{
 use siphasher::sip::SipHasher13;
 use std::{
   fs::{read_to_string, DirEntry, File},
+  io::Read,
   path::{Path, PathBuf},
 };
 
 type MigrationGroupParts = (String, i32);
-type MigrationParts = (u64, Vec<Database>, String, Option<Repeatability>, String, String, i32);
+type MigrationParts = (
+  u64,
+  ArrayVec<Database, { Database::len() }>,
+  String,
+  Option<Repeatability>,
+  String,
+  String,
+  i32,
+);
 
 macro_rules! opt_to_inv_mig {
   ($opt:expr) => {
@@ -72,7 +85,7 @@ where
       version = parts.1;
 
       let mut cfg_file_name = ArrayString::<64>::new();
-      cfg_file_name.write_fmt(format_args!("{}.cfg", dir_name))?;
+      cfg_file_name.write_fmt(format_args!("{}.toml", dir_name))?;
 
       let mut down_file_name = ArrayString::<64>::new();
       down_file_name.write_fmt(format_args!("{}_down.sql", dir_name))?;
@@ -115,6 +128,58 @@ where
   });
 
   Ok((mg, migrations))
+}
+
+/// All paths to directories that contain migrations and optional seeds
+#[inline]
+pub fn parse_root_toml(
+  cfg_path: &Path,
+) -> crate::Result<(ArrayVec<PathBuf, EXPR_ARRAY_MAX_LEN>, Option<PathBuf>)> {
+  let cfg_dir = cfg_path.parent().unwrap_or_else(|| Path::new("."));
+  parse_root_toml_raw(File::open(cfg_path)?, cfg_dir)
+}
+
+/// Similar to `parse_root_toml`, takes a stream of bytes and a base path as arguments.
+#[inline]
+pub fn parse_root_toml_raw<R>(
+  read: R,
+  root: &Path,
+) -> crate::Result<(ArrayVec<PathBuf, EXPR_ARRAY_MAX_LEN>, Option<PathBuf>)>
+where
+  R: Read,
+{
+  let mut migration_groups = ArrayVec::new();
+  let mut seeds = None;
+
+  for (ident, toml_expr) in toml(read)? {
+    match (ident.as_ref(), toml_expr) {
+      ("migration_groups", Expr::Array(array)) => {
+        for elem in array {
+          let path = root.join(elem.as_str());
+          let name_opt = || path.file_name()?.to_str();
+          let name = if let Some(rslt) = name_opt() {
+            rslt
+          } else {
+            continue;
+          };
+          if elem.is_empty() || !path.is_dir() || dir_name_parts(name).is_err() {
+            continue;
+          }
+          let _ = migration_groups.try_push(path);
+        }
+      }
+      ("seeds", Expr::String(elem)) => {
+        let path = root.join(elem.as_str());
+        if !path.is_dir() {
+          continue;
+        }
+        seeds = Some(path);
+      }
+      _ => {}
+    }
+  }
+
+  Ok((migration_groups, seeds))
 }
 
 #[inline]

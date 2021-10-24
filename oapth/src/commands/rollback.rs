@@ -2,7 +2,7 @@ use crate::{BackEnd, Commands, MigrationGroupRef, MigrationRef};
 #[oapth_macros::_std]
 use {
   crate::{group_and_migrations_from_path, MigrationOwned},
-  oapth_commons::parse_root_cfg,
+  oapth_commons::parse_root_toml,
   std::path::Path,
 };
 
@@ -36,14 +36,14 @@ where
   #[inline]
   #[oapth_macros::_std]
   pub async fn rollback_from_cfg(&mut self, path: &Path, versions: &[i32]) -> crate::Result<()> {
-    let mut dirs_str = parse_root_cfg(path)?;
-    if dirs_str.len() != versions.len() {
+    let (mut migration_groups, _) = parse_root_toml(path)?;
+    if migration_groups.len() != versions.len() {
       return Err(crate::Error::DifferentRollbackVersions);
     }
-    dirs_str.sort_by(|a, b| b.cmp(a));
+    migration_groups.sort_by(|a, b| b.cmp(a));
     let mut buffer = Vec::with_capacity(16);
-    for (dir_str, &version) in dirs_str.into_iter().zip(versions) {
-      self.do_rollback_from_dir(&mut buffer, &dir_str, version).await?;
+    for (mg, &version) in migration_groups.into_iter().zip(versions) {
+      self.do_rollback_from_dir(&mut buffer, &mg, version).await?;
     }
     Ok(())
   }

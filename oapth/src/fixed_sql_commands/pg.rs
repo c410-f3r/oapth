@@ -19,7 +19,7 @@ pub(crate) async fn clean<B>(back_end: &mut B) -> crate::Result<()>
 where
   B: crate::BackEnd,
 {
-  let mut buffer: ArrayString<[u8; 2048]> = ArrayString::new();
+  let mut buffer: ArrayString<2048> = ArrayString::new();
 
   for schema in schemas(back_end).await? {
     buffer.write_fmt(format_args!("DROP SCHEMA \"{}\" CASCADE;", schema))?;
@@ -66,7 +66,7 @@ pub(crate) async fn enums<B>(back_end: &mut B, schema: & str) -> crate::Result<V
 where
   B: crate::BackEnd
 {
-  let mut buffer = ArrayString::<[u8; 512]>::new();
+  let mut buffer = ArrayString::<512>::new();
   buffer.write_fmt(format_args!(
     "SELECT
       t.typname AS generic_column
@@ -88,7 +88,7 @@ pub(crate) async fn views<B>(back_end: &mut B, schema: & str) -> crate::Result<V
 where
  B: crate::BackEnd,
 {
-  let mut buffer = ArrayString::<[u8; 512]>::new();
+  let mut buffer = ArrayString::<512>::new();
   buffer.write_fmt(format_args!(
     "
     SELECT
@@ -112,7 +112,7 @@ pub(crate) async fn sequences<B>(back_end: &mut B, schema: & str) -> crate::Resu
 where
   B: crate::BackEnd,
 {
-  let mut buffer = ArrayString::<[u8; 256]>::new();
+  let mut buffer = ArrayString::<256>::new();
   buffer.write_fmt(format_args!(
     "SELECT
       sequence_name AS generic_column
@@ -132,7 +132,7 @@ pub(crate) async fn domains<B>(back_end: &mut B, schema: &str) -> crate::Result<
 where
   B: crate::BackEnd,
 {
-  let mut buffer = ArrayString::<[u8; 512]>::new();
+  let mut buffer = ArrayString::<512>::new();
   buffer.write_fmt(format_args!(
     "
     SELECT
@@ -186,7 +186,7 @@ where
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[inline]
-pub(crate) fn tables(schema: &str) -> crate::Result<ArrayString<[u8; 1024]>> {
+pub(crate) fn tables(schema: &str) -> crate::Result<ArrayString<1024>> {
   let mut buffer = ArrayString::new();
   buffer.write_fmt(
     format_args!(
@@ -223,7 +223,7 @@ pub(crate) async fn types<B>(back_end: &mut B, schema: &str) -> crate::Result<Ve
 where
   B: crate::BackEnd,
 {
-  let mut buffer = ArrayString::<[u8; 1024]>::new();
+  let mut buffer = ArrayString::<1024>::new();
   buffer.write_fmt(format_args!(
     "SELECT
       typname AS generic_column
@@ -250,7 +250,7 @@ where
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[oapth_macros::_dev_tools]
 #[inline]
-fn pg_proc(prokind: char, schema: &str) -> crate::Result<ArrayString<[u8; 512]>>
+fn pg_proc(prokind: char, schema: &str) -> crate::Result<ArrayString<512>>
 {
   let mut buffer = ArrayString::new();
   buffer.write_fmt(format_args!(
