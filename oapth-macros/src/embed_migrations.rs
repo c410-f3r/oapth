@@ -46,7 +46,7 @@ pub(crate) fn embed_migrations(cfg_path_str: &str) -> oapth_commons::Result<Toke
     inner.push(quote);
   }
 
-  Ok(Into::<TokenStream>::into(quote!{
+  Ok(Into::<TokenStream>::into(quote! {
     {
       #(#inner)*
 
