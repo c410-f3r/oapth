@@ -8,7 +8,7 @@ pub(crate) fn embed_migrations(cfg_path_str: &str) -> oapth_commons::Result<Toke
   let mut groups_and_migrations = Vec::new();
 
   migration_groups.sort();
-  let mut ts = TokenStream::new();
+  let mut inner = Vec::new();
 
   for mg in migration_groups {
     let ((mg_name, mg_version), ms) = group_and_migrations_from_path(&mg, |a, b| a.cmp(b))?;
@@ -43,19 +43,16 @@ pub(crate) fn embed_migrations(cfg_path_str: &str) -> oapth_commons::Result<Toke
     };
 
     groups_and_migrations.push(quote! { (#mg_ident, #ms_ident) });
-    ts.extend(Into::<TokenStream>::into(quote));
+    inner.push(quote);
   }
 
-  let quote = quote! {
-    const GROUPS: &[
-      (oapth::MigrationGroupRef<'static>, &[oapth::MigrationRef<'static, 'static>])
-    ] = &[
-      #(#groups_and_migrations,)*
-    ];
-  };
-  ts.extend(Into::<TokenStream>::into(quote));
+  Ok(Into::<TokenStream>::into(quote!{
+    {
+      #(#inner)*
 
-  Ok(ts)
+      &[#(#groups_and_migrations,)*]
+    }
+  }))
 }
 
 struct QuoteOption<T>(Option<T>);
