@@ -30,8 +30,8 @@ The CLI application expects a configuration file that contains a set of paths wh
 # oapth.toml
 
 migration_groups = [
-  migrations/1__initial
-  migrations/2__fancy_stuff
+  "migrations/1__initial",
+  "migrations/2__fancy_stuff"
 ]
 ```
 
