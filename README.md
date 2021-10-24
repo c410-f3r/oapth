@@ -27,7 +27,7 @@ RUST_LOG=debug oapth-cli migrate
 The CLI application expects a configuration file that contains a set of paths where each path is a directory with multiple migrations.
 
 ```toml
-// oapth.toml
+# oapth.toml
 
 migration_groups = [
   migrations/1__initial
@@ -71,7 +71,7 @@ DROP TABLE author;
 One cool thing about the expected file configuration is that it can also be divided into smaller pieces, for example, the above migration could be transformed into `1__author_up.sql` and `1__author_down.sql`.
 
 ```sql
-// 1__author_up.sql
+-- 1__author_up.sql
 
 CREATE TABLE author (
   id INT NOT NULL PRIMARY KEY,
@@ -84,7 +84,7 @@ CREATE TABLE author (
 ```
 
 ```sql
-// 1__author_down.sql
+-- 1__author_down.sql
 
 DROP TABLE author;
 ```

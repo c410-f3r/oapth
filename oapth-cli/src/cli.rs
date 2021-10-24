@@ -17,8 +17,9 @@ pub(crate) struct Cli {
   #[argh(default = "DEFAULT_BATCH_SIZE", option, short = 'f')]
   pub(crate) _files_num: usize,
 
-  /// seeds directory. If not specified, defaults to the directory specified on the configuration
-  /// file.
+  /// seeds directory. If not specified, defaults to the optional directory specified in the
+  /// configuration file.
+  /// Returns an error if none of the options are available.
   #[cfg(feature = "dev-tools")]
   #[argh(option, short = 's')]
   pub(crate) _seeds: Option<std::path::PathBuf>,
