@@ -19,18 +19,20 @@ It is necessary to specify a desired feature to actually run the transactions, o
 ```bash
 # Example
 
-cargo install oapth-cli --features dev-tools,log,pg
+cargo install oapth-cli --features dev-tools,pg
 echo DATABASE_URL="postgres://USER:PW@localhost:5432/DB" > .env
 RUST_LOG=debug oapth-cli migrate
 ```
 
 The CLI application expects a configuration file that contains a set of paths where each path is a directory with multiple migrations.
 
-```ini
-// oapth.cfg
+```toml
+# oapth.toml
 
-migrations/1__initial
-migrations/2__fancy_stuff
+migration_groups = [
+  migrations/1__initial
+  migrations/2__fancy_stuff
+]
 ```
 
 Each provided migration and group must contain an unique version and a name summarized by the following structure:
@@ -44,7 +46,7 @@ migrations
     +-- 2__create_post.sql (Migration)
 +-- 2__fancy_stuff (Group)
     +-- 1__something_fancy.sql (Migration)
-oapth.cfg
+oapth.toml
 ```
 
 The SQL file itself is composed by two parts, one for migrations (`-- oapth UP` section) and another for rollbacks (`-- oapth DOWN` section).
@@ -69,7 +71,7 @@ DROP TABLE author;
 One cool thing about the expected file configuration is that it can also be divided into smaller pieces, for example, the above migration could be transformed into `1__author_up.sql` and `1__author_down.sql`.
 
 ```sql
-// 1__author_up.sql
+-- 1__author_up.sql
 
 CREATE TABLE author (
   id INT NOT NULL PRIMARY KEY,
@@ -82,7 +84,7 @@ CREATE TABLE author (
 ```
 
 ```sql
-// 1__author_down.sql
+-- 1__author_down.sql
 
 DROP TABLE author;
 ```
@@ -93,8 +95,8 @@ migrations
     +-- 1__author (Migration directory)
         +-- 1__author_down.sql (Down migration)
         +-- 1__author_up.sql (Up migration)
-        +-- 1__author.cfg (Optional configuration)
-oapth.cfg
+        +-- 1__author.toml (Optional configuration)
+oapth.toml
 ```
 
 ## Library
@@ -128,8 +130,8 @@ To make deployment easier, the final binary of your application can embed all ne
 use oapth::{Commands, Config, MysqlAsync, embed_migrations};
 
 // This macro creates the constant `GROUPS` variable that holds all information
-// referred by `SOME_CONFIGURATION_FILE.cfg`.
-embed_migrations!("SOME_CONFIGURATION_FILE.cfg");
+// referred by `SOME_CONFIGURATION_FILE.toml`.
+embed_migrations!("SOME_CONFIGURATION_FILE.toml");
 
 #[async_std::main]
 async fn main() -> oapth::Result<()> {
@@ -159,7 +161,7 @@ DROP SCHEMA foo;
 
 ## Repeatable migrations
 
-Repeatability can be specified with `-- oapth repeatability SOME_VALUE` where `SOME_VALUE` can be either `always` (regardless of the checksum) or `on_checksum_change` (runs only when the checksums changes).
+Repeatability can be specified with `-- oapth repeatability SOME_VALUE` where `SOME_VALUE` can be either `always` (regardless of the checksum) or `on-checksum-change` (runs only when the checksums changes).
 
 ```sql
 -- oapth dbs pg
@@ -254,14 +256,15 @@ For PostgreSQL (except Diesel), migration timestamps are stored and retrieved wi
 
 ## Development tools
 
-These development tools are enabled with the `dev-tools` feature.
+These development tools are enabled when using the `dev-tools` feature.
 
 #### CLI
 
-- `.env`: Loads environment variables from an `.env` file.
+- `.env`: Loads environment variables from an `.env` file (Uses the `dotenv` dependency).
+- `log`: Collects internal information for debugging (Uses the `env_logger` dependency).
 
 #### CLI/Library
 
-- `clean`: Tries to clean all objects of a database, including separated namespaces/schemas.
-- `seed`: Executes arbitrary code that is intended to populate data for tests.
+- `clean`: Command that tries to clean all objects of a database, including separated namespaces/schemas.
+- `seed`: Command that executes arbitrary code intended to populate data for tests.
 

@@ -1,36 +1,29 @@
-use crate::{Database, Repeatability};
+use arrayvec::ArrayVec;
+
+use crate::{
+  toml_parser::{toml, Expr},
+  Database, Repeatability,
+};
 use std::io::{BufRead, BufReader, Read};
 
-#[derive(Debug, Default)]
-pub struct ParsedMigration {
-  pub cfg: MigrationCfg,
-  pub sql_down: String,
-  pub sql_up: String,
-}
-
+/// Auxiliary parameters of a migration file
 #[derive(Debug, Default)]
 pub struct MigrationCfg {
-  pub dbs: Vec<Database>,
+  /// All unique declared databases
+  pub dbs: ArrayVec<Database, { Database::len() }>,
+  /// Declared repeatability
   pub repeatability: Option<Repeatability>,
 }
 
-/// Gets all information related to a migration from a reading source.
-#[inline]
-pub fn parse_migration_cfg<R>(read: R) -> crate::Result<MigrationCfg>
-where
-  R: Read,
-{
-  let mut br = BufReader::new(read);
-  let mut overall_buffer = String::with_capacity(16);
-  let mut cfg = MigrationCfg::default();
-
-  iterations(&mut overall_buffer, &mut br, |_| false)?;
-
-  parse_dbs(&mut br, &mut cfg.dbs, &mut overall_buffer)?;
-
-  parse_repeatability(&mut br, &mut overall_buffer, &mut cfg.repeatability)?;
-
-  Ok(cfg)
+/// In-memory representation of a parsed migration file
+#[derive(Debug, Default)]
+pub struct ParsedMigration {
+  /// See [MigrationCfg].
+  pub cfg: MigrationCfg,
+  /// -- oapth DOWN contents
+  pub sql_down: String,
+  /// -- oapth UP contents
+  pub sql_up: String,
 }
 
 /// Gets all information related to a migration from a reading source.
@@ -48,7 +41,10 @@ where
   if let Some(rslt) = overall_buffer.split("-- oapth dbs").nth(1) {
     for db_str in rslt.split(',') {
       if let Ok(db) = db_str.trim().parse() {
-        parsed_migration.cfg.dbs.push(db);
+        let is_not_already_inserted = !parsed_migration.cfg.dbs.contains(&db);
+        if is_not_already_inserted {
+          let _ = parsed_migration.cfg.dbs.try_push(db);
+        }
       }
     }
     iterations(&mut overall_buffer, &mut br, |_| false)?;
@@ -85,6 +81,41 @@ where
   Ok(parsed_migration)
 }
 
+/// Gets all information related to a migration from a reading source.
+#[inline]
+pub(crate) fn parse_migration_cfg<R>(read: R) -> crate::Result<MigrationCfg>
+where
+  R: Read,
+{
+  let mut migration_cfg = MigrationCfg { dbs: ArrayVec::new(), repeatability: None };
+
+  for (ident, toml_expr) in toml(read)? {
+    match (ident.as_ref(), toml_expr) {
+      ("dbs", Expr::Array(array)) => {
+        for s in array {
+          let elem = if let Ok(elem) = s.parse() {
+            elem
+          } else {
+            continue;
+          };
+          let _ = migration_cfg.dbs.try_push(elem);
+        }
+      }
+      ("repeatability", Expr::String(s)) => {
+        let elem = if let Ok(elem) = s.parse() {
+          elem
+        } else {
+          continue;
+        };
+        migration_cfg.repeatability = Some(elem);
+      }
+      _ => {}
+    }
+  }
+
+  Ok(migration_cfg)
+}
+
 #[inline]
 fn iterations<F, R>(
   overall_buffer: &mut String,
@@ -119,42 +150,6 @@ where
     }
   }
 
-  Ok(())
-}
-
-fn parse_dbs<R>(
-  br: &mut BufReader<R>,
-  dbs: &mut Vec<Database>,
-  overall_buffer: &mut String,
-) -> crate::Result<()>
-where
-  R: Read,
-{
-  if let Some(rslt) = overall_buffer.split("-- oapth dbs").nth(1) {
-    for db_str in rslt.split(',') {
-      if let Ok(db) = db_str.trim().parse() {
-        dbs.push(db);
-      }
-    }
-    iterations(overall_buffer, br, |_| false)?;
-  }
-  Ok(())
-}
-
-fn parse_repeatability<R>(
-  br: &mut BufReader<R>,
-  overall_buffer: &mut String,
-  repeatability: &mut Option<Repeatability>,
-) -> crate::Result<()>
-where
-  R: Read,
-{
-  if let Some(repeatability_str) = overall_buffer.split("-- oapth repeatability").nth(1) {
-    if let Ok(parsed_repeatability) = repeatability_str.trim().parse::<Repeatability>() {
-      *repeatability = Some(parsed_repeatability)
-    }
-    iterations(overall_buffer, br, |_| false)?;
-  }
   Ok(())
 }
 
@@ -220,7 +215,7 @@ mod tests {
     let always = parse_unified_migration(s.as_bytes()).unwrap();
     assert_eq!(always.cfg.repeatability, Some(Repeatability::Always));
 
-    let s = "-- oapth repeatability on_checksum_change\n-- oapth UP\nSOMETHING";
+    let s = "-- oapth repeatability on-checksum-change\n-- oapth UP\nSOMETHING";
     let on_checksum_change = parse_unified_migration(s.as_bytes()).unwrap();
     assert_eq!(on_checksum_change.cfg.repeatability, Some(Repeatability::OnChecksumChange));
   }

@@ -42,7 +42,7 @@ pub(crate) async fn delete_migrations<B>(
 where
   B: BackEnd,
 {
-  let mut buffer = ArrayString::<[u8; 128]>::new();
+  let mut buffer = ArrayString::<128>::new();
   buffer.write_fmt(format_args!(
     "DELETE FROM {schema_prefix}_oapth_migration WHERE _oapth_migration_omg_version = {mg_version} AND version > {m_version}",
     m_version = version,
@@ -64,7 +64,7 @@ where
   B: BackEnd,
   I: Clone + Iterator<Item = MigrationRef<'a, 'a>> + 'b,
 {
-  let mut insert_migration_group_str = ArrayString::<[u8; 512]>::new();
+  let mut insert_migration_group_str = ArrayString::<512>::new();
   insert_migration_group_str.write_fmt(format_args!(
     "INSERT INTO {schema_prefix}_oapth_migration_group (version, name)
     SELECT * FROM (SELECT {mg_version} AS version, '{mg_name}' AS name) AS tmp
@@ -79,7 +79,7 @@ where
 
   back_end.transaction(migrations.clone().map(|m| m.sql_up)).await?;
   let f = |m: MigrationRef<'a, 'a>| {
-    let mut buffer = ArrayString::<[u8; 512]>::new();
+    let mut buffer = ArrayString::<512>::new();
     buffer.write_fmt(format_args!(
       "INSERT INTO {schema_prefix}_oapth_migration (
         version, _oapth_migration_omg_version, checksum, name
@@ -103,7 +103,7 @@ where
 pub(crate) fn migrations_by_mg_version_query(
   mg_version: i32,
   schema_prefix: &str,
-) -> crate::Result<ArrayString<[u8; 512]>> {
+) -> crate::Result<ArrayString<512>> {
   let mut s = ArrayString::new();
   s.write_fmt(format_args!(
     "SELECT \

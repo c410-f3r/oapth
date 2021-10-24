@@ -1,17 +1,17 @@
-use oapth_commons::{group_and_migrations_from_path, parse_root_cfg};
+use oapth_commons::{group_and_migrations_from_path, parse_root_toml};
 use proc_macro::TokenStream;
 use quote::{format_ident, quote, ToTokens, TokenStreamExt};
 use std::path::Path;
 
 pub(crate) fn embed_migrations(cfg_path_str: &str) -> oapth_commons::Result<TokenStream> {
-  let mut dirs_str = parse_root_cfg(Path::new(cfg_path_str))?;
+  let (mut migration_groups, _) = parse_root_toml(Path::new(cfg_path_str))?;
   let mut groups_and_migrations = Vec::new();
 
-  dirs_str.sort();
+  migration_groups.sort();
   let mut ts = TokenStream::new();
 
-  for dir_str in dirs_str {
-    let ((mg_name, mg_version), ms) = group_and_migrations_from_path(&dir_str, |a, b| a.cmp(b))?;
+  for mg in migration_groups {
+    let ((mg_name, mg_version), ms) = group_and_migrations_from_path(&mg, |a, b| a.cmp(b))?;
     let filtered = ms
       .filter_map(|e| {
         let (checksum, dbs, name, repeatability, sql_down, sql_up, version) = e.ok()?;

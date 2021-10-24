@@ -4,28 +4,29 @@ use std::string::String;
 #[derive(Debug, argh::FromArgs)]
 /// Oapth - CLI
 pub(crate) struct Cli {
-  /// configuration file path. If not specified, defaults to "oapth.cfg" in the current directory.
+  /// configuration file path. If not specified, defaults to "oapth.toml" in the current directory.
   #[argh(option, short = 'c')]
-  pub(crate) cfg: Option<std::path::PathBuf>,
+  pub(crate) _cfg: Option<std::path::PathBuf>,
 
   #[argh(subcommand)]
-  pub(crate) commands: Commands,
+  pub(crate) _commands: Commands,
 
   /// number of files (migrations or seeds) that is going to be sent to the database in a
   /// single transaction.
   // Default value must match oapth::DEFAULT_BATCH_SIZE
   #[argh(default = "DEFAULT_BATCH_SIZE", option, short = 'f')]
-  pub(crate) files_num: usize,
+  pub(crate) _files_num: usize,
 
-  /// seeds directory. This option is ignored by every command expect `migrate_and_seed` and
-  /// `seed`.
+  /// seeds directory. If not specified, defaults to the optional directory specified in the
+  /// configuration file.
+  /// Returns an error if none of the options are available.
   #[cfg(feature = "dev-tools")]
   #[argh(option, short = 's')]
-  pub(crate) seeds: Option<std::path::PathBuf>,
+  pub(crate) _seeds: Option<std::path::PathBuf>,
 
   /// environment variable name that contains the database URL.
   #[argh(default = "DEFAULT_ENV_VAR.into()", option, short = 'v')]
-  pub(crate) var: String,
+  pub(crate) _var: String,
 }
 
 #[derive(Debug, argh::FromArgs)]
@@ -64,7 +65,7 @@ pub(crate) struct MigrateAndSeed {}
 pub(crate) struct Rollback {
   /// versions
   #[argh(option)]
-  pub(crate) versions: Vec<i32>,
+  pub(crate) _versions: Vec<i32>,
 }
 
 /// Seeds the database with arbitrary SQL

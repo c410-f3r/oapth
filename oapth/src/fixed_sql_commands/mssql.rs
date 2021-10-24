@@ -48,7 +48,7 @@ where
   let schemas_with_dbo = schemas.iter().map(|s| s.as_str()).chain(["dbo"]);
 
   for schema in schemas_with_dbo {
-    let mut buffer: ArrayString<[u8; 1024]> = ArrayString::new();
+    let mut buffer: ArrayString<1024> = ArrayString::new();
     
     for table in back_end.tables(schema).await? {
       buffer.write_fmt(format_args!("DROP TABLE {schema}.{};", table, schema = schema))?;
@@ -58,7 +58,7 @@ where
   }
 
   for schema in schemas {
-    let mut buffer: ArrayString<[u8; 128]> = ArrayString::new();
+    let mut buffer: ArrayString<128> = ArrayString::new();
     buffer.write_fmt(format_args!("DROP SCHEMA {};", schema))?;
     back_end.execute(&buffer).await?;
   }
@@ -85,7 +85,7 @@ where
 }
 
 #[inline]
-pub(crate) fn tables(schema: &str) -> crate::Result<ArrayString<[u8; 512]>> {
+pub(crate) fn tables(schema: &str) -> crate::Result<ArrayString<512>> {
   let mut buffer = ArrayString::new();
   buffer.write_fmt(format_args!("
     SELECT

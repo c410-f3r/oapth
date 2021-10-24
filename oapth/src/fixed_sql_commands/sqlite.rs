@@ -18,7 +18,7 @@ pub(crate) async fn clean<B>(back_end: &mut B) -> crate::Result<()>
 where
   B: crate::BackEnd,
 {
-  let mut buffer: ArrayString<[u8; 1024]> = ArrayString::new();
+  let mut buffer: ArrayString<1024> = ArrayString::new();
 
   for table in back_end.tables("").await? {
     buffer.write_fmt(format_args!("DROP TABLE {};", table))?;
@@ -30,7 +30,7 @@ where
 }
 
 #[inline]
-pub(crate) fn tables(_: &str) -> crate::Result<ArrayString<[u8; 128]>> {
+pub(crate) fn tables(_: &str) -> crate::Result<ArrayString<128>> {
   let mut buffer = ArrayString::new();
   buffer.write_fmt(format_args!(
     "SELECT tbl_name generic_column FROM sqlite_master tables WHERE type='table' AND tbl_name NOT LIKE 'sqlite_%';"
