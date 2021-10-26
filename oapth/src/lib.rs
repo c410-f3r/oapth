@@ -71,6 +71,13 @@ pub const DEFAULT_ENV_VAR: &str = "DATABASE_URL";
 #[oapth_macros::_with_schema]
 const OAPTH_SCHEMA_PREFIX: &str = "_oapth.";
 
+/// Useful in constant environments where the type must be explicitly declared.
+///
+/// ```rust
+/// const MIGRATIONS: EmbeddedMigrationsTy = embed_migrations!("SOME_CFG_FILE.toml");
+/// ```
+pub type EmbeddedMigrationsTy =
+  &'static [(MigrationGroupRef<'static>, &'static [MigrationRef<'static, 'static>])];
 /// Alias for `core::result::Result<T, oapth::Error>`
 pub type Result<T> = core::result::Result<T, Error>;
 
