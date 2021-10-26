@@ -73,7 +73,8 @@ const OAPTH_SCHEMA_PREFIX: &str = "_oapth.";
 
 /// Useful in constant environments where the type must be explicitly declared.
 ///
-/// ```rust
+/// ```ignore,rust
+/// use oapth::
 /// const MIGRATIONS: EmbeddedMigrationsTy = embed_migrations!("SOME_CFG_FILE.toml");
 /// ```
 pub type EmbeddedMigrationsTy =
