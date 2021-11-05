@@ -127,17 +127,15 @@ One thing worth noting is that these mandatory dependencies might already be par
 To make deployment easier, the final binary of your application can embed all necessary migrations by using the `embed_migrations!` macro that is available when selecting the `embed-migrations` feature.
 
 ```rust
-use oapth::{Commands, Config, MysqlAsync, embed_migrations};
+use oapth::{Commands, Config, EmbeddedMigrationsTy, MysqlAsync, embed_migrations};
 
-// This macro creates the constant `GROUPS` variable that holds all information
-// referred by `SOME_CONFIGURATION_FILE.toml`.
-embed_migrations!("SOME_CONFIGURATION_FILE.toml");
+const MIGRATIONS: EmbeddedMigrationsTy = embed_migrations!("SOME_CONFIGURATION_FILE.toml");
 
 #[async_std::main]
 async fn main() -> oapth::Result<()> {
   let config = Config::with_url_from_default_var()?;
   let mut commands = Commands::with_back_end(MysqlAsync::new(&config).await?);
-  let groups = GROUPS.iter().map(|e| (e.0, e.1.iter().cloned()));
+  let groups = MIGRATIONS.iter().map(|e| (e.0, e.1.iter().cloned()));
   commands.migrate_from_groups(groups).await?;
   Ok(())
 }
