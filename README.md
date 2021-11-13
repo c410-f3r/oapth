@@ -111,7 +111,7 @@ The library gives freedom to arrange groups and uses some external crates, bring
 use oapth::{Commands, Config, SqlxPg};
 use std::path::Path;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> oapth::Result<()> {
   let config = Config::with_url_from_default_var()?;
   let mut commands = Commands::with_back_end(SqlxPg::new(&config).await?);
@@ -131,7 +131,7 @@ use oapth::{Commands, Config, EmbeddedMigrationsTy, MysqlAsync, embed_migrations
 
 const MIGRATIONS: EmbeddedMigrationsTy = embed_migrations!("SOME_CONFIGURATION_FILE.toml");
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> oapth::Result<()> {
   let config = Config::with_url_from_default_var()?;
   let mut commands = Commands::with_back_end(MysqlAsync::new(&config).await?);
