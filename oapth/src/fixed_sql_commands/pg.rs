@@ -26,7 +26,7 @@ where
   }
 
   for domain in domains(back_end, "public").await? {
-    buffer.write_fmt(format_args!("DROP DOMAIN \"{}\";", domain))?;
+    buffer.write_fmt(format_args!("DROP DOMAIN \"{}\" CASCADE;", domain))?;
   }
 
   for function in functions(back_end, "public").await? {
@@ -50,7 +50,7 @@ where
   }
 
   for sequence in sequences(back_end, "public").await? {
-    buffer.write_fmt(format_args!("DROP SEQUENCE \"{}\";", sequence))?;
+    buffer.write_fmt(format_args!("DROP SEQUENCE \"{}\" CASCADE;", sequence))?;
   }
 
   back_end.execute(&buffer).await?;
