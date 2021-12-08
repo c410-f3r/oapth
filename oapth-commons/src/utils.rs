@@ -70,7 +70,6 @@ where
   let (mg, mut migrations_vec) = migrations_from_dir(path)?;
   migrations_vec.sort_by(cb);
   let migrations = migrations_vec.into_iter().map(move |path| {
-    let checksum;
     let mut dbs = Default::default();
     let name;
     let mut repeatability = Default::default();
@@ -122,7 +121,7 @@ where
       return Err(crate::Error::InvalidMigration);
     }
 
-    checksum = calc_checksum(&name, &sql_up, &sql_down, version);
+    let checksum = calc_checksum(&name, &sql_up, &sql_down, version);
 
     Ok((checksum, dbs, name, repeatability, sql_down, sql_up, version))
   });
