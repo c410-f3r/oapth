@@ -19,7 +19,7 @@ It is necessary to specify a desired feature to actually run the transactions, o
 ```bash
 # Example
 
-cargo install oapth-cli --features dev-tools,pg
+cargo install oapth-cli --features dev-tools,pg --git https://github.com/c410-f3r/oapth
 echo DATABASE_URL="postgres://USER:PW@localhost:5432/DB" > .env
 RUST_LOG=debug oapth-cli migrate
 ```
