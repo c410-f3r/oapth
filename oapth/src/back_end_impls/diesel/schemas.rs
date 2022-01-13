@@ -5,7 +5,7 @@ diesel::table! {
 }
 
 #[derive(Debug, PartialEq, diesel::QueryableByName)]
-#[table_name = "generic_table"]
+#[diesel(table_name = generic_table)]
 pub(crate) struct GenericTable {
   pub(crate) generic_column: String,
 }
