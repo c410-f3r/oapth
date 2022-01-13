@@ -7,7 +7,7 @@ use crate::{
 };
 use oapth_commons::Database;
 use alloc::string::String;
-use rusqlite::{Connection, Row, NO_PARAMS};
+use rusqlite::{Connection, Row};
 
 /// Wraps functionalities for the `rusqlite` crate
 #[derive(Debug)]
@@ -43,7 +43,7 @@ impl Rusqlite {
       self
         .conn
         .prepare(query)?
-        .query_map(NO_PARAMS, cb)?
+        .query_map([], cb)?
         .into_iter()
         .collect::<Result<Vec<T>, _>>()?,
     )

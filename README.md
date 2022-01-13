@@ -106,7 +106,7 @@ The library gives freedom to arrange groups and uses some external crates, bring
 ```rust
 // [dependencies]
 // oapth = { features = ["with-sqlx-pg"], version = "SOME_VERSION" }
-// sqlx-core = { default-features = false, features = ["runtime-tokio-native-tls"], version = "SOME_VERSION" }
+// sqlx-core = { default-features = false, features = ["runtime-tokio-rustls"], version = "SOME_VERSION" }
 
 use oapth::{Commands, Config, SqlxPg};
 use std::path::Path;
