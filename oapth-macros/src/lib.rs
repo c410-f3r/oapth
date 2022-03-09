@@ -8,18 +8,18 @@ mod embed_migrations;
 use proc_macro::{Delimiter, Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree};
 
 const DEV_TOOLS: &str = "dev-tools";
+const DIESEL_MYSQL: &str = "diesel-mysql";
+const DIESEL_PG: &str = "diesel-pg";
+const DIESEL_SQLITE: &str = "diesel-sqlite";
+const MYSQL_ASYNC: &str = "mysql_async";
+const RUSQLITE: &str = "rusqlite";
+const SQLX_MSSQL: &str = "sqlx-mssql";
+const SQLX_MYSQL: &str = "sqlx-mysql";
+const SQLX_PG: &str = "sqlx-pg";
+const SQLX_SQLITE: &str = "sqlx-sqlite";
 const STD: &str = "std";
-const WITH_DIESEL_MYSQL: &str = "with-diesel-mysql";
-const WITH_DIESEL_PG: &str = "with-diesel-pg";
-const WITH_DIESEL_SQLITE: &str = "with-diesel-sqlite";
-const WITH_MYSQL_ASYNC: &str = "with-mysql_async";
-const WITH_RUSQLITE: &str = "with-rusqlite";
-const WITH_SQLX_MSSQL: &str = "with-sqlx-mssql";
-const WITH_SQLX_MYSQL: &str = "with-sqlx-mysql";
-const WITH_SQLX_PG: &str = "with-sqlx-pg";
-const WITH_SQLX_SQLITE: &str = "with-sqlx-sqlite";
-const WITH_TIBERIUS: &str = "with-tiberius";
-const WITH_TOKIO_POSTGRES: &str = "with-tokio-postgres";
+const TIBERIUS: &str = "tiberius";
+const TOKIO_POSTGRES: &str = "tokio-postgres";
 
 /// Embed migrations
 #[cfg(feature = "embed-migrations")]
@@ -157,40 +157,40 @@ create_cfg!(
   _any_db_;
   create_grouped_features!(
     "any";
-    WITH_DIESEL_MYSQL,
-    WITH_DIESEL_PG,
-    WITH_DIESEL_SQLITE,
-    WITH_MYSQL_ASYNC,
-    WITH_RUSQLITE,
-    WITH_SQLX_MSSQL,
-    WITH_SQLX_MYSQL,
-    WITH_SQLX_PG,
-    WITH_SQLX_SQLITE,
-    WITH_TIBERIUS,
-    WITH_TOKIO_POSTGRES
+    DIESEL_MYSQL,
+    DIESEL_PG,
+    DIESEL_SQLITE,
+    MYSQL_ASYNC,
+    RUSQLITE,
+    SQLX_MSSQL,
+    SQLX_MYSQL,
+    SQLX_PG,
+    SQLX_SQLITE,
+    TIBERIUS,
+    TOKIO_POSTGRES
   )
 );
 
 // Back end
 
-create_cfg!(_diesel_mysql; _diesel_mysql_; create_features!(WITH_DIESEL_MYSQL));
-create_cfg!(_diesel_pg; _diesel_pg_; create_features!(WITH_DIESEL_PG));
-create_cfg!(_diesel_sqlite; _diesel_sqlite_; create_features!(WITH_DIESEL_SQLITE));
-create_cfg!(_mysql_async; _mysql_async_; create_features!(WITH_MYSQL_ASYNC));
-create_cfg!(_rusqlite; _rusqlite_; create_features!(WITH_RUSQLITE));
-create_cfg!(_sqlx_mssql; _sqlx_mssql_; create_features!(WITH_SQLX_MSSQL));
-create_cfg!(_sqlx_mysql; _sqlx_mysql_; create_features!(WITH_SQLX_MYSQL));
-create_cfg!(_sqlx_pg; _sqlx_pg_; create_features!(WITH_SQLX_PG));
-create_cfg!(_sqlx_sqlite; _sqlx_sqlite_; create_features!(WITH_SQLX_SQLITE));
-create_cfg!(_tiberius; _tiberius_; create_features!(WITH_TIBERIUS));
-create_cfg!(_tokio_postgres; _tokio_postgres_; create_features!(WITH_TOKIO_POSTGRES));
+create_cfg!(_diesel_mysql; _diesel_mysql_; create_features!(DIESEL_MYSQL));
+create_cfg!(_diesel_pg; _diesel_pg_; create_features!(DIESEL_PG));
+create_cfg!(_diesel_sqlite; _diesel_sqlite_; create_features!(DIESEL_SQLITE));
+create_cfg!(_mysql_async; _mysql_async_; create_features!(MYSQL_ASYNC));
+create_cfg!(_rusqlite; _rusqlite_; create_features!(RUSQLITE));
+create_cfg!(_sqlx_mssql; _sqlx_mssql_; create_features!(SQLX_MSSQL));
+create_cfg!(_sqlx_mysql; _sqlx_mysql_; create_features!(SQLX_MYSQL));
+create_cfg!(_sqlx_pg; _sqlx_pg_; create_features!(SQLX_PG));
+create_cfg!(_sqlx_sqlite; _sqlx_sqlite_; create_features!(SQLX_SQLITE));
+create_cfg!(_tiberius; _tiberius_; create_features!(TIBERIUS));
+create_cfg!(_tokio_postgres; _tokio_postgres_; create_features!(TOKIO_POSTGRES));
 
 // Database
 
 create_grouped_features!(
   mssql_any_features;
   "any";
-  WITH_SQLX_MSSQL, WITH_TIBERIUS
+  SQLX_MSSQL, TIBERIUS
 );
 create_cfg!(
   _mssql; _mssql_;
@@ -200,7 +200,7 @@ create_cfg!(
 create_grouped_features!(
   mysql_any_features;
   "any";
-  WITH_DIESEL_MYSQL, WITH_MYSQL_ASYNC, WITH_SQLX_MYSQL
+  DIESEL_MYSQL, MYSQL_ASYNC, SQLX_MYSQL
 );
 create_cfg!(
   _mysql; _mysql_;
@@ -210,7 +210,7 @@ create_cfg!(
 create_grouped_features!(
   pg_any_features;
   "any";
-  WITH_DIESEL_PG, WITH_SQLX_PG, WITH_TOKIO_POSTGRES
+  DIESEL_PG, SQLX_PG, TOKIO_POSTGRES
 );
 create_cfg!(
   _pg; _pg_;
@@ -220,7 +220,7 @@ create_cfg!(
 create_grouped_features!(
   sqlite_any_features;
   "any";
-  WITH_DIESEL_SQLITE, WITH_RUSQLITE, WITH_SQLX_SQLITE
+  DIESEL_SQLITE, RUSQLITE, SQLX_SQLITE
 );
 create_cfg!(
   _sqlite; _sqlite_;
@@ -233,14 +233,14 @@ create_cfg!(
   _diesel; _diesel_;
   create_grouped_features!(
     "any";
-    WITH_DIESEL_MYSQL, WITH_DIESEL_PG, WITH_DIESEL_SQLITE
+    DIESEL_MYSQL, DIESEL_PG, DIESEL_SQLITE
   )
 );
 create_cfg!(
   _sqlx; _sqlx_;
   create_grouped_features!(
     "any";
-    WITH_SQLX_MSSQL, WITH_SQLX_MYSQL, WITH_SQLX_PG, WITH_SQLX_SQLITE
+    SQLX_MSSQL, SQLX_MYSQL, SQLX_PG, SQLX_SQLITE
   )
 );
 
@@ -252,7 +252,7 @@ create_cfg!(
   _diesel_minus_pg; _diesel_minus_pg_;
   create_grouped_features!(
     "any";
-    WITH_DIESEL_MYSQL, WITH_DIESEL_SQLITE
+    DIESEL_MYSQL, DIESEL_SQLITE
   )
 );
 
@@ -270,7 +270,7 @@ create_cfg!(
   _with_schema; _with_schema_;
   create_grouped_features!(
     "any";
-    WITH_DIESEL_PG, WITH_SQLX_MSSQL, WITH_SQLX_PG, WITH_TIBERIUS, WITH_TOKIO_POSTGRES
+    DIESEL_PG, SQLX_MSSQL, SQLX_PG, TIBERIUS, TOKIO_POSTGRES
   )
 );
 
@@ -278,7 +278,7 @@ create_cfg!(
   _without_schema; _without_schema_;
   create_grouped_features!(
     "any";
-    WITH_DIESEL_MYSQL, WITH_DIESEL_SQLITE, WITH_MYSQL_ASYNC, WITH_RUSQLITE, WITH_SQLX_MYSQL, WITH_SQLX_SQLITE
+    DIESEL_MYSQL, DIESEL_SQLITE, MYSQL_ASYNC, RUSQLITE, SQLX_MYSQL, SQLX_SQLITE
   )
 );
 

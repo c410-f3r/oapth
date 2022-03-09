@@ -3,7 +3,7 @@ use crate::{
     delete_migrations, insert_migrations, migrations_by_mg_version_query,
     mysql::{tables, CREATE_MIGRATION_TABLES},
   },
-  BackEnd, BackEndGeneric, BoxFut, Config, DbMigration, MigrationRef, MigrationGroupRef,
+  Backend, BackendGeneric, Config, DbMigration, Migration, MigrationGroup,
 };
 use oapth_commons::Database;
 use alloc::string::String;
@@ -35,26 +35,19 @@ impl MysqlAsync {
   }
 }
 
-impl BackEnd for MysqlAsync {}
+impl Backend for MysqlAsync {}
 
-impl BackEndGeneric for MysqlAsync {
+#[async_trait::async_trait]
+impl BackendGeneric for MysqlAsync {
   #[oapth_macros::_dev_tools]
   #[inline]
-  fn clean<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
-  where
-    'a: 'ret,
-    Self: 'ret,
-  {
-    Box::pin(crate::fixed_sql_commands::mysql::clean(self))
+  async fn clean(&mut self, buffer: &mut String) -> crate::Result<()> {
+    crate::fixed_sql_commands::mysql::clean(self, buffer).await
   }
 
   #[inline]
-  fn create_oapth_tables<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
-  where
-    'a: 'ret,
-    Self: 'ret,
-  {
-    self.execute(CREATE_MIGRATION_TABLES)
+  async fn create_oapth_tables(&mut self) -> crate::Result<()> {
+    self.execute(CREATE_MIGRATION_TABLES).await
   }
 
   #[inline]
@@ -63,80 +56,61 @@ impl BackEndGeneric for MysqlAsync {
   }
 
   #[inline]
-  fn delete_migrations<'a, 'b, 'ret>(
-    &'a mut self,
+  async fn delete_migrations<S>(
+    &mut self,
+    buffer: &mut String,
     version: i32,
-    mg: MigrationGroupRef<'b>,
-  ) -> BoxFut<'ret, crate::Result<()>>
+    mg: &MigrationGroup<S>,
+  ) -> crate::Result<()>
   where
-    'a: 'ret,
-    'b: 'ret,
-    Self: 'ret,
+    S: AsRef<str> + Send + Sync
   {
-    Box::pin(delete_migrations(self, mg, "", version))
+    delete_migrations(self, buffer, mg, "", version).await
   }
 
   #[inline]
-  fn execute<'a, 'b, 'ret>(&'a mut self, command: &'b str) -> BoxFut<'ret, crate::Result<()>>
-  where
-    'a: 'ret,
-    'b: 'ret,
-    Self: 'ret,
-  {
-    Box::pin(async move {
+  async fn execute(&mut self, command: &str) -> crate::Result<()> {
       if command.is_empty() {
         Ok(())
       }
       else {
         Ok(self.conn.query_drop(command).await?)
       }
-    })
   }
 
   #[inline]
-  fn insert_migrations<'a, 'b, 'c, 'ret, I>(
-    &'a mut self,
+  async fn insert_migrations<'migration, DBS, I, S>(
+    &mut self,
+    buffer: &mut String,
     migrations: I,
-    mg: MigrationGroupRef<'b>,
-  ) -> BoxFut<'ret, crate::Result<()>>
+    mg: &MigrationGroup<S>,
+  ) -> crate::Result<()>
   where
-    'a: 'ret,
-    'b: 'ret,
-    'c: 'ret,
-    I: Clone + Iterator<Item = MigrationRef<'c, 'c>> + 'ret,
-    Self: 'ret
+    DBS: AsRef<[Database]> + 'migration,
+    I: Clone + Iterator<Item = &'migration Migration<DBS, S>> + Send + Sync,
+    S: AsRef<str> + Send + Sync + 'migration
   {
-    Box::pin(insert_migrations(self, mg, "", migrations))
+    insert_migrations(self, buffer, mg, "", migrations).await
   }
 
   #[inline]
-  fn migrations<'a, 'b, 'ret>(
-    &'a mut self,
-    mg: MigrationGroupRef<'b>,
-  ) -> BoxFut<'ret, crate::Result<Vec<DbMigration>>>
+  async fn migrations<S>(
+    &mut self,
+    buffer: &mut String,
+    mg: &MigrationGroup<S>,
+  ) -> crate::Result<Vec<DbMigration>>
   where
-    'a: 'ret,
-    'b: 'ret,
-    Self: 'ret,
+    S: AsRef<str> + Send + Sync
   {
-    Box::pin(async move {
-      let buffer = migrations_by_mg_version_query(mg.version(), "")?;
-      let vec: Vec<Row> = self.conn.query(buffer.as_str()).await?;
-      vec.into_iter().map(DbMigration::try_from).collect::<crate::Result<Vec<_>>>()
-    })
+    migrations_by_mg_version_query(buffer, mg.version(), "")?;
+    let vec: Vec<Row> = self.conn.query(buffer.as_str()).await?;
+    let rslt = vec.into_iter().map(DbMigration::try_from).collect::<crate::Result<Vec<_>>>();
+    buffer.clear();
+    rslt
   }
 
   #[inline]
-  fn query_string<'a, 'b, 'ret>(
-    &'a mut self,
-    query: &'b str,
-  ) -> BoxFut<'ret, crate::Result<Vec<String>>>
-  where
-    'a: 'ret,
-    'b: 'ret,
-    Self: 'ret,
-  {
-    Box::pin(async move {
+  async fn query_string(&mut self, query: &str) -> crate::Result<Vec<String>> {
       let rows: Vec<Row> = self.conn.query(query).await?;
       rows
         .into_iter()
@@ -146,18 +120,11 @@ impl BackEndGeneric for MysqlAsync {
           ).into()))
         })
         .collect::<crate::Result<_>>()
-    })
   }
   
   #[inline]
-  fn tables<'a, 'b, 'ret>(&'a mut self, schema: &'b str) -> BoxFut<'ret, crate::Result<Vec<String>>>
-  where
-    'a: 'ret,
-    'b: 'ret,
-    Self: 'ret,
-  {
-    Box::pin(async move {
-      let buffer = tables(schema)?;
+  async fn tables(&mut self, schema: &str) -> crate::Result<Vec<String>> {
+    let buffer = tables(schema)?;
       let rows: Vec<Row> = self.conn.query(buffer.as_str()).await?;
       rows
         .into_iter()
@@ -167,24 +134,19 @@ impl BackEndGeneric for MysqlAsync {
           ).into()))
         })
         .collect::<crate::Result<_>>()
-    })
   }
 
   #[inline]
-  fn transaction<'a, 'ret, I, S>(&'a mut self, commands: I) -> BoxFut<'ret, crate::Result<()>>
+  async fn transaction<I, S>(&mut self, commands: I) -> crate::Result<()>
   where
-    'a: 'ret,
-    I: Iterator<Item = S> + 'ret,
-    S: AsRef<str>,
-    Self: 'ret
+    I: Iterator<Item = S> + Send,
+    S: AsRef<str> + Send + Sync,
   {
-    Box::pin(async move {
       let mut transaction = self.conn.start_transaction(TxOpts::default()).await?;
       for command in commands {
         transaction.query_drop(command.as_ref()).await?;
       }
       transaction.commit().await?;
       Ok(())
-    })
   }
 }

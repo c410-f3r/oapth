@@ -47,8 +47,8 @@ async fn main() -> oapth::Result<()> {
   Ok(())
 }
 
-fn _cfg_file_path(cli: &cli::Cli) -> oapth::Result<Cow<'_, Path>> {
-  Ok(if let Some(el) = cli._cfg.as_deref() {
+fn _toml_file_path(cli: &cli::Cli) -> oapth::Result<Cow<'_, Path>> {
+  Ok(if let Some(el) = cli._toml.as_deref() {
     Cow::Borrowed(el)
   } else {
     let mut path_buf = current_dir()?;
@@ -58,35 +58,36 @@ fn _cfg_file_path(cli: &cli::Cli) -> oapth::Result<Cow<'_, Path>> {
 }
 
 #[inline]
-async fn _handle_commands<B>(cli: &cli::Cli, back_end: B) -> oapth::Result<()>
+async fn _handle_commands<B>(cli: &cli::Cli, backend: B) -> oapth::Result<()>
 where
-  B: oapth::BackEnd,
+  B: oapth::Backend,
 {
-  let mut commands = oapth::Commands::new(back_end, cli._files_num);
+  let mut buffer = String::new();
+  let mut commands = oapth::Commands::new(backend, cli._files_num);
   match cli._commands {
     #[cfg(feature = "dev-tools")]
     cli::Commands::Clean(..) => {
-      commands.clean().await?;
+      commands.clean(&mut buffer).await?;
     }
     cli::Commands::Migrate(..) => {
-      commands.migrate_from_cfg_path(&_cfg_file_path(cli)?).await?;
+      commands.migrate_from_toml_path(&mut buffer, &_toml_file_path(cli)?).await?;
     }
     #[cfg(feature = "dev-tools")]
     cli::Commands::MigrateAndSeed(..) => {
-      let (migration_groups, seeds) = oapth_commons::parse_root_toml(&_cfg_file_path(cli)?)?;
-      commands.migrate_from_groups_paths(migration_groups).await?;
+      let (migration_groups, seeds) = oapth_commons::parse_root_toml(&_toml_file_path(cli)?)?;
+      commands.migrate_from_groups_paths(&mut buffer, migration_groups).await?;
       commands.seed_from_dir(_seeds_file_path(cli, seeds.as_deref())?).await?;
     }
     cli::Commands::Rollback(ref rollback) => {
-      commands.rollback_from_cfg(&_cfg_file_path(cli)?, &rollback._versions).await?;
+      commands.rollback_from_toml(&mut buffer, &_toml_file_path(cli)?, &rollback._versions).await?;
     }
     #[cfg(feature = "dev-tools")]
     cli::Commands::Seed(..) => {
-      let (_, seeds) = oapth_commons::parse_root_toml(&_cfg_file_path(cli)?)?;
+      let (_, seeds) = oapth_commons::parse_root_toml(&_toml_file_path(cli)?)?;
       commands.seed_from_dir(_seeds_file_path(cli, seeds.as_deref())?).await?;
     }
     cli::Commands::Validate(..) => {
-      commands.validate_from_cfg(&_cfg_file_path(cli)?).await?;
+      commands.validate_from_toml(&_toml_file_path(cli)?).await?;
     }
   }
   Ok(())
@@ -95,7 +96,7 @@ where
 #[cfg(feature = "dev-tools")]
 fn _seeds_file_path<'a, 'b, 'c>(
   cli: &'a cli::Cli,
-  seeds_cfg: Option<&'b Path>,
+  seeds_toml: Option<&'b Path>,
 ) -> oapth::Result<&'c Path>
 where
   'a: 'c,
@@ -104,7 +105,7 @@ where
   if let Some(el) = cli._seeds.as_deref() {
     return Ok(el);
   }
-  if let Some(el) = seeds_cfg {
+  if let Some(el) = seeds_toml {
     return Ok(el);
   }
   Err(oapth::Error::Other(

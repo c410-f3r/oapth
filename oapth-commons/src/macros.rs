@@ -32,7 +32,7 @@ macro_rules! create_enum {
             }
         }
 
-        #[cfg(feature = "with-quote")]
+        #[cfg(feature = "quote")]
         impl quote::ToTokens for $enum_ident {
           fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
             match self {

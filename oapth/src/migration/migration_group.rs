@@ -22,7 +22,7 @@ where
 {
   /// Creates a new instance from all necessary parameters.
   #[inline]
-  pub fn new(name: S, version: i32) -> Self {
+  pub const fn new(name: S, version: i32) -> Self {
     Self { name, version }
   }
 
@@ -39,21 +39,6 @@ where
     self.name.as_ref()
   }
 
-  /// Migration Group Reference
-  ///
-  /// Returns an instance of `MigrationGroupRef`.
-  ///
-  /// # Example
-  ///
-  /// ```rust
-  /// use oapth::doc_tests::migration_group;
-  /// let _ = migration_group().m_g_ref();
-  /// ```
-  #[inline]
-  pub fn m_g_ref(&self) -> MigrationGroupRef<'_> {
-    MigrationGroupRef { name: self.name.as_ref(), version: self.version }
-  }
-
   /// Version
   ///
   /// # Example
@@ -65,12 +50,5 @@ where
   #[inline]
   pub fn version(&self) -> i32 {
     self.version
-  }
-}
-
-impl<'s> MigrationGroupRef<'s> {
-  /// Creates a new instance from all necessary input references.
-  pub const fn new_ref(name: &'s str, version: i32) -> Self {
-    Self { name, version }
   }
 }

@@ -6,7 +6,7 @@ use std::string::String;
 pub(crate) struct Cli {
   /// configuration file path. If not specified, defaults to "oapth.toml" in the current directory.
   #[argh(option, short = 'c')]
-  pub(crate) _cfg: Option<std::path::PathBuf>,
+  pub(crate) _toml: Option<std::path::PathBuf>,
 
   #[argh(subcommand)]
   pub(crate) _commands: Commands,

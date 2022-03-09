@@ -1,5 +1,5 @@
 use crate::{
-  parse_migration_cfg, parse_unified_migration,
+  parse_migration_toml, parse_unified_migration,
   toml_parser::{toml, Expr, EXPR_ARRAY_MAX_LEN},
   Database, Repeatability,
 };
@@ -63,7 +63,7 @@ pub fn files(dir: &Path) -> crate::Result<impl Iterator<Item = crate::Result<Dir
 pub fn group_and_migrations_from_path<F>(
   path: &Path,
   cb: F,
-) -> crate::Result<(MigrationGroupParts, impl Clone + Iterator<Item = crate::Result<MigrationParts>>)>
+) -> crate::Result<(MigrationGroupParts, impl Iterator<Item = crate::Result<MigrationParts>>)>
 where
   F: FnMut(&PathBuf, &PathBuf) -> Ordering,
 {
@@ -97,7 +97,7 @@ where
         let file_path = file.path();
         let file_name = opt_to_inv_mig!(|| file_path.file_name()?.to_str())?;
         if file_name == &cfg_file_name {
-          let mc = parse_migration_cfg(File::open(file_path)?)?;
+          let mc = parse_migration_toml(File::open(file_path)?)?;
           dbs = mc.dbs;
           repeatability = mc.repeatability;
         } else if file_name == &down_file_name {

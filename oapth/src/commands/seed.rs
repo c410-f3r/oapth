@@ -1,4 +1,4 @@
-use crate::{BackEnd, Commands};
+use crate::{Backend, Commands};
 #[oapth_macros::_std]
 use {
   std::{fs::read_to_string, path::Path},
@@ -6,7 +6,7 @@ use {
 
 impl<B> Commands<B>
 where
-  B: BackEnd,
+  B: Backend,
 {
   /// Executes an arbitrary stream of SQL commands
   ///
@@ -14,10 +14,10 @@ where
   #[inline]
   pub async fn seed<I, S>(&mut self, seeds: I) -> crate::Result<()>
   where
-    I: Iterator<Item = S>,
-    S: AsRef<str>
+    I: Iterator<Item = S> + Send,
+    S: AsRef<str> + Send + Sync
   {
-    self.back_end.transaction(seeds).await?;
+    self.backend.transaction(seeds).await?;
     Ok(())
   }
 

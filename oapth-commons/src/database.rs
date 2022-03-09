@@ -10,5 +10,7 @@ create_enum! {
     Pg, "pg";
     /// SQLite
     Sqlite, "sqlite";
+    /// Unit (Dummy used for testing)
+    Unit, "unit";
   }
 }

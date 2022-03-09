@@ -12,7 +12,7 @@ use siphasher::sip::SipHasher13;
 /// Migration - Owned
 pub type MigrationOwned = Migration<ArrayVec<Database, { Database::len() }>, String>;
 /// Migration - Reference
-pub type MigrationRef<'dbs, 's> = Migration<&'dbs [Database], &'s str>;
+pub type MigrationRef<'dbs, 'str> = Migration<&'dbs [Database], &'str str>;
 
 /// A migration that is intended to be inserted into a database.
 ///
@@ -60,6 +60,33 @@ where
     })
   }
 
+  /// Creates a new instance from all necessary input references.
+  ///
+  /// # Safety
+  ///
+  /// The caller of this function must include a valid checksum.
+  #[allow(
+    // Not used internally
+    unsafe_code
+  )]
+  #[inline]
+  pub const unsafe fn new_ref(
+    checksum: u64,
+    dbs: DBS,
+    name: S,
+    repeatability: Option<Repeatability>,
+    sql_down: S,
+    sql_up: S,
+    version: i32,
+  ) -> Self {
+    Self {
+      dbs,
+      common: MigrationCommon { checksum, name, repeatability, version },
+      sql_down,
+      sql_up,
+    }
+  }
+
   /// Checksum
   ///
   /// # Example
@@ -86,31 +113,6 @@ where
   #[inline]
   pub fn dbs(&self) -> &[Database] {
     self.dbs.as_ref()
-  }
-
-  /// Migration Reference
-  ///
-  /// Returns an instance of `MigrationRef`.
-  ///
-  /// # Example
-  ///
-  /// ```rust
-  /// use oapth::doc_tests::migration;
-  /// let _ = migration().m_ref();
-  /// ```
-  #[inline]
-  pub fn m_ref(&self) -> MigrationRef<'_, '_> {
-    MigrationRef {
-      common: MigrationCommon {
-        checksum: self.common.checksum,
-        name: self.common.name.as_ref(),
-        repeatability: self.common.repeatability,
-        version: self.common.version,
-      },
-      dbs: self.dbs.as_ref(),
-      sql_down: self.sql_down.as_ref(),
-      sql_up: self.sql_up.as_ref(),
-    }
   }
 
   /// Name
@@ -178,34 +180,5 @@ where
   #[inline]
   pub fn version(&self) -> i32 {
     self.common.version
-  }
-}
-
-impl<'dbs, 's> MigrationRef<'dbs, 's> {
-  /// Creates a new instance from all necessary input references.
-  ///
-  /// # Safety
-  ///
-  /// The caller of this function must include a valid checksum.
-  #[allow(
-    // Not used internally
-    unsafe_code
-  )]
-  #[inline]
-  pub const unsafe fn new_ref(
-    checksum: u64,
-    dbs: &'dbs [Database],
-    name: &'s str,
-    repeatability: Option<Repeatability>,
-    sql_down: &'s str,
-    sql_up: &'s str,
-    version: i32,
-  ) -> Self {
-    Self {
-      dbs,
-      common: MigrationCommon { checksum, name, repeatability, version },
-      sql_down,
-      sql_up,
-    }
   }
 }

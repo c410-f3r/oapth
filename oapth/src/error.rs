@@ -4,18 +4,10 @@ use core::fmt;
 pub enum Error {
   /// Databases must be sorted and unique
   DatabasesMustBeSortedAndUnique,
-  #[cfg(any(
-    feature = "with-diesel-mysql",
-    feature = "with-diesel-pg",
-    feature = "with-diesel-sqlite",
-  ))]
+  #[cfg(any(feature = "diesel-mysql", feature = "diesel-pg", feature = "diesel-sqlite",))]
   /// Diesel error
   Diesel(diesel::result::Error),
-  #[cfg(any(
-    feature = "with-diesel-mysql",
-    feature = "with-diesel-pg",
-    feature = "with-diesel-sqlite",
-  ))]
+  #[cfg(any(feature = "diesel-mysql", feature = "diesel-pg", feature = "diesel-sqlite",))]
   /// Diesel connection error
   DieselConnection(diesel::result::ConnectionError),
   /// Different rollback versions
@@ -30,31 +22,31 @@ pub enum Error {
   /// Missing environment variable
   MissingEnvVar,
   /// `mysql_async` error
-  #[cfg(feature = "with-mysql_async")]
+  #[cfg(feature = "mysql_async")]
   MysqlAsync(Box<mysql_async::Error>),
   /// Oapth commons
   OapthCommons(oapth_commons::Error),
   /// Other
   Other(&'static str),
   /// rust-native-tls
-  #[cfg(feature = "with-tokio-postgres")]
+  #[cfg(feature = "tokio-postgres")]
   RustNativeTls(native_tls::Error),
   /// `rusqlite` error
-  #[cfg(feature = "with-rusqlite")]
+  #[cfg(feature = "rusqlite")]
   Rusqlite(rusqlite::Error),
   /// `sqlx` error
   #[cfg(any(
-    feature = "with-sqlx-mssql",
-    feature = "with-sqlx-mysql",
-    feature = "with-sqlx-pg",
-    feature = "with-sqlx-sqlite",
+    feature = "sqlx-mssql",
+    feature = "sqlx-mysql",
+    feature = "sqlx-pg",
+    feature = "sqlx-sqlite",
   ))]
   Sqlx(sqlx_core::error::Error),
   /// `tiberius` error
-  #[cfg(feature = "with-tiberius")]
+  #[cfg(feature = "tiberius")]
   Tiberius(Box<tiberius::error::Error>),
   /// `tokio-postgres` error
-  #[cfg(feature = "with-tokio-postgres")]
+  #[cfg(feature = "tokio-postgres")]
   TokioPostgres(tokio_postgres::Error),
   /// Validation - Divergent migrations
   ValidationDivergentMigrations(i32),
@@ -85,7 +77,7 @@ impl From<fmt::Error> for Error {
   }
 }
 
-#[cfg(feature = "with-mysql_async")]
+#[cfg(feature = "mysql_async")]
 impl From<mysql_async::Error> for Error {
   #[inline]
   fn from(from: mysql_async::Error) -> Self {
@@ -108,7 +100,7 @@ impl From<oapth_commons::Error> for Error {
   }
 }
 
-#[cfg(feature = "with-tokio-postgres")]
+#[cfg(feature = "tokio-postgres")]
 impl From<native_tls::Error> for Error {
   #[inline]
   fn from(from: native_tls::Error) -> Self {
@@ -116,7 +108,7 @@ impl From<native_tls::Error> for Error {
   }
 }
 
-#[cfg(feature = "with-rusqlite")]
+#[cfg(feature = "rusqlite")]
 impl From<rusqlite::Error> for Error {
   #[inline]
   fn from(from: rusqlite::Error) -> Self {
@@ -153,17 +145,9 @@ impl fmt::Debug for Error {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match *self {
       Self::DatabasesMustBeSortedAndUnique => write!(f, "Databases must be sorted an unique"),
-      #[cfg(any(
-        feature = "with-diesel-mysql",
-        feature = "with-diesel-pg",
-        feature = "with-diesel-sqlite",
-      ))]
+      #[cfg(any(feature = "diesel-mysql", feature = "diesel-pg", feature = "diesel-sqlite",))]
       Self::Diesel(ref e) => write!(f, "Diesel: {}", e),
-      #[cfg(any(
-        feature = "with-diesel-mysql",
-        feature = "with-diesel-pg",
-        feature = "with-diesel-sqlite",
-      ))]
+      #[cfg(any(feature = "diesel-mysql", feature = "diesel-pg", feature = "diesel-sqlite",))]
       Self::DieselConnection(ref e) => write!(f, "Diesel connection: {}", e),
       Self::DifferentRollbackVersions => {
         write!(f, "The number of rollback versions must be equal the number of migration groups")
@@ -175,24 +159,24 @@ impl fmt::Debug for Error {
       Self::MissingEnvVar => {
         write!(f, "The environnement variable that contains the database url must be set")
       }
-      #[cfg(feature = "with-mysql_async")]
+      #[cfg(feature = "mysql_async")]
       Self::MysqlAsync(ref e) => write!(f, "MySql: {}", e),
       Self::OapthCommons(ref e) => write!(f, "Oapth commons: {}", e),
       Self::Other(s) => write!(f, "Other: {}", s),
-      #[cfg(feature = "with-tokio-postgres")]
+      #[cfg(feature = "tokio-postgres")]
       Self::RustNativeTls(ref e) => write!(f, "rust-native-tls: {}", e),
-      #[cfg(feature = "with-rusqlite")]
+      #[cfg(feature = "rusqlite")]
       Self::Rusqlite(ref e) => write!(f, "Rusqlite: {}", e),
       #[cfg(any(
-        feature = "with-sqlx-mssql",
-        feature = "with-sqlx-mysql",
-        feature = "with-sqlx-pg",
-        feature = "with-sqlx-sqlite",
+        feature = "sqlx-mssql",
+        feature = "sqlx-mysql",
+        feature = "sqlx-pg",
+        feature = "sqlx-sqlite",
       ))]
       Self::Sqlx(ref e) => write!(f, "SQLx: {}", e),
-      #[cfg(feature = "with-tiberius")]
+      #[cfg(feature = "tiberius")]
       Self::Tiberius(ref e) => write!(f, "tiberius: {}", e),
-      #[cfg(feature = "with-tokio-postgres")]
+      #[cfg(feature = "tokio-postgres")]
       Self::TokioPostgres(ref e) => write!(f, "tokio postgres: {}", e),
       Self::ValidationDivergentMigrations(version) => {
         write!(

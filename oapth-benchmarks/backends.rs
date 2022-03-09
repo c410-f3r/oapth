@@ -39,7 +39,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::with_back_end(DieselMysql::new(&mysql_config).await.unwrap());
+            let c = Commands::with_backend(DieselMysql::new(&mysql_config).await.unwrap());
             $diesel_mysql(c).await;
           });
         })
@@ -49,7 +49,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::with_back_end(DieselPg::new(&pg_config).await.unwrap());
+            let c = Commands::with_backend(DieselPg::new(&pg_config).await.unwrap());
             $diesel_pg(c).await;
           });
         })
@@ -59,7 +59,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::with_back_end(DieselSqlite::new(&sqlite_config).await.unwrap());
+            let c = Commands::with_backend(DieselSqlite::new(&sqlite_config).await.unwrap());
             $diesel_sqlite(c).await;
           });
         })
@@ -69,7 +69,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::with_back_end(MysqlAsync::new(&mysql_config).await.unwrap());
+            let c = Commands::with_backend(MysqlAsync::new(&mysql_config).await.unwrap());
             $mysql_async(c).await;
           });
         })
@@ -79,7 +79,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::with_back_end(Rusqlite::new(&sqlite_config).await.unwrap());
+            let c = Commands::with_backend(Rusqlite::new(&sqlite_config).await.unwrap());
             $rusqlite(c).await;
           });
         })
@@ -89,7 +89,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::with_back_end(SqlxMssql::new(&mssql_config).await.unwrap());
+            let c = Commands::with_backend(SqlxMssql::new(&mssql_config).await.unwrap());
             $sqlx_mssql(c).await;
           })
         })
@@ -99,7 +99,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::with_back_end(SqlxMysql::new(&mysql_config).await.unwrap());
+            let c = Commands::with_backend(SqlxMysql::new(&mysql_config).await.unwrap());
             $sqlx_mysql(c).await;
           });
         })
@@ -109,7 +109,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::with_back_end(SqlxPg::new(&pg_config).await.unwrap());
+            let c = Commands::with_backend(SqlxPg::new(&pg_config).await.unwrap());
             $sqlx_pg(c).await;
           });
         })
@@ -119,7 +119,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::with_back_end(SqlxSqlite::new(&sqlite_config).await.unwrap());
+            let c = Commands::with_backend(SqlxSqlite::new(&sqlite_config).await.unwrap());
             $sqlx_sqlite(c).await;
           });
         })
@@ -132,7 +132,7 @@ macro_rules! add_benchmark_group {
             use tokio_util::compat::TokioAsyncWriteCompatExt;
             let tcp =
               tokio::net::TcpStream::connect(mssql_config.full_host().unwrap()).await.unwrap();
-            let c = Commands::with_back_end(
+            let c = Commands::with_backend(
               Tiberius::new(&mssql_config, tcp.compat_write()).await.unwrap(),
             );
             $tiberius(c).await;
@@ -144,7 +144,7 @@ macro_rules! add_benchmark_group {
         b.iter(|| {
           let rt = Runtime::new().unwrap();
           rt.block_on(async {
-            let c = Commands::with_back_end(TokioPostgres::new(&pg_config).await.unwrap());
+            let c = Commands::with_backend(TokioPostgres::new(&pg_config).await.unwrap());
             $tokio_postgres(c).await;
           });
         })
@@ -158,7 +158,7 @@ macro_rules! add_benchmark_group {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-  macro_rules! cfg {
+  macro_rules! path {
     () => {
       Path::new("../oapth-test-utils/migrations.toml")
     };
@@ -167,37 +167,37 @@ fn criterion_benchmark(c: &mut Criterion) {
     c,
     migrate,
     |mut c: Commands<DieselMysql>| async move {
-      c.migrate_from_cfg_path(cfg!()).await.unwrap();
+      c.migrate_from_toml_path(&mut String::new(), path!()).await.unwrap();
     },
     |mut c: Commands<DieselPg>| async move {
-      c.migrate_from_cfg_path(cfg!()).await.unwrap();
+      c.migrate_from_toml_path(&mut String::new(), path!()).await.unwrap();
     },
     |mut c: Commands<DieselSqlite>| async move {
-      c.migrate_from_cfg_path(cfg!()).await.unwrap();
+      c.migrate_from_toml_path(&mut String::new(), path!()).await.unwrap();
     },
     |mut c: Commands<MysqlAsync>| async move {
-      c.migrate_from_cfg_path(cfg!()).await.unwrap();
+      c.migrate_from_toml_path(&mut String::new(), path!()).await.unwrap();
     },
     |mut c: Commands<Rusqlite>| async move {
-      c.migrate_from_cfg_path(cfg!()).await.unwrap();
+      c.migrate_from_toml_path(&mut String::new(), path!()).await.unwrap();
     },
     |mut c: Commands<SqlxMssql>| async move {
-      c.migrate_from_cfg_path(cfg!()).await.unwrap();
+      c.migrate_from_toml_path(&mut String::new(), path!()).await.unwrap();
     },
     |mut c: Commands<SqlxMysql>| async move {
-      c.migrate_from_cfg_path(cfg!()).await.unwrap();
+      c.migrate_from_toml_path(&mut String::new(), path!()).await.unwrap();
     },
     |mut c: Commands<SqlxPg>| async move {
-      c.migrate_from_cfg_path(cfg!()).await.unwrap();
+      c.migrate_from_toml_path(&mut String::new(), path!()).await.unwrap();
     },
     |mut c: Commands<SqlxSqlite>| async move {
-      c.migrate_from_cfg_path(cfg!()).await.unwrap();
+      c.migrate_from_toml_path(&mut String::new(), path!()).await.unwrap();
     },
     |mut c: Commands<Tiberius<_>>| async move {
-      c.migrate_from_cfg_path(cfg!()).await.unwrap();
+      c.migrate_from_toml_path(&mut String::new(), path!()).await.unwrap();
     },
     |mut c: Commands<TokioPostgres>| async move {
-      c.migrate_from_cfg_path(cfg!()).await.unwrap();
+      c.migrate_from_toml_path(&mut String::new(), path!()).await.unwrap();
     }
   );
 }

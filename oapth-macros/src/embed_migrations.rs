@@ -24,7 +24,7 @@ pub(crate) fn embed_migrations(cfg_path_str: &str) -> oapth_commons::Result<Toke
     let ms_ident = format_ident!("{}_MIGRATIONS", mg_name);
 
     let quote = quote! {
-      const #mg_ident: oapth::MigrationGroupRef<'static> = oapth::MigrationGroupRef::new_ref(
+      const #mg_ident: &oapth::MigrationGroupRef<'static> = &oapth::MigrationGroupRef::new(
         #mg_name, #mg_version
       );
 
@@ -50,7 +50,7 @@ pub(crate) fn embed_migrations(cfg_path_str: &str) -> oapth_commons::Result<Toke
     {
       #(#inner)*
 
-      &[#(#groups_and_migrations,)*]
+      &[#(#groups_and_migrations,)*][..]
     }
   }))
 }

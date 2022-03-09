@@ -4,12 +4,14 @@ mod rollback;
 oapth_macros::_dev_tools_! { mod seed; }
 mod validate;
 
-use crate::{BackEnd, MigrationRef, DEFAULT_BATCH_SIZE};
+use oapth_commons::Database;
+
+use crate::{Backend, Migration, DEFAULT_BATCH_SIZE};
 
 /// SQL commands facade
 #[derive(Debug)]
 pub struct Commands<B> {
-  pub(crate) back_end: B,
+  pub(crate) backend: B,
   #[allow(
     // An important part of the public interface but only used on std environments
     dead_code
@@ -19,30 +21,31 @@ pub struct Commands<B> {
 
 impl<B> Commands<B>
 where
-  B: BackEnd,
+  B: Backend,
 {
-  /// Creates a new instance from a given BackEnd and batch size.
+  /// Creates a new instance from a given Backend and batch size.
   #[inline]
-  pub fn new(back_end: B, batch_size: usize) -> Self {
-    Self { back_end, batch_size }
+  pub fn new(backend: B, batch_size: usize) -> Self {
+    Self { backend, batch_size }
   }
 
-  /// Creates a new instance from a given BackEnd.
+  /// Creates a new instance from a given Backend.
   ///
   /// Batch size will default to 128.
   #[inline]
-  pub fn with_back_end(back_end: B) -> Self {
+  pub fn with_backend(backend: B) -> Self {
     let batch_size = DEFAULT_BATCH_SIZE;
-    Self { back_end, batch_size }
+    Self { backend, batch_size }
   }
 
   #[inline]
-  fn filter_by_db<'a, 'b, I>(
+  fn filter_by_db<'migration, DBS, I, S>(
     migrations: I,
-  ) -> impl Clone + Iterator<Item = MigrationRef<'a, 'a>> + 'b
+  ) -> impl Clone + Iterator<Item = &'migration Migration<DBS, S>>
   where
-    'a: 'b,
-    I: Clone + Iterator<Item = MigrationRef<'a, 'a>> + 'b,
+    DBS: AsRef<[Database]> + 'migration,
+    I: Clone + Iterator<Item = &'migration Migration<DBS, S>>,
+    S: AsRef<str> + 'migration,
   {
     let db = B::database();
     migrations.filter(move |m| if m.dbs().is_empty() { true } else { m.dbs().contains(&db) })
