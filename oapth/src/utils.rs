@@ -1,4 +1,6 @@
-use crate::{DbMigration, MigrationRef};
+use oapth_commons::Database;
+
+use crate::{DbMigration, Migration};
 #[oapth_macros::_std]
 use {
   crate::{MigrationCommon, MigrationGroupOwned, MigrationOwned},
@@ -10,7 +12,7 @@ use {
 macro_rules! loop_files {
   ($buffer:expr, $iter:expr, $n:expr, $cb:expr) => {{
     loop {
-      for el in crate::iter_n_times($n, &mut $iter) {
+      for el in $iter.by_ref().take($n) {
         $buffer.push(el?);
       }
       if $buffer.is_empty() {
@@ -34,10 +36,14 @@ pub(crate) fn binary_seach_migration_by_version(
 }
 
 #[inline]
-pub(crate) fn is_migration_divergent(
+pub(crate) fn is_migration_divergent<DBS, S>(
   db_migrations: &[DbMigration],
-  migration: &MigrationRef<'_, '_>,
-) -> bool {
+  migration: &Migration<DBS, S>,
+) -> bool
+where
+  DBS: AsRef<[Database]>,
+  S: AsRef<str>,
+{
   let version = migration.version();
   let opt = binary_seach_migration_by_version(version, db_migrations);
   let db_migration = if let Some(rslt) = opt {
@@ -52,27 +58,10 @@ pub(crate) fn is_migration_divergent(
 
 #[oapth_macros::_std]
 #[inline]
-pub(crate) fn iter_n_times<'a, 'b, I, T>(n: usize, iter: &'a mut I) -> impl Iterator<Item = T> + 'b
-where
-  'a: 'b,
-  I: Iterator<Item = T>,
-{
-  let mut counter: usize = 0;
-  core::iter::from_fn(move || {
-    if counter >= n {
-      return None;
-    }
-    counter = counter.saturating_add(1);
-    iter.next()
-  })
-}
-
-#[oapth_macros::_std]
-#[inline]
 pub(crate) fn group_and_migrations_from_path<F>(
   path: &Path,
   cb: F,
-) -> crate::Result<(MigrationGroupOwned, impl Clone + Iterator<Item = crate::Result<MigrationOwned>>)>
+) -> crate::Result<(MigrationGroupOwned, impl Iterator<Item = crate::Result<MigrationOwned>>)>
 where
   F: FnMut(&PathBuf, &PathBuf) -> Ordering,
 {

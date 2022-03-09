@@ -1,5 +1,5 @@
-use arrayvec::ArrayString;
 use core::fmt::Write;
+use arrayvec::ArrayString;
 
 pub(crate) const CREATE_MIGRATION_TABLES: &str = concat!(
   "IF (NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = '_oapth'))
@@ -40,39 +40,39 @@ pub(crate) const CREATE_MIGRATION_TABLES: &str = concat!(
 
 #[oapth_macros::_dev_tools]
 #[inline]
-pub(crate) async fn clean<B>(back_end: &mut B) -> crate::Result<()>
+pub(crate) async fn clean<B>(backend: &mut B, buffer: &mut String) -> crate::Result<()>
 where
-  B: crate::BackEnd,
+  B: crate::Backend,
 {
-  let schemas = schemas(back_end).await?;
+  let schemas = schemas(backend).await?;
   let schemas_with_dbo = schemas.iter().map(|s| s.as_str()).chain(["dbo"]);
 
   for schema in schemas_with_dbo {
-    let mut buffer: ArrayString<1024> = ArrayString::new();
-    
-    for table in back_end.tables(schema).await? {
+    for table in backend.tables(schema).await? {
       buffer.write_fmt(format_args!("DROP TABLE {schema}.{};", table, schema = schema))?;
     }
-
-    back_end.execute(&buffer).await?;
+    backend.execute(buffer).await?;
   }
+
+  buffer.clear();
 
   for schema in schemas {
-    let mut buffer: ArrayString<128> = ArrayString::new();
     buffer.write_fmt(format_args!("DROP SCHEMA {};", schema))?;
-    back_end.execute(&buffer).await?;
+    backend.execute(buffer).await?;
   }
+
+  buffer.clear();
 
   Ok(())
 }
 
 #[oapth_macros::_dev_tools]
 #[inline]
-pub(crate) async fn schemas<B>(back_end: &mut B) -> crate::Result<Vec<String>>
+pub(crate) async fn schemas<B>(backend: &mut B) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd,
+  B: crate::Backend,
 {
-  Ok(back_end.query_string("
+  backend.query_string("
     SELECT
       s.name
     FROM
@@ -81,7 +81,7 @@ where
     WHERE
       u.issqluser = 1
       AND s.name NOT IN ('dbo', 'sys', 'guest', 'INFORMATION_SCHEMA');
-  ").await?)
+  ").await
 }
 
 #[inline]

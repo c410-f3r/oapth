@@ -21,7 +21,7 @@ services:
             dockerfile: mssql/Dockerfile
         environment:
             ACCEPT_EULA: 'Y'
-            SA_PASSWORD: yourStrong_Password
+            SA_PASSWORD: yourStrong(!)Password
         ports:
           - 1433:1433
 

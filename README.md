@@ -12,7 +12,7 @@ This project tries to support all database bridges of the Rust ecosystem, is ful
 
 ## No features by default
 
-It is necessary to specify a desired feature to actually run the transactions, otherwise you will get a bunch of code that won't do much. Take a look at [Supported back ends](#supported-back-ends).
+It is necessary to specify a desired feature to actually run the transactions, otherwise you will get a bunch of code that won't do much. Take a look at [Supported back ends](#supported-backends).
 
 ## CLI
 
@@ -101,11 +101,11 @@ oapth.toml
 
 ## Library
 
-The library gives freedom to arrange groups and uses some external crates, bringing a total of 7 additional dependencies into your application. If this overhead is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
+The library gives freedom to arrange groups and uses some external crates, bringing ~10 additional dependencies into your application. If this overhead is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
 
 ```rust
 // [dependencies]
-// oapth = { features = ["with-sqlx-pg"], version = "SOME_VERSION" }
+// oapth = { features = ["sqlx-pg"], version = "SOME_VERSION" }
 // sqlx-core = { default-features = false, features = ["runtime-tokio-rustls"], version = "SOME_VERSION" }
 
 use oapth::{Commands, Config, SqlxPg};
@@ -114,7 +114,7 @@ use std::path::Path;
 #[tokio::main]
 async fn main() -> oapth::Result<()> {
   let config = Config::with_url_from_default_var()?;
-  let mut commands = Commands::with_back_end(SqlxPg::new(&config).await?);
+  let mut commands = Commands::with_backend(SqlxPg::new(&config).await?);
   commands.migrate_from_dir(Path::new("my_custom_migration_group_path"), 128).await?;
   Ok(())
 }
@@ -134,7 +134,7 @@ const MIGRATIONS: EmbeddedMigrationsTy = embed_migrations!("SOME_CONFIGURATION_F
 #[tokio::main]
 async fn main() -> oapth::Result<()> {
   let config = Config::with_url_from_default_var()?;
-  let mut commands = Commands::with_back_end(MysqlAsync::new(&config).await?);
+  let mut commands = Commands::with_backend(MysqlAsync::new(&config).await?);
   let groups = MIGRATIONS.iter().map(|e| (e.0, e.1.iter().cloned()));
   commands.migrate_from_groups(groups).await?;
   Ok(())
@@ -187,20 +187,20 @@ migrations/3__final_repeatable_migrations
 Each back end has a feature that can be selected when using the library:
 
 ```bash
-oapth = { features = ["with-tokio-postgres"], version = "SOME_VERSION" }
+oapth = { features = ["tokio-postgres"], version = "SOME_VERSION" }
 ```
 
-- Diesel (MariaDB/Mysql) - `with-diesel-mysql`
-- Diesel (PostgreSQL) - `with-diesel-pg`
-- Diesel (SQlite) - `with-diesel-sqlite`
-- mysql_async - `with-mysql_async`
-- rusqlite - `with-rusqlite`
-- SQLx (MariaDB/MySql) - `with-sqlx-mysql`
-- SQLx (MS-SQL) - `with-sqlx-mssql`
-- SQLx (PostgreSQL) - `with-sqlx-pg`
-- SQLx (SQLite) - `with-sqlx-sqlite`
-- tiberius - `with-tiberius`
-- tokio-postgres - `with-tokio-postgres`
+- Diesel (MariaDB/Mysql) - `diesel-mysql`
+- Diesel (PostgreSQL) - `diesel-pg`
+- Diesel (SQlite) - `diesel-sqlite`
+- mysql_async - `mysql_async`
+- rusqlite - `rusqlite`
+- SQLx (MariaDB/MySql) - `sqlx-mysql`
+- SQLx (MS-SQL) - `sqlx-mssql`
+- SQLx (PostgreSQL) - `sqlx-pg`
+- SQLx (SQLite) - `sqlx-sqlite`
+- tiberius - `tiberius`
+- tokio-postgres - `tokio-postgres`
 
 Or when installing the CLI binary:
 

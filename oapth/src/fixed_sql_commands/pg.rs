@@ -1,5 +1,5 @@
-use arrayvec::ArrayString;
 use core::fmt::Write;
+use arrayvec::ArrayString;
 
 pub(crate) const CREATE_MIGRATION_TABLES: &str = concat!(
   "CREATE SCHEMA IF NOT EXISTS _oapth; \
@@ -15,124 +15,57 @@ pub(crate) const CREATE_MIGRATION_TABLES: &str = concat!(
 
 #[inline]
 #[oapth_macros::_dev_tools]
-pub(crate) async fn clean<B>(back_end: &mut B) -> crate::Result<()>
+pub(crate) async fn clean<B>(backend: &mut B, buffer: &mut String) -> crate::Result<()>
 where
-  B: crate::BackEnd,
+  B: crate::Backend,
 {
-  let mut buffer: ArrayString<2048> = ArrayString::new();
+  let mut local_buffer = String::new();
 
-  for schema in schemas(back_end).await? {
+  for schema in schemas(backend).await? {
     buffer.write_fmt(format_args!("DROP SCHEMA \"{}\" CASCADE;", schema))?;
   }
 
-  for domain in domains(back_end, "public").await? {
+  for domain in domains(backend, &mut local_buffer, "public").await? {
     buffer.write_fmt(format_args!("DROP DOMAIN \"{}\" CASCADE;", domain))?;
   }
 
-  for function in functions(back_end, "public").await? {
+  for function in functions(backend, &mut local_buffer, "public").await? {
     buffer.write_fmt(format_args!("DROP FUNCTION \"{}\" CASCADE;", function))?;
   }
 
-  for view in views(back_end, "public").await? {
+  for view in views(backend, &mut local_buffer, "public").await? {
     buffer.write_fmt(format_args!("DROP VIEW \"{}\" CASCADE;", view))?;
   }
 
-  for table in back_end.tables("public").await? {
+  for table in backend.tables("public").await? {
     buffer.write_fmt(format_args!("DROP TABLE \"{}\" CASCADE;", table))?;
   }
 
-  for procedure in procedures(back_end, "public").await? {
+  for procedure in procedures(backend, &mut local_buffer, "public").await? {
     buffer.write_fmt(format_args!("DROP PROCEDURE \"{}\" CASCADE;", procedure))?;
   }
 
-  for ty in types(back_end, "public").await? {
+  for ty in types(backend, &mut local_buffer, "public").await? {
     buffer.write_fmt(format_args!("DROP TYPE \"{}\" CASCADE;", ty))?;
   }
 
-  for sequence in sequences(back_end, "public").await? {
+  for sequence in sequences(backend, &mut local_buffer, "public").await? {
     buffer.write_fmt(format_args!("DROP SEQUENCE \"{}\" CASCADE;", sequence))?;
   }
 
-  back_end.execute(&buffer).await?;
+  backend.execute(buffer).await?;
+  buffer.clear();
 
   Ok(())
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
-#[cfg(test)]
-#[inline]
-#[oapth_macros::_dev_tools]
-pub(crate) async fn enums<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
-where
-  B: crate::BackEnd
-{
-  let mut buffer = ArrayString::<512>::new();
-  buffer.write_fmt(format_args!(
-    "SELECT
-      t.typname AS generic_column
-    FROM
-      pg_catalog.pg_type t
-      INNER JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
-    WHERE
-      n.nspname = '{schema}' AND  t.typtype = 'e'
-    ",
-    schema = schema
-  ))?;
-  Ok(back_end.query_string(&buffer).await?)
-}
-
-// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
-#[inline]
-#[oapth_macros::_dev_tools]
-pub(crate) async fn views<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
-where
- B: crate::BackEnd,
-{
-  let mut buffer = ArrayString::<512>::new();
-  buffer.write_fmt(format_args!(
-    "
-    SELECT
-      relname AS generic_column
-    FROM pg_catalog.pg_class c
-      JOIN pg_namespace n ON n.oid = c.relnamespace
-      LEFT JOIN pg_depend dep ON dep.objid = c.oid AND dep.deptype = 'e'
-    WHERE c.relkind = 'v'
-      AND  n.nspname = '{schema}'
-      AND dep.objid IS NULL
-    ",
-    schema = schema
-  ))?;
-  Ok(back_end.query_string(&buffer).await?)
-}
-
-// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
-#[inline]
-#[oapth_macros::_dev_tools]
-pub(crate) async fn sequences<B>(back_end: &mut B, schema: & str) -> crate::Result<Vec<String>>
-where
-  B: crate::BackEnd,
-{
-  let mut buffer = ArrayString::<256>::new();
-  buffer.write_fmt(format_args!(
-    "SELECT
-      sequence_name AS generic_column
-    FROM
-      information_schema.sequences
-    WHERE
-      sequence_schema = '{schema}'",
-    schema = schema
-  ))?;
-  Ok(back_end.query_string(&buffer).await?)
-}
-
-// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[oapth_macros::_dev_tools]
 #[inline]
-pub(crate) async fn domains<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
+pub(crate) async fn domains<B>(backend: &mut B, buffer: &mut String, schema: &str) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd,
+  B: crate::Backend,
 {
-  let mut buffer = ArrayString::<512>::new();
   buffer.write_fmt(format_args!(
     "
     SELECT
@@ -146,34 +79,88 @@ where
     ",
     schema = schema
   ))?;
-  Ok(back_end.query_string(&buffer).await?)
+  let rslt = backend.query_string(buffer).await;
+  buffer.clear();
+  rslt
+}
+
+// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
+#[cfg(test)]
+#[inline]
+#[oapth_macros::_dev_tools]
+pub(crate) async fn enums<B>(backend: &mut B, buffer: &mut String, schema: & str) -> crate::Result<Vec<String>>
+where
+  B: crate::Backend
+{
+  buffer.write_fmt(format_args!(
+    "SELECT
+      t.typname AS generic_column
+    FROM
+      pg_catalog.pg_type t
+      INNER JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+    WHERE
+      n.nspname = '{schema}' AND  t.typtype = 'e'
+    ",
+    schema = schema
+  ))?;
+  let rslt = backend.query_string(&buffer).await;
+  buffer.clear();
+  rslt
+
 }
 
 #[inline]
 #[oapth_macros::_dev_tools]
-pub(crate) async fn functions<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
+pub(crate) async fn functions<B>(backend: &mut B, buffer: &mut String, schema: &str) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd,
+  B: crate::Backend,
 {
-  Ok(back_end.query_string(&pg_proc('f', schema)?).await?)
+  pg_proc(buffer, 'f', schema)?;
+  let rslt = backend.query_string(buffer).await;
+  buffer.clear();
+  rslt
 }
 
 #[inline]
 #[oapth_macros::_dev_tools]
-pub(crate) async fn procedures<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
+pub(crate) async fn procedures<B>(backend: &mut B, buffer: &mut String, schema: &str) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd,
+  B: crate::Backend,
 {
-  Ok(back_end.query_string(&pg_proc('p', schema)?).await?)
+  pg_proc(buffer, 'p', schema)?;
+  let rslt =backend.query_string(buffer).await;
+  buffer.clear();
+  rslt
+}
+
+// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
+#[inline]
+#[oapth_macros::_dev_tools]
+pub(crate) async fn sequences<B>(backend: &mut B, buffer: &mut String, schema: & str) -> crate::Result<Vec<String>>
+where
+  B: crate::Backend,
+{
+  buffer.write_fmt(format_args!(
+    "SELECT
+      sequence_name AS generic_column
+    FROM
+      information_schema.sequences
+    WHERE
+      sequence_schema = '{schema}'",
+    schema = schema
+  ))?;
+  let rslt = backend.query_string(buffer).await;
+  buffer.clear();
+  rslt
 }
 
 #[inline]
 #[oapth_macros::_dev_tools]
-pub(crate) async fn schemas<B>(back_end: &mut B) -> crate::Result<Vec<String>>
+pub(crate) async fn schemas<B>(backend: &mut B) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd,
+  B: crate::Backend,
 {
-  Ok(back_end.query_string("SELECT
+  backend.query_string("SELECT
     pc_ns.nspname AS generic_column
   FROM
     pg_catalog.pg_namespace pc_ns
@@ -181,7 +168,7 @@ where
     nspname NOT IN ('information_schema', 'pg_catalog', 'public')
     AND nspname NOT LIKE 'pg_toast%'
     AND nspname NOT LIKE 'pg_temp_%'
-  ").await?)
+  ").await
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
@@ -219,11 +206,10 @@ pub(crate) fn tables(schema: &str) -> crate::Result<ArrayString<1024>> {
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[oapth_macros::_dev_tools]
 #[inline]
-pub(crate) async fn types<B>(back_end: &mut B, schema: &str) -> crate::Result<Vec<String>>
+pub(crate) async fn types<B>(backend: &mut B, buffer: &mut String, schema: &str) -> crate::Result<Vec<String>>
 where
-  B: crate::BackEnd,
+  B: crate::Backend,
 {
-  let mut buffer = ArrayString::<1024>::new();
   buffer.write_fmt(format_args!(
     "SELECT
       typname AS generic_column
@@ -244,15 +230,41 @@ where
       AND t.typtype != 'd'",
       schema = schema
   ))?;
-  Ok(back_end.query_string(&buffer).await?)
+  let rslt = backend.query_string(buffer).await;
+  buffer.clear();
+  rslt
+}
+
+// https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
+#[inline]
+#[oapth_macros::_dev_tools]
+pub(crate) async fn views<B>(backend: &mut B, buffer: &mut String, schema: & str) -> crate::Result<Vec<String>>
+where
+ B: crate::Backend,
+{
+  buffer.write_fmt(format_args!(
+    "
+    SELECT
+      relname AS generic_column
+    FROM pg_catalog.pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      LEFT JOIN pg_depend dep ON dep.objid = c.oid AND dep.deptype = 'e'
+    WHERE c.relkind = 'v'
+      AND  n.nspname = '{schema}'
+      AND dep.objid IS NULL
+    ",
+    schema = schema
+  ))?;
+  let rslt = backend.query_string(buffer).await;
+  buffer.clear();
+  rslt
 }
 
 // https://github.com/flyway/flyway/blob/master/flyway-core/src/main/java/org/flywaydb/core/internal/database/postgresql/PostgreSQLSchema.java
 #[oapth_macros::_dev_tools]
 #[inline]
-fn pg_proc(prokind: char, schema: &str) -> crate::Result<ArrayString<512>>
+fn pg_proc(buffer: &mut String, prokind: char, schema: &str) -> crate::Result<()>
 {
-  let mut buffer = ArrayString::new();
   buffer.write_fmt(format_args!(
     "
     SELECT
@@ -270,5 +282,5 @@ fn pg_proc(prokind: char, schema: &str) -> crate::Result<ArrayString<512>>
     prokind = prokind,
     schema = schema
   ))?;
-  Ok(buffer)
+  Ok(())
 }

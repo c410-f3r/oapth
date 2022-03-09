@@ -1,29 +1,28 @@
-mod back_end;
+mod backend;
 mod db;
 mod generic;
 mod schema;
 
 use crate::{
   doc_tests::{migration, migration_group},
-  BackEnd, Commands, MigrationGroupRef,
+  Backend, Commands, MigrationGroupRef,
 };
-use arrayvec::ArrayString;
 use core::fmt::Write;
 
 macro_rules! create_integration_test {
-  ($back_end:expr, $aux:expr, $($fun:path),*) => {{
+  ($backend:expr, $_buffer:expr, $aux:expr, $($fun:path),*) => {{
     $(
-      let mut commands = crate::Commands::with_back_end($back_end);
-      commands.clean().await.unwrap();
-      $fun(&mut commands, $aux).await;
+      let mut commands = crate::Commands::with_backend($backend);
+      commands.clean(&mut $_buffer).await.unwrap();
+      $fun(&mut $_buffer, &mut commands, $aux).await;
     )*
   }};
 }
 
-macro_rules! _create_integration_test_back_end {
-  ($back_end_ty:ident) => {{
+macro_rules! _create_integration_test_backend {
+  ($backend_ty:ident) => {{
     let c = crate::Config::with_url_from_default_var().unwrap();
-    crate::$back_end_ty::new(&c).await.unwrap()
+    crate::$backend_ty::new(&c).await.unwrap()
   }};
 }
 
@@ -43,16 +42,20 @@ macro_rules! create_integration_tests {
     tokio_postgres: $($tokio_postgres:path),*;
   ) => {
     pub(crate) async fn $fn_name() {
+      let mut _buffer = String::new();
+
       oapth_macros::_diesel_mysql_! {
         create_integration_test!(
-          _create_integration_test_back_end!(DieselMysql),
+          _create_integration_test_backend!(DieselMysql),
+          _buffer,
           _generic_schema(),
           $($diesel_mysql),*
         );
       }
       oapth_macros::_diesel_pg_! {
         create_integration_test!(
-          _create_integration_test_back_end!(DieselPg),
+          _create_integration_test_backend!(DieselPg),
+          _buffer,
           _pg_schema(),
           $($diesel_pg),*
         );
@@ -60,7 +63,8 @@ macro_rules! create_integration_tests {
 
       oapth_macros::_diesel_sqlite_! {
         create_integration_test!(
-          _create_integration_test_back_end!(DieselSqlite),
+          _create_integration_test_backend!(DieselSqlite),
+          _buffer,
           _generic_schema(),
           $($diesel_sqlite),*
         );
@@ -68,7 +72,8 @@ macro_rules! create_integration_tests {
 
       oapth_macros::_mysql_async_! {
         create_integration_test!(
-          _create_integration_test_back_end!(MysqlAsync),
+          _create_integration_test_backend!(MysqlAsync),
+          _buffer,
           _generic_schema(),
           $($mysql_async),*
         );
@@ -76,7 +81,8 @@ macro_rules! create_integration_tests {
 
       oapth_macros::_rusqlite_! {
         create_integration_test!(
-          _create_integration_test_back_end!(Rusqlite),
+          _create_integration_test_backend!(Rusqlite),
+          _buffer,
           _generic_schema(),
           $($rusqlite),*
         );
@@ -84,7 +90,8 @@ macro_rules! create_integration_tests {
 
       oapth_macros::_sqlx_mssql_! {
         create_integration_test!(
-          _create_integration_test_back_end!(SqlxMssql),
+          _create_integration_test_backend!(SqlxMssql),
+          _buffer,
           _mssql_schema(),
           $($sqlx_mssql),*
         );
@@ -92,7 +99,8 @@ macro_rules! create_integration_tests {
 
       oapth_macros::_sqlx_mysql_! {
         create_integration_test!(
-          _create_integration_test_back_end!(SqlxMysql),
+          _create_integration_test_backend!(SqlxMysql),
+          _buffer,
           _generic_schema(),
           $($sqlx_mysql),*
         );
@@ -100,7 +108,8 @@ macro_rules! create_integration_tests {
 
       oapth_macros::_sqlx_pg_! {
         create_integration_test!(
-          _create_integration_test_back_end!(SqlxPg),
+          _create_integration_test_backend!(SqlxPg),
+          _buffer,
           _pg_schema(),
           $($sqlx_pg),*
         );
@@ -108,7 +117,8 @@ macro_rules! create_integration_tests {
 
       oapth_macros::_sqlx_sqlite_! {
         create_integration_test!(
-          _create_integration_test_back_end!(SqlxSqlite),
+          _create_integration_test_backend!(SqlxSqlite),
+          _buffer,
           _generic_schema(),
           $($sqlx_sqlite),*
         );
@@ -122,6 +132,7 @@ macro_rules! create_integration_tests {
             let tcp = tokio::net::TcpStream::connect(c.full_host().unwrap()).await.unwrap();
             crate::Tiberius::new(&c, tcp.compat_write()).await.unwrap()
           },
+          _buffer,
           _mssql_schema(),
           $($tiberius),*
         );
@@ -129,7 +140,8 @@ macro_rules! create_integration_tests {
 
       oapth_macros::_tokio_postgres_! {
         create_integration_test!(
-          _create_integration_test_back_end!(TokioPostgres),
+          _create_integration_test_backend!(TokioPostgres),
+          _buffer,
           _pg_schema(),
           $($tokio_postgres),*
         );
@@ -163,7 +175,7 @@ macro_rules! create_all_integration_tests {
     without_schema: $($without_schema:path),*;
   ) => {
     create_integration_tests!(
-      integration_tests_back_end,
+      integration_tests_backend,
       diesel_mysql: $($diesel_mysql),*;
       diesel_pg: $($diesel_pg),*;
       diesel_sqlite: $($diesel_sqlite),*;
@@ -226,7 +238,7 @@ macro_rules! create_all_integration_tests {
     async fn integration_tests() {
       let _ = env_logger::builder().is_test(true).try_init();
 
-      integration_tests_back_end().await;
+      integration_tests_backend().await;
       integration_tests_db().await;
       integration_tests_generic().await;
       integration_tests_schema().await;
@@ -238,24 +250,24 @@ create_all_integration_tests!(
   // Back end
 
   diesel_mysql:
-    back_end::_back_end_has_migration_with_utc_time;
+    backend::_backend_has_migration_with_utc_time;
   diesel_pg:
-    back_end::_back_end_has_migration_with_utc_time;
+    backend::_backend_has_migration_with_utc_time;
   diesel_sqlite:
-    back_end::_back_end_has_migration_with_utc_time;
+    backend::_backend_has_migration_with_utc_time;
   mysql_async:
-    back_end::_back_end_has_migration_with_utc_time;
+    backend::_backend_has_migration_with_utc_time;
   rusqlite:
-    back_end::_back_end_has_migration_with_utc_time;
+    backend::_backend_has_migration_with_utc_time;
   sqlx_mssql:
-    back_end::_back_end_has_migration_with_utc_time;
+    backend::_backend_has_migration_with_utc_time;
   sqlx_mysql:
-    back_end::_back_end_has_migration_with_utc_time;
+    backend::_backend_has_migration_with_utc_time;
   sqlx_pg: ;
   sqlx_sqlite:
-    back_end::_back_end_has_migration_with_utc_time;
+    backend::_backend_has_migration_with_utc_time;
   tiberius:
-    back_end::_back_end_has_migration_with_utc_time;
+    backend::_backend_has_migration_with_utc_time;
   tokio_postgres: ;
 
   // Database
@@ -293,11 +305,11 @@ pub(crate) struct AuxTestParams {
 
 pub(crate) async fn create_foo_table<B>(c: &mut Commands<B>, schema_prefix: &str)
 where
-  B: BackEnd,
+  B: Backend,
 {
-  let mut buffer = ArrayString::<64>::new();
-  buffer.write_fmt(format_args!("CREATE TABLE {}foo(id INT)", schema_prefix)).unwrap();
-  c.back_end.execute(&buffer).await.unwrap();
+  let mut _buffer = String::new();
+  _buffer.write_fmt(format_args!("CREATE TABLE {}foo(id INT)", schema_prefix)).unwrap();
+  c.backend.execute(&_buffer).await.unwrap();
 }
 
 #[inline]
@@ -310,12 +322,12 @@ pub(crate) fn _generic_schema() -> AuxTestParams {
 }
 
 #[inline]
-pub(crate) async fn _migrate_doc_test<B>(c: &mut Commands<B>) -> MigrationGroupRef<'static>
+pub(crate) async fn _migrate_doc_test<B>(_buffer: &mut String, c: &mut Commands<B>) -> MigrationGroupRef<'static>
 where
-  B: BackEnd,
+  B: Backend,
 {
   let mg = migration_group();
-  c.migrate(mg, [migration()].into_iter()).await.unwrap();
+  c.migrate(_buffer, &mg, [migration()].iter()).await.unwrap();
   mg
 }
 

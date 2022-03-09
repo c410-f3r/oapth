@@ -28,44 +28,49 @@ oapth_macros::_mysql_! { pub(crate) mod mysql; }
 oapth_macros::_pg_! { pub(crate) mod pg; }
 oapth_macros::_sqlite_! { pub(crate) mod sqlite; }
 
-use crate::{BackEnd, MigrationRef,MigrationGroupRef};
-use arrayvec::ArrayString;
+use oapth_commons::Database;
+
+use crate::{Backend, Migration, MigrationGroup};
 use core::fmt::Write;
 
 #[inline]
-pub(crate) async fn delete_migrations<B>(
-  back_end: &mut B,
-  mg: MigrationGroupRef<'_>,
+pub(crate) async fn delete_migrations<B, S>(
+  backend: &mut B,
+  buffer: &mut String,
+  mg: &MigrationGroup<S>,
   schema_prefix: &str,
   version: i32,
 ) -> crate::Result<()>
 where
-  B: BackEnd,
+  B: Backend,
+  S: AsRef<str>
 {
-  let mut buffer = ArrayString::<128>::new();
   buffer.write_fmt(format_args!(
     "DELETE FROM {schema_prefix}_oapth_migration WHERE _oapth_migration_omg_version = {mg_version} AND version > {m_version}",
     m_version = version,
     mg_version = mg.version(),
     schema_prefix = schema_prefix,
   ))?;
-  back_end.execute(&buffer).await?;
+  backend.execute(buffer).await?;
+  buffer.clear();
   Ok(())
 }
 
 #[inline]
-pub(crate) async fn insert_migrations<'a, 'b, B, I>(
-  back_end: &mut B,
-  mg: MigrationGroupRef<'_>,
+pub(crate) async fn insert_migrations<'migration, B, DBS, I, S>(
+  backend: &mut B,
+  buffer: &mut String,
+  mg: &MigrationGroup<S>,
   schema_prefix: &str,
   migrations: I,
 ) -> crate::Result<()>
 where
-  B: BackEnd,
-  I: Clone + Iterator<Item = MigrationRef<'a, 'a>> + 'b,
+  B: Backend,
+  DBS: AsRef<[Database]> + 'migration,
+  I: Clone + Iterator<Item = &'migration Migration<DBS, S>> + Send,
+  S: AsRef<str> + Send + Sync + 'migration
 {
-  let mut insert_migration_group_str = ArrayString::<512>::new();
-  insert_migration_group_str.write_fmt(format_args!(
+  buffer.write_fmt(format_args!(
     "INSERT INTO {schema_prefix}_oapth_migration_group (version, name)
     SELECT * FROM (SELECT {mg_version} AS version, '{mg_name}' AS name) AS tmp
     WHERE NOT EXISTS (
@@ -75,37 +80,39 @@ where
     mg_version = mg.version(),
     schema_prefix = schema_prefix
   ))?;
-  back_end.execute(&insert_migration_group_str).await?;
+  backend.execute(buffer).await?;
+  buffer.clear();
 
-  back_end.transaction(migrations.clone().map(|m| m.sql_up)).await?;
-  let f = |m: MigrationRef<'a, 'a>| {
-    let mut buffer = ArrayString::<512>::new();
+  backend.transaction(migrations.clone().map(|m| &m.sql_up)).await?;
+
+  for migration in migrations {
     buffer.write_fmt(format_args!(
       "INSERT INTO {schema_prefix}_oapth_migration (
         version, _oapth_migration_omg_version, checksum, name
       ) VALUES (
         {m_version}, {mg_version}, '{m_checksum}', '{m_name}'
       );",
-      m_checksum = m.checksum(),
-      m_name = m.name(),
-      m_version = m.version(),
+      m_checksum = migration.checksum(),
+      m_name = migration.name(),
+      m_version = migration.version(),
       mg_version = mg.version(),
       schema_prefix = schema_prefix,
-    )).ok()?;
-    Some(buffer)
+    ))?;
   };
-  back_end.transaction(migrations.filter_map(f)).await?;
+  
+  backend.transaction([&mut *buffer].into_iter()).await?;
+  buffer.clear();
 
   Ok(())
 }
 
 #[inline]
 pub(crate) fn migrations_by_mg_version_query(
+  buffer: &mut String,
   mg_version: i32,
   schema_prefix: &str,
-) -> crate::Result<ArrayString<512>> {
-  let mut s = ArrayString::new();
-  s.write_fmt(format_args!(
+) -> crate::Result<()> {
+  buffer.write_fmt(format_args!(
     "SELECT \
       _oapth_migration.version, \
       _oapth_migration_group.version as omg_version, \
@@ -125,6 +132,6 @@ pub(crate) fn migrations_by_mg_version_query(
     mg_version = mg_version,
     schema_prefix = schema_prefix
   ))?;
-  Ok(s)
+  Ok(())
 }
 

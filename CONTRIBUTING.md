@@ -12,7 +12,7 @@ Runs unit tests, `rustfmt`, `clippy` and `libfuzzer-sys` to enhance security and
 
 In a testing environment, the following credentials are expected:
 
-- **MS-SQL**: A database `oapth` and an user `sa` with password `yourStrong_Password`
+- **MS-SQL**: A database `oapth` and an user `sa` with password `yourStrong(!)Password`
 - **Everything else**: A database `oapth` and an user `oapth` with password `oapth`
 
 #### Containers

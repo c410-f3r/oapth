@@ -9,12 +9,12 @@ tokio = { default-features = false, features = ["macros", "rt-multi-thread"], ve
 
 [features]
 default = []
-dev-tools = ["dotenv", "log", "oapth/dev-tools"]
-log = ["env_logger"]
-mssql = ["oapth/with-sqlx-mssql", "sqlx-core/runtime-tokio-rustls"]
-mysql = ["oapth/with-mysql_async"]
-pg = ["oapth/with-tokio-postgres"]
-sqlite = ["oapth/with-rusqlite"]
+dev-tools = ["dep:dotenv", "log", "oapth/dev-tools"]
+log = ["dep:env_logger"]
+mssql = ["oapth/sqlx-mssql", "dep:sqlx-core", "sqlx-core?/runtime-tokio-rustls"]
+mysql = ["oapth/mysql_async"]
+pg = ["oapth/tokio-postgres"]
+sqlite = ["oapth/rusqlite"]
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]

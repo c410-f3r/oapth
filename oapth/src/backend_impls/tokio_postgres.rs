@@ -4,8 +4,8 @@ use crate::{
   fixed_sql_commands::{
     delete_migrations, insert_migrations, migrations_by_mg_version_query,
     pg::{tables, CREATE_MIGRATION_TABLES},
-  },MigrationGroupRef,
-  BackEnd, BackEndGeneric, BoxFut, DbMigration, MigrationRef, OAPTH_SCHEMA_PREFIX
+  },MigrationGroup,
+  Backend, BackendGeneric,  DbMigration,  OAPTH_SCHEMA_PREFIX, Migration
 };
 use std::fs;
 use oapth_commons::Database;
@@ -78,26 +78,19 @@ impl TokioPostgres {
   }
 }
 
-impl BackEnd for TokioPostgres {}
+impl Backend for TokioPostgres {}
 
-impl BackEndGeneric for TokioPostgres {
+#[async_trait::async_trait]
+impl BackendGeneric for TokioPostgres {
   #[oapth_macros::_dev_tools]
   #[inline]
-  fn clean<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
-  where
-    'a: 'ret,
-    Self: 'ret,
-  {
-    Box::pin(crate::fixed_sql_commands::pg::clean(self))
+  async fn clean(&mut self, buffer: &mut String) -> crate::Result<()> {
+    crate::fixed_sql_commands::pg::clean(self, buffer).await
   }
 
   #[inline]
-  fn create_oapth_tables<'a, 'ret>(&'a mut self) -> BoxFut<'ret, crate::Result<()>>
-  where
-    'a: 'ret,
-    Self: 'ret,
-  {
-    self.execute(CREATE_MIGRATION_TABLES)
+  async fn create_oapth_tables(&mut self) -> crate::Result<()> {
+    self.execute(CREATE_MIGRATION_TABLES).await
   }
 
   #[inline]
@@ -106,106 +99,85 @@ impl BackEndGeneric for TokioPostgres {
   }
 
   #[inline]
-  fn delete_migrations<'a, 'b, 'ret>(
-    &'a mut self,
+  async fn delete_migrations<S>(
+    &mut self,
+    buffer: &mut String,
     version: i32,
-    mg: MigrationGroupRef<'b>,
-  ) -> BoxFut<'ret, crate::Result<()>>
+    mg: &MigrationGroup<S>,
+  ) -> crate::Result<()>
   where
-    'a: 'ret,
-    'b: 'ret,
-    Self: 'ret,
+    S: AsRef<str> + Send + Sync
   {
-    Box::pin(delete_migrations(self, mg, OAPTH_SCHEMA_PREFIX, version))
+    delete_migrations(self, buffer, mg, OAPTH_SCHEMA_PREFIX, version).await
   }
 
   #[inline]
-  fn execute<'a, 'b, 'ret>(&'a mut self, command: &'b str) -> BoxFut<'ret, crate::Result<()>>
-  where
-    'a: 'ret,
-    'b: 'ret,
-    Self: 'ret,
-  {
-    Box::pin(async move { Ok(self.conn.batch_execute(command).await?) })
+  async fn execute(&mut self, command: &str) -> crate::Result<()> {
+    Ok(self.conn.batch_execute(command).await?)
   }
 
   #[inline]
-  fn insert_migrations<'a, 'b, 'c, 'ret, I>(
-    &'a mut self,
+  async fn insert_migrations<'migration, DBS, I, S>(
+    &mut self,
+    buffer: &mut String,
     migrations: I,
-    mg: MigrationGroupRef<'b>,
-  ) -> BoxFut<'ret, crate::Result<()>>
+    mg: &MigrationGroup<S>,
+  ) -> crate::Result<()>
   where
-    'a: 'ret,
-    'b: 'ret,
-    'c: 'ret,
-    I: Clone + Iterator<Item = MigrationRef<'c, 'c>> + 'ret,
-    Self: 'ret
+    DBS: AsRef<[Database]> + 'migration,
+    I: Clone + Iterator<Item = &'migration Migration<DBS, S>> + Send + Sync,
+    S: AsRef<str> + Send + Sync + 'migration
   {
-    Box::pin(insert_migrations(self, mg, OAPTH_SCHEMA_PREFIX, migrations))
+    insert_migrations(self, buffer, mg, OAPTH_SCHEMA_PREFIX, migrations).await
   }
 
   #[inline]
-  fn migrations<'a, 'b, 'ret>(
-    &'a mut self,
-    mg: MigrationGroupRef<'b>,
-  ) -> BoxFut<'ret, crate::Result<Vec<DbMigration>>>
+  async fn migrations<S>(
+    &mut self,
+    buffer: &mut String,
+    mg: &MigrationGroup<S>,
+  ) -> crate::Result<Vec<DbMigration>>
   where
-    'a: 'ret,
-    'b: 'ret,
-    Self: 'ret,
+    S: AsRef<str> + Send + Sync
   {
-    Box::pin(async move {
-      let buffer = migrations_by_mg_version_query(mg.version(), OAPTH_SCHEMA_PREFIX)?;
-      let vec = self.conn.query(buffer.as_str(), &[]).await?;
-      vec.into_iter().map(DbMigration::try_from).collect::<crate::Result<Vec<_>>>()
-    })
+    migrations_by_mg_version_query(buffer, mg.version(), OAPTH_SCHEMA_PREFIX)?;
+    let vec = self.conn.query(buffer, &[]).await?;
+    let rslt = vec.into_iter().map(DbMigration::try_from).collect::<crate::Result<Vec<_>>>();
+    buffer.clear();
+    rslt
   }
 
   #[inline]
-  fn query_string<'a, 'b, 'ret>(
-    &'a mut self,
-    query: &'b str,
-  ) -> BoxFut<'ret, crate::Result<Vec<String>>>
-  where
-    'a: 'ret,
-    'b: 'ret,
-    Self: 'ret,
+    async fn query_string(
+      &mut self,
+      query: &str,
+    ) -> crate::Result<Vec<String>>
   {
-    Box::pin(async move {
-      let rows = self.conn.query(query, &[]).await?;
-      rows.into_iter().map(|r| Ok(r.try_get::<_, String>(0)?)).collect::<crate::Result<_>>()
-    })
+    let rows = self.conn.query(query, &[]).await?;
+    rows.into_iter().map(|r| Ok(r.try_get::<_, String>(0)?)).collect::<crate::Result<_>>()
   }
 
   #[inline]
-  fn tables<'a, 'b, 'ret>(&'a mut self, schema: &'b str) -> BoxFut<'ret, crate::Result<Vec<String>>>
-  where
-    'a: 'ret,
-    'b: 'ret,
-    Self: 'ret,
+  async fn tables(
+    &mut self,
+    schema: &str,
+  ) -> crate::Result<Vec<String>>
   {
-    Box::pin(async move {
-      let rows = self.conn.query(tables(schema)?.as_str(), &[]).await?;
-      rows.into_iter().map(|r| Ok(r.try_get::<_, String>(0)?)).collect::<crate::Result<_>>()
-    })
+    let rows = self.conn.query(tables(schema)?.as_str(), &[]).await?;
+    rows.into_iter().map(|r| Ok(r.try_get::<_, String>(0)?)).collect::<crate::Result<_>>()
   }
 
   #[inline]
-  fn transaction<'a, 'ret, I, S>(&'a mut self, commands: I) -> BoxFut<'ret, crate::Result<()>>
+  async fn transaction<I, S>(&mut self, commands: I) -> crate::Result<()>
   where
-    'a: 'ret,
-    I: Iterator<Item = S> + 'ret,
-    S: AsRef<str>,
-    Self: 'ret
+    I: Iterator<Item = S> + Send,
+    S: AsRef<str> + Send + Sync,
   {
-    Box::pin(async move {
-      let transaction = self.conn.transaction().await?;
-      for command in commands {
-        transaction.batch_execute(command.as_ref()).await?;
-      }
-      transaction.commit().await?;
-      Ok(())
-    })
+    let transaction = self.conn.transaction().await?;
+    for command in commands {
+      transaction.batch_execute(command.as_ref()).await?;
+    }
+    transaction.commit().await?;
+    Ok(())
   }
 }

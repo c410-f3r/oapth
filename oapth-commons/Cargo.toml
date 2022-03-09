@@ -6,8 +6,8 @@ siphasher = { default-features = false, version = "0.3" }
 
 [features]
 default = []
+quote = ["dep:proc-macro2", "dep:quote"]
 std = []
-with-quote = ["proc-macro2", "quote"]
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]

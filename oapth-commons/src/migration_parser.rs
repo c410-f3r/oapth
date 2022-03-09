@@ -83,11 +83,11 @@ where
 
 /// Gets all information related to a migration from a reading source.
 #[inline]
-pub(crate) fn parse_migration_cfg<R>(read: R) -> crate::Result<MigrationCfg>
+pub(crate) fn parse_migration_toml<R>(read: R) -> crate::Result<MigrationCfg>
 where
   R: Read,
 {
-  let mut migration_cfg = MigrationCfg { dbs: ArrayVec::new(), repeatability: None };
+  let mut migration_toml = MigrationCfg { dbs: ArrayVec::new(), repeatability: None };
 
   for (ident, toml_expr) in toml(read)? {
     match (ident.as_ref(), toml_expr) {
@@ -98,7 +98,7 @@ where
           } else {
             continue;
           };
-          let _ = migration_cfg.dbs.try_push(elem);
+          let _ = migration_toml.dbs.try_push(elem);
         }
       }
       ("repeatability", Expr::String(s)) => {
@@ -107,13 +107,13 @@ where
         } else {
           continue;
         };
-        migration_cfg.repeatability = Some(elem);
+        migration_toml.repeatability = Some(elem);
       }
       _ => {}
     }
   }
 
-  Ok(migration_cfg)
+  Ok(migration_toml)
 }
 
 #[inline]

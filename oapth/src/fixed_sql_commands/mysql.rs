@@ -1,5 +1,5 @@
-use arrayvec::ArrayString;
 use core::fmt::Write;
+  use arrayvec::ArrayString;
 
 pub(crate) const CREATE_MIGRATION_TABLES: &str = concat!(
   "CREATE TABLE IF NOT EXISTS _oapth_migration_group (",
@@ -14,22 +14,17 @@ pub(crate) const CREATE_MIGRATION_TABLES: &str = concat!(
 
 #[oapth_macros::_dev_tools]
 #[inline]
-pub(crate) async fn clean<B>(back_end: &mut B) -> crate::Result<()>
+pub(crate) async fn clean<B>(backend: &mut B, buffer: &mut String) -> crate::Result<()>
 where
-  B: crate::BackEnd,
+  B: crate::Backend,
 {
-  let mut buffer: ArrayString<1024> = ArrayString::new();
-
   buffer.write_fmt(format_args!("SET FOREIGN_KEY_CHECKS = 0;"))?;
-
-  for table in back_end.tables("").await? {
+  for table in backend.tables("").await? {
     buffer.write_fmt(format_args!("DROP TABLE {} CASCADE;", table))?;
   }
-
   buffer.write_fmt(format_args!("SET FOREIGN_KEY_CHECKS = 1;"))?;
-
-  back_end.execute(&buffer).await?;
-
+  backend.execute(buffer).await?;
+  buffer.clear();
   Ok(())
 }
 

@@ -5,7 +5,7 @@ quote = { default-features = false, features = ["proc-macro"], optional = true, 
 
 [features]
 default = []
-embed-migrations = ["oapth-commons/with-quote", "proc-macro2", "quote"]
+embed-migrations = ["dep:oapth-commons", "oapth-commons?/quote", "dep:proc-macro2", "dep:quote"]
 
 [lib]
 proc-macro = true
