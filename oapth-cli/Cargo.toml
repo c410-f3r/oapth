@@ -5,7 +5,7 @@ env_logger = { default-features = false, optional = true, version = "0.9" }
 oapth = { default-features = false, features = ["std"], path = "../oapth", version = "0.1" }
 oapth-commons = { default-features = false, path = "../oapth-commons", version = "0.1" }
 sqlx-core = { default-features = false, optional = true, version = "0.5" }
-tokio = { default-features = false, features = ["macros", "rt-multi-thread"], version = "1.0" }
+tokio = { default-features = false, features = ["macros", "rt-multi-thread"], version = "1.18" }
 
 [features]
 default = []

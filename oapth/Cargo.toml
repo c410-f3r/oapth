@@ -26,7 +26,7 @@ tiberius = { default-features = false, optional = true, version = "0.7" }
 
 native-tls = { default-features = false, optional = true, version = "0.2" }
 postgres-native-tls = { default-features = false, features = ["runtime"], optional = true, version = "0.5" }
-tokio = { default-features = false, optional = true, version = "1.0" }
+tokio = { default-features = false, optional = true, version = "1.18" }
 tokio-postgres = { default-features = false, features = ["runtime", "with-chrono-0_4"], optional = true, version = "0.7" }
 
 # Multi-backend dependencies
@@ -45,7 +45,7 @@ siphasher = { default-features = false, version = "0.3" }
 [dev-dependencies]
 chrono = { default-features = false, features = ["clock"], version = "0.4" }
 env_logger = { default-features = false, version = "0.8" }
-tokio = { default-features = false, features = ["macros", "net", "rt-multi-thread"], version = "1.0" }
+tokio = { default-features = false, features = ["macros", "net", "rt-multi-thread"], version = "1.18" }
 tokio-util = { default-features = false, features = ["compat"], version = "0.6" }
 
 [features]
