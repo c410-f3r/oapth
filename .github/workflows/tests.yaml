@@ -46,7 +46,7 @@ jobs:
           profile: minimal
           toolchain: nightly-2023-10-15
 
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - run: docker-compose -f .test-utils/docker-compose.yml up -d
 
@@ -73,6 +73,6 @@ jobs:
           profile: minimal
           toolchain: nightly-2023-10-15
 
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - run: ./.scripts/${{ matrix.scripts }}.sh
