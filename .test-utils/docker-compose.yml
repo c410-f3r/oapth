@@ -1,0 +1,37 @@
+version: "3"
+
+services:
+    # Mssql
+
+    mssql:
+        build:
+            context: .
+            dockerfile: mssql/Dockerfile
+        environment:
+            ACCEPT_EULA: 'Y'
+            MSSQL_SA_PASSWORD: yourStrong(!)Password
+        ports:
+          - 1433:1433
+
+    # MySQL
+
+    mysql_8:
+        environment:
+            MYSQL_DATABASE: oapth
+            MYSQL_PASSWORD: oapth
+            MYSQL_ROOT_HOST: '%'
+            MYSQL_ROOT_PASSWORD: oapth
+            MYSQL_USER: oapth
+        image: mysql:8
+        ports:
+            - 3306:3306
+    # PostgreSQL
+
+    postgres:
+        environment:
+            POSTGRES_DB: oapth
+            POSTGRES_PASSWORD: oapth
+            POSTGRES_USER: oapth
+        image: postgres:16
+        ports:
+            - 5432:5432

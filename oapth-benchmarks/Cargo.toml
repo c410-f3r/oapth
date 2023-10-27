@@ -4,26 +4,19 @@ name = "backends"
 path = "backends.rs"
 
 [dependencies]
-criterion = { default-features = false, version = "0.3" }
-sqlx-core = { default-features = false, features = ["runtime-tokio-rustls"], version = "0.5" }
+criterion = { default-features = false, version = "0.5" }
+sqlx-core = { default-features = false, features = ["_rt-tokio"], version = "0.7" }
 tokio = { default-features = false, features = ["macros", "net", "rt-multi-thread"], version = "1.0" }
-tokio-util = { default-features = false, features = ["compat"], version = "0.6" }
+tokio-util = { default-features = false, features = ["compat"], version = "0.7" }
 
 [dependencies.oapth]
 default-features = false
 features = [
-    "dev-tools",
-    "diesel-mysql",
-    "diesel-pg",
-    "diesel-sqlite",
-    "mysql_async",
-    "rusqlite",
-    "sqlx-mssql",
-    "sqlx-mysql",
-    "sqlx-pg",
-    "sqlx-sqlite",
-    "tiberius",
-    "tokio-postgres"
+  "sm-dev",
+  "sqlx-mysql",
+  "sqlx-postgres",
+  "sqlx-sqlite",
+  "tiberius",
 ]
 path = "../oapth"
 

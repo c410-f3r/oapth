@@ -13,8 +13,7 @@ rpath = false
 members = [
     "oapth",
     "oapth-benchmarks",
-    "oapth-cli",
-    "oapth-commons",
     "oapth-fuzz",
-    "oapth-macros"
+    "oapth-macros",
 ]
+resolver = "2"

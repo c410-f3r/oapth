@@ -1,80 +1,37 @@
-//! oapth
-//!
-//! Flexible version control for databases through SQL migrations.
+//! # Oapth ORM
 
+#![allow(incomplete_features)]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![feature(non_lifetime_binders)]
 
 extern crate alloc;
 
 #[macro_use]
-mod utils;
+mod macros;
 
-oapth_macros::_any_db_! { mod fixed_sql_commands; }
-#[cfg(all(feature = "_integration-tests", test))]
-oapth_macros::_any_db_! { mod integration_tests; }
-mod backend_impls;
-mod backends;
-mod commands;
-mod config;
-pub mod doc_tests;
+pub mod database;
+mod database_ty;
 mod error;
-mod migration;
+mod from_row;
+mod from_rows;
+#[cfg(feature = "orm")]
+pub mod orm;
+mod row;
+#[cfg(feature = "sm")]
+pub mod sm;
+#[cfg(test)]
+mod tests;
 
-#[oapth_macros::_diesel_mysql]
-pub use backend_impls::diesel::DieselMysql;
-#[oapth_macros::_diesel_pg]
-pub use backend_impls::diesel::DieselPg;
-#[oapth_macros::_diesel_sqlite]
-pub use backend_impls::diesel::DieselSqlite;
-#[oapth_macros::_mysql_async]
-pub use backend_impls::mysql_async::MysqlAsync;
-#[oapth_macros::_rusqlite]
-pub use backend_impls::rusqlite::Rusqlite;
-#[oapth_macros::_sqlx_mssql]
-pub use backend_impls::sqlx::SqlxMssql;
-#[oapth_macros::_sqlx_mysql]
-pub use backend_impls::sqlx::SqlxMysql;
-#[oapth_macros::_sqlx_pg]
-pub use backend_impls::sqlx::SqlxPg;
-#[oapth_macros::_sqlx_sqlite]
-pub use backend_impls::sqlx::SqlxSqlite;
-#[oapth_macros::_tiberius]
-pub use backend_impls::tiberius::Tiberius;
-#[oapth_macros::_tokio_postgres]
-pub use backend_impls::tokio_postgres::TokioPostgres;
-pub use backends::backend::Backend;
-pub use commands::Commands;
-pub use config::Config;
-pub use error::Error;
-pub use migration::{
-  migration_group::{MigrationGroup, MigrationGroupOwned, MigrationGroupRef},
-  Migration, MigrationOwned, MigrationRef,
-};
-#[oapth_macros::_embed_migrations]
-pub use oapth_macros::embed_migrations;
+pub use database_ty::*;
+pub use error::*;
+pub use from_row::FromRow;
+pub use from_rows::FromRows;
+pub use row::Row;
 
-use backends::backend_generic::BackendGeneric;
-use migration::{
-  db_migration::DbMigration,
-  migration_common::{MigrationCommon, MigrationCommonOwned},
-};
-use utils::*;
-
-/// Default batch size
-pub const DEFAULT_BATCH_SIZE: usize = 128;
-#[oapth_macros::_std]
-/// Default environment variable name for the database URL
-pub const DEFAULT_ENV_VAR: &str = "DATABASE_URL";
-
-#[oapth_macros::_with_schema]
-const OAPTH_SCHEMA_PREFIX: &str = "_oapth.";
-
-/// Useful in constant environments where the type must be explicitly declared.
-///
-/// ```ignore,rust
-/// const MIGRATIONS: EmbeddedMigrationsTy = embed_migrations!("SOME_CFG_FILE.toml");
-/// ```
-pub type EmbeddedMigrationsTy =
-  &'static [(&'static MigrationGroupRef<'static>, &'static [MigrationRef<'static, 'static>])];
-/// Alias for `core::result::Result<T, oapth::Error>`
+/// The maximum number of characters that a database identifier can have. For example, tables,
+/// procedures, triggers, etc.
+pub type Identifier = arrayvec::ArrayString<64>;
+/// Alias of [core::result::Result<T, oapth_orm::Error>].
 pub type Result<T> = core::result::Result<T, Error>;
+/// Used by some operations to identify different tables
+pub type TableSuffix = u32;

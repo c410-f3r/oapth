@@ -1,20 +1,29 @@
-use oapth_commons::{group_and_migrations_from_path, parse_root_toml};
+use oapth::sm::utils::{group_and_migrations_from_path, parse_root_toml};
 use proc_macro::TokenStream;
 use quote::{format_ident, quote, ToTokens, TokenStreamExt};
 use std::path::Path;
 
-pub(crate) fn embed_migrations(cfg_path_str: &str) -> oapth_commons::Result<TokenStream> {
+pub(crate) fn embed_migrations(cfg_path_str: &str) -> oapth::Result<TokenStream> {
   let (mut migration_groups, _) = parse_root_toml(Path::new(cfg_path_str))?;
   let mut groups_and_migrations = Vec::new();
 
   migration_groups.sort();
   let mut inner = Vec::new();
 
-  for mg in migration_groups {
-    let ((mg_name, mg_version), ms) = group_and_migrations_from_path(&mg, |a, b| a.cmp(b))?;
+  for mg_path in migration_groups {
+    let (mg, ms) = group_and_migrations_from_path(&mg_path, Ord::cmp)?;
+    let mg_name = mg.name();
+    let mg_version = mg.version();
     let filtered = ms
       .filter_map(|e| {
-        let (checksum, dbs, name, repeatability, sql_down, sql_up, version) = e.ok()?;
+        let migration = e.ok()?;
+        let checksum = migration.checksum();
+        let dbs = migration.dbs();
+        let name = migration.name();
+        let repeatability = migration.repeatability();
+        let sql_down = migration.sql_down();
+        let sql_up = migration.sql_up();
+        let version = migration.version();
         let opt_hack = QuoteOption(repeatability);
         Some(quote! { ( #checksum, &[#(#dbs,)*], #name, #opt_hack, #sql_down, #sql_up, #version ) })
       })
@@ -30,7 +39,7 @@ pub(crate) fn embed_migrations(cfg_path_str: &str) -> oapth_commons::Result<Toke
 
       const #ms_ident: &[oapth::MigrationRef<'static, 'static>] = &[#(unsafe {
         let tuple = #filtered;
-        oapth::Migration::new_ref(
+        oapth::Migration::new(
           tuple.0,
           tuple.1,
           tuple.2,
@@ -62,9 +71,10 @@ where
   T: ToTokens,
 {
   fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-    tokens.append_all(match self.0 {
-      Some(ref t) => quote! { core::option::Option::Some(#t) },
-      None => quote! { core::option::Option::None },
+    tokens.append_all(if let Some(t) = &self.0 {
+      quote! { core::option::Option::Some(#t) }
+    } else {
+      quote! { core::option::Option::None }
     });
   }
 }

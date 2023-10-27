@@ -17,14 +17,14 @@ jobs:
         with:
           override: true
           profile: minimal
-          toolchain: nightly-2022-03-08
+          toolchain: nightly-2023-10-15
 
       - uses: actions-rs/install@v0.1
         with:
           crate: cargo-fuzz
           use-tool-cache: true
 
-      - run: ./scripts/fuzz.sh
+      - run: ./.scripts/fuzz.sh
 
   integration:
     name: Integration tests
@@ -32,10 +32,9 @@ jobs:
     strategy:
       matrix:
         scripts: [
-          "integration-tests-mariadb",
-          #"integration-tests-mssql",
+          "integration-tests-mssql",
           "integration-tests-mysql",
-          "integration-tests-pg",
+          "integration-tests-postgres",
           "integration-tests-sqlite"
         ]
     steps:
@@ -45,15 +44,15 @@ jobs:
         with:
           override: true
           profile: minimal
-          toolchain: nightly-2022-03-08
+          toolchain: nightly-2023-10-15
 
       - uses: Swatinem/rust-cache@v1
 
-      - run: docker-compose -f oapth-test-utils/docker-compose.yml up -d
+      - run: docker-compose -f .test-utils/docker-compose.yml up -d
 
       - run: sleep 60
 
-      - run: ./scripts/${{ matrix.scripts }}.sh
+      - run: ./.scripts/${{ matrix.scripts }}.sh
 
   internal:
     name: Internal tests
@@ -63,8 +62,6 @@ jobs:
         scripts: [
           "internal-tests-oapth-0",
           "internal-tests-oapth-1",
-          "internal-tests-oapth-cli",
-          "internal-tests-oapth-misc",
         ]
     steps:
       - uses: actions/checkout@v2
@@ -74,8 +71,8 @@ jobs:
           components: clippy, rustfmt
           override: true
           profile: minimal
-          toolchain: nightly-2022-03-08
+          toolchain: nightly-2023-10-15
 
       - uses: Swatinem/rust-cache@v1
 
-      - run: ./scripts/${{ matrix.scripts }}.sh
+      - run: ./.scripts/${{ matrix.scripts }}.sh
