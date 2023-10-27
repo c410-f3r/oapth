@@ -11,7 +11,7 @@ jobs:
     name: Fuzz tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -38,7 +38,7 @@ jobs:
           "integration-tests-sqlite"
         ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -64,7 +64,7 @@ jobs:
           "internal-tests-oapth-1",
         ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: actions-rs/toolchain@v1
         with:
