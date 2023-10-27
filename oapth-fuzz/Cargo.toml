@@ -1,11 +1,11 @@
 [[bin]]
 name = "parsers"
 path = "parsers.rs"
+required-features = ["libfuzzer-sys/link_libfuzzer"]
 
 [dependencies]
 libfuzzer-sys = { default-features = false, version = "0.4" }
-oapth = { default-features = false, features = ["std"], path = "../oapth" }
-oapth-commons = { default-features = false, features = ["std"], path = "../oapth-commons" }
+oapth = { default-features = false, features = ["sm", "std"], path = "../oapth" }
 
 [package]
 edition = "2021"

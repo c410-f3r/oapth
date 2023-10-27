@@ -1,25 +1,25 @@
-# Oapth 
+# Oapth
 
 [![CI](https://github.com/c410-f3r/oapth/workflows/Tests/badge.svg)](https://github.com/c410-f3r/oapth/actions?query=workflow%3ATests)
 [![crates.io](https://img.shields.io/crates/v/oapth.svg)](https://crates.io/crates/oapth)
 [![Documentation](https://docs.rs/oapth/badge.svg)](https://docs.rs/oapth)
 [![License](https://img.shields.io/badge/license-APACHE2-blue.svg)](./LICENSE)
-[![Rustc](https://img.shields.io/badge/rustc-stable-lightgray")](https://blog.rust-lang.org/2020/03/12/Rust-stable.html)
+[![Rustc](https://img.shields.io/badge/rustc-1.75-lightgray")](https://blog.rust-lang.org/2022/08/11/Rust-1.75.html)
 
-Flexible version control for databases through SQL migrations. Supports embedded and CLI workflows for MS-SQL, MariaDB, MySQL, PostgreSQL and SQLite.
+Oapth is a suite of tools that interact with databases.
+
+## Schema Manager
+
+Using SQL migrations, supports embedded and CLI workflows for MS-SQL, MySQL, PostgreSQL and SQLite.
 
 This project tries to support all database bridges of the Rust ecosystem, is fully documented, applies fuzz tests in some targets and doesn't make use of `expect`, `indexing`, `panic`, `unsafe` or `unwrap`.
 
-## No features by default
-
-It is necessary to specify a desired feature to actually run the transactions, otherwise you will get a bunch of code that won't do much. Take a look at [Supported back ends](#supported-backends).
-
-## CLI
+### CLI
 
 ```bash
 # Example
 
-cargo install oapth-cli --features dev-tools,pg --git https://github.com/c410-f3r/oapth
+cargo install oapth-cli --features sm-dev,postgres --git https://github.com/c410-f3r/oapth
 echo DATABASE_URL="postgres://USER:PW@localhost:5432/DB" > .env
 RUST_LOG=debug oapth-cli migrate
 ```
@@ -99,15 +99,11 @@ migrations
 oapth.toml
 ```
 
-## Library
+### Library
 
 The library gives freedom to arrange groups and uses some external crates, bringing ~10 additional dependencies into your application. If this overhead is not acceptable, then you probably should discard the library and use the CLI binary instead as part of a custom deployment strategy.
 
 ```rust
-// [dependencies]
-// oapth = { features = ["sqlx-pg"], version = "SOME_VERSION" }
-// sqlx-core = { default-features = false, features = ["runtime-tokio-rustls"], version = "SOME_VERSION" }
-
 use oapth::{Commands, Config, SqlxPg};
 use std::path::Path;
 
@@ -122,7 +118,7 @@ async fn main() -> oapth::Result<()> {
 
 One thing worth noting is that these mandatory dependencies might already be part of your application as transients. In case of doubt, check your `Cargo.lock` file or type `cargo tree` for analysis.
 
-## Embedded migrations
+### Embedded migrations
 
 To make deployment easier, the final binary of your application can embed all necessary migrations by using the `embed_migrations!` macro that is available when selecting the `embed-migrations` feature.
 
@@ -141,12 +137,12 @@ async fn main() -> oapth::Result<()> {
 }
 ```
 
-## Conditional migrations
+### Conditional migrations
 
 If one particular migration needs to be executed in a specific set of databases, then it is possible to use the `-- oapth dbs` parameter in a file.
 
 ```sql
--- oapth dbs mssql,pg
+-- oapth dbs mssql,postgres
 
 -- oapth UP
 
@@ -157,12 +153,12 @@ CREATE SCHEMA foo;
 DROP SCHEMA foo;
 ```
 
-## Repeatable migrations
+### Repeatable migrations
 
 Repeatability can be specified with `-- oapth repeatability SOME_VALUE` where `SOME_VALUE` can be either `always` (regardless of the checksum) or `on-checksum-change` (runs only when the checksums changes).
 
 ```sql
--- oapth dbs pg
+-- oapth dbs postgres
 -- oapth repeatability always
 
 -- oapth UP
@@ -174,7 +170,7 @@ CREATE OR REPLACE PROCEDURE something() LANGUAGE SQL AS $$ $$
 DROP PROCEDURE something();
 ```
 
-Keep in mind that repeatable migrations might break subsequent operations, therefore, you must known what you are doing. If desirable, they can be separated into dedicated groups. 
+Keep in mind that repeatable migrations might break subsequent operations, therefore, you must known what you are doing. If desirable, they can be separated into dedicated groups.
 
 ```ini
 migrations/1__initial_repeatable_migrations
@@ -182,42 +178,7 @@ migrations/2__normal_migrations
 migrations/3__final_repeatable_migrations
 ```
 
-## Supported back ends
-
-Each back end has a feature that can be selected when using the library:
-
-```bash
-oapth = { features = ["tokio-postgres"], version = "SOME_VERSION" }
-```
-
-- Diesel (MariaDB/Mysql) - `diesel-mysql`
-- Diesel (PostgreSQL) - `diesel-pg`
-- Diesel (SQlite) - `diesel-sqlite`
-- mysql_async - `mysql_async`
-- rusqlite - `rusqlite`
-- SQLx (MariaDB/MySql) - `sqlx-mysql`
-- SQLx (MS-SQL) - `sqlx-mssql`
-- SQLx (PostgreSQL) - `sqlx-pg`
-- SQLx (SQLite) - `sqlx-sqlite`
-- tiberius - `tiberius`
-- tokio-postgres - `tokio-postgres`
-
-Or when installing the CLI binary:
-
-```bash
-cargo install oapth-cli --features "pg"
-```
-
-- `mssql`
-- `mysql`
-- `pg`
-- `sqlite`
-
-## Diesel support
-
-Only migrations are supported and schema printing is still a work in progress. For any unsupported use-case, please use the official Diesel CLI binary.
-
-## Namespaces/Schemas
+### Namespaces/Schemas
 
 For supported databases, there is no direct user parameter that inserts migrations inside a single database schema but it is possible to specify the schema inside the SQL file and arrange the migration groups structure in a way that most suits you.
 
@@ -234,35 +195,6 @@ CREATE TABLE cool_department_schema.author (
 DROP TABLE cool_department_schema.author;
 ```
 
-##  Migration time zones
+## ORM
 
-For PostgreSQL (except Diesel), migration timestamps are stored and retrieved with the timezone declared in the database. For everything else, timestamps are UTC.
-
-| Back end                | Type             |
-| ---------------------- | ---------------- |
-| Diesel (MariaDB/Mysql) | UTC              |
-| Diesel (PostgreSQL)    | UTC              |
-| Diesel (SQlite)        | UTC              |
-| mysql_async            | UTC              |
-| rusqlite               | UTC              |
-| SQLx (MariaDB/MySql)   | UTC              |
-| SQLx (MS-SQL)          | UTC              |
-| SQLx (PostgreSQL)      | Fixed time zones |
-| SQLx (SQLite)          | UTC              |
-| tiberius               | UTC              |
-| tokio-postgres         | Fixed time zones |
-
-## Development tools
-
-These development tools are enabled when using the `dev-tools` feature.
-
-#### CLI
-
-- `.env`: Loads environment variables from an `.env` file (Uses the `dotenv` dependency).
-- `log`: Collects internal information for debugging (Uses the `env_logger` dependency).
-
-#### CLI/Library
-
-- `clean`: Command that tries to clean all objects of a database, including separated namespaces/schemas.
-- `seed`: Command that executes arbitrary code intended to populate data for tests.
-
+Currently only contains very basic support for CRUD operations.

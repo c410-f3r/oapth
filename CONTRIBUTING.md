@@ -1,4 +1,4 @@
-Before submitting a PR, you should probably run `./scripts/internal-tests-all.sh` and/or `./scripts/integration-tests-all.sh` to make sure everything is fine.
+Before submitting a PR, you should probably run `./.scripts/internal-tests-all.sh` and/or `./.scripts/integration-tests-all.sh` to make sure everything is fine.
 
 #### Integration tests
 
@@ -17,4 +17,4 @@ In a testing environment, the following credentials are expected:
 
 #### Containers
 
-If you don't want to manually install and configure all databases in your system, then check out `scripts/podman-start.sh` where each database image is pulled and executed automatically.
+If you don't want to manually install and configure all databases in your system, then check out `.scripts/podman-start.sh` where each database image is pulled and executed automatically.

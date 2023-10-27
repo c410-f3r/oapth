@@ -1,87 +1,52 @@
+[[bin]]
+name = "cli"
+required-features = ["sm-cli", "tokio"]
+
 [dependencies]
-
-# Diesel
-
-diesel = { default-features = false, features = ["chrono"], git = "https://github.com/diesel-rs/diesel", optional = true }
-
-# mysql-async
-
-flate2 = { default-features = false, features = ["zlib"], optional = true, version = "1.0" }
-mysql_async = { default-features = false, optional = true, version = "0.29" }
-mysql_common = { default-features = false, features = ["chrono", "uuid"], optional = true, version = "0.28" }
-
-# Rusqlite
-
-rusqlite = { default-features = false, features = ["chrono", "trace"], optional = true, version = "0.26" }
-
-# SQLx
-
-sqlx-core = { default-features = false, features = ["chrono"], optional = true, version = "0.5" }
-
-# Tiberuis
-
-tiberius = { default-features = false, optional = true, version = "0.7" }
-
-# Tokio-Postgres
-
-native-tls = { default-features = false, optional = true, version = "0.2" }
-postgres-native-tls = { default-features = false, features = ["runtime"], optional = true, version = "0.5" }
-tokio = { default-features = false, optional = true, version = "1.0" }
-tokio-postgres = { default-features = false, features = ["runtime", "with-chrono-0_4"], optional = true, version = "0.7" }
-
-# Multi-backend dependencies
-
-futures = { default-features = false, optional = true, version = "0.3" }
-
-# Internals
-
+argh = { default-features = false, optional = true, version = "0.1" }
 arrayvec = { default-features = false, version = "0.7" }
-async-trait = { default-features = false, version = "0.1" }
-chrono = { default-features = false, version = "0.4" }
-oapth-commons = { default-features = false, path = "../oapth-commons" } 
-oapth-macros = { default-features = false, path = "../oapth-macros" }
-siphasher = { default-features = false, version = "0.3" }
+chrono = { default-features = false, optional = true, version = "0.4" }
+cl-aux = { default-features = false, features = ["alloc"], version = "4.0" }
+dotenv = { default-features = false, optional = true, version = "0.15" }
+futures = { default-features = false, optional = true, version = "0.3" }
+proc-macro2 = { default-features = false, optional = true, version = "1.0" }
+quote = { default-features = false, optional = true, version = "1.0" }
+rust_decimal = { default-features = false, optional = true, version = "1.0" }
+smallvec = { default-features = false, features = ["const_generics", "union"], optional = true, version = "1.0" }
+sqlx-core = { default-features = false, optional = true, version = "0.7" }
+sqlx-mysql = { default-features = false, optional = true, version = "0.7" }
+sqlx-postgres = { default-features = false, optional = true, version = "0.7" }
+sqlx-sqlite = { default-features = false, optional = true, version = "0.7" }
+tiberius = { default-features = false, optional = true, version = "0.12" }
+tokio = { default-features = false, optional = true, version = "1.0" }
 
 [dev-dependencies]
 chrono = { default-features = false, features = ["clock"], version = "0.4" }
-env_logger = { default-features = false, version = "0.8" }
 tokio = { default-features = false, features = ["macros", "net", "rt-multi-thread"], version = "1.0" }
-tokio-util = { default-features = false, features = ["compat"], version = "0.6" }
+tokio-util = { default-features = false, features = ["compat"], version = "0.7" }
 
 [features]
 default = []
-dev-tools = []
-diesel-mysql = ["dep:diesel", "diesel?/mysql", "std"]
-diesel-pg = ["dep:diesel", "diesel?/postgres", "std"]
-diesel-sqlite = ["dep:diesel", "diesel?/sqlite", "std"]
-embed-migrations = ["oapth-macros/embed-migrations"]
-mysql_async = ["dep:flate2", "dep:mysql_async", "dep:mysql_common", "std"]
-rusqlite = ["dep:rusqlite", "std"]
-sqlx-mssql = ["dep:futures", "dep:sqlx-core", "sqlx-core?/mssql", "std"]
-sqlx-mysql = ["dep:futures", "dep:sqlx-core", "sqlx-core?/mysql", "std"]
-sqlx-pg = ["dep:futures", "dep:sqlx-core", "sqlx-core?/postgres", "std"]
-sqlx-sqlite = ["dep:futures", "dep:sqlx-core", "sqlx-core?/sqlite", "std"]
-std = ["oapth-commons/std"]
-tiberius = ["dep:futures", "std", "dep:tiberius"]
-tokio-postgres = ["dep:native-tls", "dep:postgres-native-tls", "std", "dep:tokio", "dep:tokio-postgres"]
+orm = ["dep:smallvec"]
+quote = ["dep:proc-macro2", "dep:quote"]
+sm = ["chrono", "sqlx-mysql?/chrono", "sqlx-postgres?/chrono", "sqlx-sqlite?/chrono", "tiberius?/chrono"]
+sm-cli = ["argh", "sm", "tokio/macros", "tokio/rt-multi-thread"]
+sm-dev = ["sm"]
+sqlx-mysql = ["dep:futures", "sqlx-core", "dep:sqlx-mysql", "std"]
+sqlx-postgres = ["dep:futures", "sqlx-core", "dep:sqlx-postgres", "std"]
+sqlx-sqlite = ["dep:futures", "sqlx-core", "dep:sqlx-sqlite", "std"]
+std = []
+tiberius = ["dep:futures", "futures?/std", "std", "dep:tiberius"]
 
-# Private features
-
-_integration-tests = ["std"]
-_sqlx_hack = ["sqlx-core?/runtime-tokio-rustls"]
+_integration-tests = ["sqlx-core?/_rt-tokio", "std"]
 
 [package]
 authors = ["Caio Fernandes <c410.f3r@gmail.com>"]
 categories = ["database"]
-description = "Flexible version control for databases through SQL migrations"
+description = "Object–relational mapping"
 edition = "2021"
-keywords = ["database", "migration", "oapth", "sql"]
+keywords = ["database", "orm", "sql"]
 license = "Apache-2.0"
 name = "oapth"
-readme = "README.md"
 repository = "https://github.com/c410-f3r/oapth"
-rust-version = "1.61"
 version = "0.1.0"
-
-[package.metadata.docs.rs]
-all-features = true

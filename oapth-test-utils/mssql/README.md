@@ -1,1 +1,0 @@
-Docker images of MS-SQL don't support creation of databases through environment variables. That said, the necessary infra to do such thing was copied from https://github.com/launchbadge/sqlx/tree/master/tests/mssql.

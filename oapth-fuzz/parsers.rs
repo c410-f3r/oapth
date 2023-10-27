@@ -4,8 +4,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use oapth::Config;
-use oapth_commons::{parse_root_toml_raw, parse_unified_migration};
+use oapth::sm::{migration_parser::parse_unified_migration, utils::parse_root_toml_raw, Config};
 use std::path::Path;
 
 fuzz_target!(|data: &[u8]| {
