@@ -2,6 +2,7 @@ use crate::orm::{
   buffer_write_fmt, truncate_if_ends_with_char, truncate_if_ends_with_str, SelectLimit,
   SelectOrderBy, SqlWriter, SqlWriterLogic, Table, TableParams,
 };
+use alloc::string::String;
 
 impl<'entity, T> SqlWriterLogic<'entity, T>
 where
@@ -23,7 +24,7 @@ where
       buffer_cmd,
       format_args!(
         " FROM \"{table}\" AS \"{table}{suffix}\" ",
-        suffix = table.suffix(),
+        suffix = table.table_suffix(),
         table = T::TABLE_NAME
       ),
     )?;

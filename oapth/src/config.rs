@@ -23,7 +23,7 @@ impl Config {
   ///
   /// ```rust
   /// # fn main() -> oapth::Result<()> {
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// std::env::set_var("DATABASE_URL", "FOO");
   /// let _ = Config::with_url_from_default_var()?;
   /// # Ok(()) }
@@ -31,7 +31,7 @@ impl Config {
   #[cfg(feature = "std")]
   #[inline]
   pub fn with_url_from_default_var() -> crate::Result<Self> {
-    Self::with_url_from_var(crate::sm::DEFAULT_ENV_VAR)
+    Self::with_url_from_var(crate::DEFAULT_ENV_VAR)
   }
 
   /// Creates an instance with the contents of the environment variable `env_var`.
@@ -40,7 +40,7 @@ impl Config {
   ///
   /// ```rust
   /// # fn main() -> oapth::Result<()> {
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// std::env::set_var("SOMETHING", "BAR");
   /// let _ = Config::with_url_from_var("SOMETHING")?;
   /// # Ok(()) }
@@ -55,7 +55,7 @@ impl Config {
   /// Database type
   ///
   /// ```rust
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// let c = Config::with_url("postgres://user:password@endpoint:1234/db");
   /// assert_eq!(c.database().unwrap(), "postgres");
   /// ```
@@ -68,7 +68,7 @@ impl Config {
   /// Host with optional port
   ///
   /// ```rust
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// let c0 = Config::with_url("postgres://user:password@endpoint/db");
   /// assert_eq!(c0.full_host().unwrap(), "endpoint");
   /// let c1 = Config::with_url("postgres://user:password@endpoint:1234/db");
@@ -88,7 +88,7 @@ impl Config {
   /// Host
   ///
   /// ```rust
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// let c0 = Config::with_url("postgres://user:password@endpoint/db");
   /// assert_eq!(c0.host().unwrap(), "endpoint");
   /// let c1 = Config::with_url("postgres://user:password@endpoint:1234/db");
@@ -108,7 +108,7 @@ impl Config {
   /// Name
   ///
   /// ```rust
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// let c = Config::with_url("postgres://user:password@endpoint/db");
   /// assert_eq!(c.name().unwrap(), "db");
   /// ```
@@ -124,7 +124,7 @@ impl Config {
   /// Password
   ///
   /// ```rust
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// let c = Config::with_url("postgres://user:password@endpoint:1234/db");
   /// assert_eq!(c.password().unwrap(), "password");
   /// ```
@@ -141,7 +141,7 @@ impl Config {
   /// Port
   ///
   /// ```rust
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// let c = Config::with_url("postgres://user:password@endpoint:1234/db");
   /// assert_eq!(c.port().unwrap(), 1234);
   /// ```
@@ -157,7 +157,7 @@ impl Config {
   /// SSL mode
   ///
   /// ```rust
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// let c = Config::with_url("postgres://user:password@endpoint:1234/db?sslmode=verify-ca");
   /// assert_eq!(c.sslmode().unwrap(), "verify-ca");
   /// ```
@@ -170,7 +170,7 @@ impl Config {
   /// SSL root certificate
   ///
   /// ```rust
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// let c = Config::with_url("postgres://user:password@endpoint:1234/db?sslrootcert=foo.crt");
   /// assert_eq!(c.sslrootcert().unwrap(), "foo.crt");
   /// ```
@@ -183,7 +183,7 @@ impl Config {
   /// Url
   ///
   /// ```rust
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// let c = Config::with_url("postgres://user:password@endpoint/db");
   /// assert_eq!(c.url(), "postgres://user:password@endpoint/db");
   /// ```
@@ -195,7 +195,7 @@ impl Config {
   /// User
   ///
   /// ```rust
-  /// use oapth::sm::Config;
+  /// use oapth::Config;
   /// let c = Config::with_url("postgres://user:password@endpoint:1234/db");
   /// assert_eq!(c.user().unwrap(), "user");
   /// ```

@@ -27,7 +27,7 @@ macro_rules! create_integration_test {
 
 macro_rules! _create_integration_test_backend {
   ($backend_ty:ident) => {{
-    let c = crate::sm::Config::with_url_from_default_var().unwrap();
+    let c = crate::Config::with_url_from_default_var().unwrap();
     crate::database::$backend_ty::new(&c).await.unwrap()
   }};
 }
@@ -73,7 +73,7 @@ macro_rules! create_integration_tests {
       create_integration_test!(
         {
           use tokio_util::compat::TokioAsyncWriteCompatExt;
-          let c = crate::sm::Config::with_url_from_default_var().unwrap();
+          let c = crate::Config::with_url_from_default_var().unwrap();
           let tcp = tokio::net::TcpStream::connect(c.full_host().unwrap()).await.unwrap();
           crate::database::Tiberius::new(&c, tcp.compat_write()).await.unwrap()
         },

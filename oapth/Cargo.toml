@@ -3,10 +3,10 @@ name = "cli"
 required-features = ["sm-cli", "tokio"]
 
 [dependencies]
-argh = { default-features = false, optional = true, version = "0.1" }
 arrayvec = { default-features = false, version = "0.7" }
 chrono = { default-features = false, optional = true, version = "0.4" }
 cl-aux = { default-features = false, features = ["alloc"], version = "4.0" }
+clap = { default-features = false, features = ["derive", "help", "std"], optional = true, version = "4.0" }
 dotenv = { default-features = false, optional = true, version = "0.15" }
 futures = { default-features = false, optional = true, version = "0.3" }
 proc-macro2 = { default-features = false, optional = true, version = "1.0" }
@@ -30,8 +30,8 @@ default = []
 orm = ["dep:smallvec"]
 quote = ["dep:proc-macro2", "dep:quote"]
 sm = ["chrono", "sqlx-mysql?/chrono", "sqlx-postgres?/chrono", "sqlx-sqlite?/chrono", "tiberius?/chrono"]
-sm-cli = ["argh", "sm", "tokio/macros", "tokio/rt-multi-thread"]
-sm-dev = ["sm"]
+sm-cli = ["clap", "sm", "std", "tokio/macros", "tokio/rt-multi-thread"]
+sm-dev = ["dotenv", "sm"]
 sqlx-mysql = ["dep:futures", "sqlx-core", "dep:sqlx-mysql", "std"]
 sqlx-postgres = ["dep:futures", "sqlx-core", "dep:sqlx-postgres", "std"]
 sqlx-sqlite = ["dep:futures", "sqlx-core", "dep:sqlx-sqlite", "std"]

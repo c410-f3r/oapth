@@ -2,9 +2,8 @@
 
 use crate::{
   orm::{
-    FromSuffixRslt, GenericSqlValue, InitialInsertValue, NoTableAssociation, SelectLimit,
-    SelectOrderBy, SqlWriter, Table, TableAssociation, TableAssociationWrapper, TableField,
-    TableParams,
+    FromSuffixRslt, InitialInsertValue, NoTableAssociation, SelectLimit, SelectOrderBy, SqlWriter,
+    Table, TableAssociation, TableAssociationWrapper, TableField, TableParams,
   },
   TableSuffix,
 };
@@ -23,8 +22,8 @@ impl<'entity> Table<'entity> for A {
 
   type Associations = NoTableAssociation<()>;
   type Error = ();
-  type Fields = (TableField<GenericSqlValue<(), &'static str>>,);
-  type PrimaryKeyValue = GenericSqlValue<(), &'entity i32>;
+  type Fields = (TableField<&'static str>,);
+  type PrimaryKeyValue = &'entity i32;
 
   fn type_instances(_: TableSuffix) -> FromSuffixRslt<'entity, Self> {
     (NoTableAssociation::new(), (TableField::new("name"),))
@@ -48,8 +47,8 @@ impl<'entity> Table<'entity> for B {
 
   type Associations = NoTableAssociation<()>;
   type Error = ();
-  type Fields = (TableField<GenericSqlValue<(), &'static str>>,);
-  type PrimaryKeyValue = GenericSqlValue<(), &'entity i32>;
+  type Fields = (TableField<&'static str>,);
+  type PrimaryKeyValue = &'entity i32;
 
   fn type_instances(_: TableSuffix) -> FromSuffixRslt<'entity, Self> {
     (NoTableAssociation::new(), (TableField::new("name"),))
@@ -78,8 +77,8 @@ impl<'entity> Table<'entity> for C {
     TableAssociationWrapper<'entity, B, Vec<TableParams<'entity, B>>>,
   );
   type Error = ();
-  type Fields = (TableField<GenericSqlValue<(), &'static str>>,);
-  type PrimaryKeyValue = GenericSqlValue<(), &'entity i32>;
+  type Fields = (TableField<&'static str>,);
+  type PrimaryKeyValue = &'entity i32;
 
   fn type_instances(ts: TableSuffix) -> FromSuffixRslt<'entity, Self> {
     (
@@ -106,14 +105,14 @@ impl<'entity> Table<'entity> for C {
 
     table.associations_mut().0.tables.clear();
     for a in entity.r#as.iter() {
-      let mut elem = TableParams::new(table.suffix() + 1);
+      let mut elem = TableParams::new(table.table_suffix() + 1);
       elem.update_all_table_fields(a);
       table.associations_mut().0.tables.push(elem);
     }
 
     table.associations_mut().1.tables.clear();
     for b in entity.bs.iter() {
-      let mut elem = TableParams::new(table.suffix() + 2);
+      let mut elem = TableParams::new(table.table_suffix() + 2);
       elem.update_all_table_fields(b);
       table.associations_mut().1.tables.push(elem);
     }

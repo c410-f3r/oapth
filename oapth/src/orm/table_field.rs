@@ -1,5 +1,3 @@
-use crate::orm::SqlValue;
-
 /// Table field name and its associated Rust type
 #[derive(Debug, PartialEq)]
 pub struct TableField<T> {
@@ -7,10 +5,7 @@ pub struct TableField<T> {
   value: Option<T>,
 }
 
-impl<T> TableField<T>
-where
-  T: SqlValue,
-{
+impl<T> TableField<T> {
   /// Creates a new instance from the table field name
   #[inline]
   pub const fn new(name: &'static str) -> Self {
