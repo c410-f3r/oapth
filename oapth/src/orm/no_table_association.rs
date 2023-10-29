@@ -2,6 +2,7 @@ use crate::orm::{
   AuxNodes, FullTableAssociation, SelectLimit, SelectOrderBy, SqlWriter, TableAssociations,
   TableSourceAssociation,
 };
+use alloc::string::String;
 use core::{array, marker::PhantomData};
 
 /// For entities that don't have associations

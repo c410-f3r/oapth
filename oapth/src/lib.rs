@@ -9,6 +9,7 @@ extern crate alloc;
 #[macro_use]
 mod macros;
 
+mod config;
 pub mod database;
 mod database_ty;
 mod error;
@@ -22,11 +23,16 @@ pub mod sm;
 #[cfg(test)]
 mod tests;
 
+pub use config::Config;
 pub use database_ty::*;
 pub use error::*;
 pub use from_row::FromRow;
 pub use from_rows::FromRows;
 pub use row::Row;
+
+#[cfg(feature = "std")]
+/// Default environment variable name for the database URL
+pub const DEFAULT_ENV_VAR: &str = "DATABASE_URL";
 
 /// The maximum number of characters that a database identifier can have. For example, tables,
 /// procedures, triggers, etc.

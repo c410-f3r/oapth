@@ -5,7 +5,7 @@ create_enum! {
     /// MS-SQL
     Mssql, "mssql";
     /// MySql
-    Mysql, "mysql";
+    MySql, "mysql";
     /// PostgreSQL
     Postgres, "postgres";
     /// SQLite

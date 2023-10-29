@@ -75,7 +75,7 @@ where
 
   /// Used to write internal SQL operations
   #[inline]
-  pub fn suffix(&self) -> TableSuffix {
+  pub fn table_suffix(&self) -> TableSuffix {
     self.ts
   }
 

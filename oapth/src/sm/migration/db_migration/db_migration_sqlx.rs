@@ -17,7 +17,7 @@ impl crate::FromRow<sqlx_mysql::MySqlRow> for crate::sm::DbMigration {
         version: from.try_get("version")?,
       },
       created_on: from.try_get::<chrono::DateTime<chrono::Utc>, _>("created_on")?.into(),
-      db_ty: crate::DatabaseTy::Mysql,
+      db_ty: crate::DatabaseTy::MySql,
       group: crate::sm::MigrationGroup::new(
         from.try_get::<&str, _>("omg_name")?.try_into()?,
         from.try_get("omg_version")?,

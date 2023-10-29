@@ -3,6 +3,7 @@ use crate::orm::{
   SqlWriter, Table, TableAssociationWrapper, TableAssociations, TableField, TableFields,
   TableParams, TableSourceAssociation,
 };
+use alloc::string::String;
 use cl_aux::SingleTypeStorage;
 use core::{array, fmt::Display};
 
@@ -30,7 +31,7 @@ macro_rules! double_tuple_impls {
                 self.$idx.association,
                 $U::TABLE_NAME,
                 $U::TABLE_NAME_ALIAS,
-                self.$idx.guide.suffix()
+                self.$idx.guide.table_suffix()
               ),
             )+
           ].into_iter()
@@ -152,11 +153,10 @@ macro_rules! tuple_impls {
     }
   )+) => {
     $(
-      impl<ERR, $($T: SqlValue<Error = ERR>),+> TableFields for ($( TableField<$T>, )+)
+      impl<ERR, $($T: SqlValue<ERR>),+> TableFields<ERR> for ($( TableField<$T>, )+)
       where
         ERR: From<crate::Error>,
       {
-        type Error = ERR;
         type FieldNames = array::IntoIter<&'static str, $tuple_len>;
 
         #[inline]
@@ -165,7 +165,7 @@ macro_rules! tuple_impls {
         }
 
         #[inline]
-        fn write_insert_values(&self, buffer_cmd: &mut String) -> Result<(), Self::Error> {
+        fn write_insert_values(&self, buffer_cmd: &mut String) -> Result<(), ERR> {
           $(
             if let &Some(ref elem) = self.$idx.value() {
               elem.write(buffer_cmd)?;
@@ -176,7 +176,7 @@ macro_rules! tuple_impls {
         }
 
         #[inline]
-        fn write_update_values(&self, buffer_cmd: &mut String) -> Result<(), Self::Error> {
+        fn write_update_values(&self, buffer_cmd: &mut String) -> Result<(), ERR> {
           $(
             if let &Some(ref elem) = self.$idx.value() {
               buffer_write_fmt(buffer_cmd, format_args!("{}=", self.$idx.name()))?;

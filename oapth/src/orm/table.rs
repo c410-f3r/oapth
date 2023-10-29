@@ -18,9 +18,9 @@ pub trait Table<'entity>: Sized {
   /// See [crate::Error].
   type Error: From<crate::Error>;
   /// All table fields minus the primary key. For more information, see [TableFields]
-  type Fields: TableFields<Error = Self::Error>;
+  type Fields: TableFields<Self::Error>;
   /// Table primary key value type
-  type PrimaryKeyValue: Copy + Display + Hash + SqlValue<Error = Self::Error>;
+  type PrimaryKeyValue: Copy + Display + Hash + SqlValue<Self::Error>;
 
   /// Implementation should provide all related fields and associations
   fn type_instances(ts: TableSuffix) -> FromSuffixRslt<'entity, Self>;

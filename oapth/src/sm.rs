@@ -4,7 +4,6 @@
 mod macros;
 
 mod commands;
-mod config;
 pub mod doc_tests;
 pub(crate) mod fixed_sql_commands;
 mod migration;
@@ -21,15 +20,11 @@ pub use repeatability::Repeatability;
 mod integration_tests;
 use crate::{database::Database, DatabaseTy, Identifier};
 use alloc::{string::String, vec::Vec};
-pub use config::*;
 use core::future::Future;
 pub use migration::*;
 
 /// Default batch size
 pub const DEFAULT_BATCH_SIZE: usize = 128;
-#[cfg(feature = "std")]
-/// Default environment variable name for the database URL
-pub const DEFAULT_ENV_VAR: &str = "DATABASE_URL";
 pub(crate) const _OAPTH: &str = "oapth";
 pub(crate) const _OAPTH_SCHEMA_PREFIX: &str = "_oapth.";
 

@@ -2,6 +2,7 @@ use crate::orm::{
   buffer_write_fmt, node_was_already_visited, truncate_if_ends_with_char, AuxNodes, SqlValue,
   SqlWriter, SqlWriterLogic, Table, TableFields, TableParams, TableSourceAssociation,
 };
+use alloc::string::String;
 use core::fmt::Display;
 
 impl<'entity, T> SqlWriterLogic<'entity, T>

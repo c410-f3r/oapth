@@ -1,35 +1,28 @@
-use crate::orm::{buffer_write_fmt, GenericSqlValue};
+use crate::orm::buffer_write_fmt;
 use alloc::string::String;
 
 /// Raw SQL representation of a type
-pub trait SqlValue {
-  /// See [crate::Error].
-  type Error: From<crate::Error>;
-
+pub trait SqlValue<E> {
   /// Pushes the representation into `buffer_cmd`.
-  fn write(&self, buffer_cmd: &mut String) -> Result<(), Self::Error>;
+  fn write(&self, buffer_cmd: &mut String) -> Result<(), E>;
 }
 
-impl<T> SqlValue for &'_ T
+impl<E, T> SqlValue<E> for &'_ T
 where
-  T: SqlValue,
+  T: SqlValue<E>,
 {
-  type Error = T::Error;
-
   #[inline]
-  fn write(&self, buffer_cmd: &mut String) -> Result<(), Self::Error> {
+  fn write(&self, buffer_cmd: &mut String) -> Result<(), E> {
     (**self).write(buffer_cmd)
   }
 }
 
-impl<T> SqlValue for Option<T>
+impl<E, T> SqlValue<E> for Option<T>
 where
-  T: SqlValue,
+  T: SqlValue<E>,
 {
-  type Error = T::Error;
-
   #[inline]
-  fn write(&self, buffer_cmd: &mut String) -> Result<(), Self::Error> {
+  fn write(&self, buffer_cmd: &mut String) -> Result<(), E> {
     if let Some(ref elem) = *self {
       elem.write(buffer_cmd)
     } else {
@@ -41,33 +34,20 @@ where
 
 macro_rules! impl_display {
   ($ty:ty $(, $($bounds:tt)+)?) => {
-    impl<E, $($($bounds)+)?> SqlValue for GenericSqlValue<E, $ty>
+    impl<E, $($($bounds)+)?> SqlValue<E> for $ty
     where
       E: From<crate::Error>
     {
-      type Error = E;
-
       #[inline]
-      fn write(&self, buffer_cmd: &mut String) -> Result<(), Self::Error> {
-        buffer_write_fmt(buffer_cmd, format_args!("'{}'", self.elem()))
-      }
-    }
-
-    impl<E, $($($bounds)+)?> SqlValue for GenericSqlValue<E, &$ty>
-    where
-      E: From<crate::Error>
-    {
-      type Error = E;
-
-      #[inline]
-      fn write(&self, buffer_cmd: &mut String) -> Result<(), Self::Error> {
-        buffer_write_fmt(buffer_cmd, format_args!("'{}'", self.elem()))
+      fn write(&self, buffer_cmd: &mut String) -> Result<(), E> {
+        buffer_write_fmt(buffer_cmd, format_args!("'{self}'"))
       }
     }
   }
 }
 
 impl_display!(&'_ str);
+impl_display!(arrayvec::ArrayString<N>, const N: usize);
 impl_display!(bool);
 impl_display!(i32);
 impl_display!(i64);
@@ -75,7 +55,5 @@ impl_display!(u32);
 impl_display!(u64);
 impl_display!(String);
 
-#[cfg(feature = "arrayvec")]
-impl_display!(arrayvec::ArrayString<N>, const N: usize);
 #[cfg(feature = "rust_decimal")]
 impl_display!(rust_decimal::Decimal);

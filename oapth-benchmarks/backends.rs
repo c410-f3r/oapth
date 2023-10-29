@@ -5,7 +5,8 @@ use criterion::{
 };
 use oapth::{
   database::{SqlxMysql, SqlxPostgres, SqlxSqlite, Tiberius},
-  sm::{Commands, Config},
+  sm::Commands,
+  Config,
 };
 use std::path::Path;
 use tokio::runtime::Runtime;

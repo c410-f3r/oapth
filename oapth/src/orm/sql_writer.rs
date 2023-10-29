@@ -7,6 +7,7 @@ use crate::orm::{
   write_full_select_field, write_select_join, write_select_order_by, AuxNodes, SelectLimit,
   SelectOrderBy, Table, TableAssociations, TableFields, TableParams, TableSourceAssociation,
 };
+use alloc::string::String;
 use core::{fmt::Display, marker::PhantomData};
 
 /// Writes raw SQL commands
@@ -88,7 +89,7 @@ where
   #[inline]
   fn write_select_associations(&self, buffer_cmd: &mut String) -> Result<(), Self::Error> {
     for full_association in self.associations().full_associations() {
-      write_select_join(buffer_cmd, T::TABLE_NAME, self.suffix(), full_association)?;
+      write_select_join(buffer_cmd, T::TABLE_NAME, self.table_suffix(), full_association)?;
       buffer_cmd.push(' ');
     }
     self.associations().write_select_associations(buffer_cmd)?;
@@ -101,7 +102,7 @@ where
       buffer_cmd,
       T::TABLE_NAME,
       T::TABLE_NAME_ALIAS,
-      self.suffix(),
+      self.table_suffix(),
       self.id_field().name(),
     )?;
     buffer_cmd.push(',');
@@ -110,7 +111,7 @@ where
         buffer_cmd,
         T::TABLE_NAME,
         T::TABLE_NAME_ALIAS,
-        self.suffix(),
+        self.table_suffix(),
         field,
       )?;
       buffer_cmd.push(',');
@@ -125,7 +126,7 @@ where
       buffer_cmd,
       T::TABLE_NAME,
       T::TABLE_NAME_ALIAS,
-      self.suffix(),
+      self.table_suffix(),
       self.id_field().name(),
     )?;
     buffer_cmd.push(',');

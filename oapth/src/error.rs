@@ -1,3 +1,5 @@
+#[allow(unused_imports)]
+use alloc::boxed::Box;
 use core::fmt::{Debug, Display, Formatter};
 
 /// Generic error

@@ -24,16 +24,15 @@ where
   #[cfg_attr(feature = "_integration-tests", doc = "```rust")]
   #[cfg_attr(not(feature = "_integration-tests"), doc = "```ignore,rust")]
   /// # #[tokio::main] async fn main() -> oapth::Result<()> {
-  /// use oapth::{sm::Config, database::Tiberius};
+  /// use oapth::{Config, database::Tiberius};
   /// use tokio_util::compat::TokioAsyncWriteCompatExt;
   /// let c = Config::with_url_from_default_var().unwrap();
   /// let tcp = tokio::net::TcpStream::connect(c.full_host().unwrap()).await.unwrap();
   /// let _ = Tiberius::new(&c, tcp.compat_write()).await.unwrap();
   /// # Ok(()) }
   /// ```
-  #[cfg(feature = "sm")]
   #[inline]
-  pub async fn new(oapth_config: &crate::sm::Config, tcp: T) -> crate::Result<Self> {
+  pub async fn new(oapth_config: &crate::Config, tcp: T) -> crate::Result<Self> {
     let mut config = tiberius::Config::new();
     config.authentication(tiberius::AuthMethod::sql_server(
       oapth_config.user()?,
@@ -46,7 +45,6 @@ where
     Ok(Self { conn })
   }
 
-  #[cfg(feature = "sm")]
   #[inline]
   fn manage_trust_server_certificate(c: &mut tiberius::Config, url: &str) {
     let opt = || url.split("trustServerCertificate=").nth(1)?.parse::<bool>().ok();

@@ -2,10 +2,7 @@
 
 mod cli;
 
-use oapth::{
-  sm::{Config, DbMigration},
-  Identifier,
-};
+use oapth::{sm::DbMigration, Config, Identifier};
 use std::{borrow::Cow, env::current_dir, path::Path};
 
 const _DEFAULT_CFG_FILE_NAME: &str = "oapth.toml";
@@ -17,7 +14,7 @@ async fn main() -> oapth::Result<()> {
   #[cfg(feature = "sm-dev")]
   let _ = dotenv::dotenv().ok();
 
-  let cli: cli::Cli = argh::from_env();
+  let cli = <cli::Cli as clap::Parser>::parse();
   let config = Config::with_url_from_var(&cli._var)?;
 
   match config.database()? {
@@ -62,7 +59,7 @@ fn _toml_file_path(cli: &cli::Cli) -> oapth::Result<Cow<'_, Path>> {
 
 #[inline]
 async fn _handle_commands<D>(
-  (buffer_cmd, buffer_db_migrations, buffer_idents): (
+  (buffer_cmd, buffer_db_migrations, _buffer_idents): (
     &mut String,
     &mut Vec<DbMigration>,
     &mut Vec<Identifier>,
@@ -74,38 +71,35 @@ where
   D: oapth::sm::SchemaManagement,
 {
   let mut commands = oapth::sm::Commands::new(cli._files_num, database);
-  match cli._commands {
-    cli::Commands::Clean(..) => {
-      commands.clear((buffer_cmd, buffer_idents)).await?;
+  match &cli._commands {
+    #[cfg(feature = "sm-dev")]
+    cli::Commands::Clean {} => {
+      commands.clear((buffer_cmd, _buffer_idents)).await?;
     }
-    cli::Commands::Migrate(..) => {
+    cli::Commands::Migrate {} => {
       commands
         .migrate_from_toml_path((buffer_cmd, buffer_db_migrations), &_toml_file_path(cli)?)
         .await?;
     }
     #[cfg(feature = "sm-dev")]
-    cli::Commands::MigrateAndSeed(..) => {
+    cli::Commands::MigrateAndSeed {} => {
       let (migration_groups, seeds) = oapth::sm::utils::parse_root_toml(&_toml_file_path(cli)?)?;
       commands
         .migrate_from_groups_paths((buffer_cmd, buffer_db_migrations), &migration_groups)
         .await?;
       commands.seed_from_dir(buffer_cmd, _seeds_file_path(cli, seeds.as_deref())?).await?;
     }
-    cli::Commands::Rollback(ref rollback) => {
+    cli::Commands::Rollback { _versions } => {
       commands
-        .rollback_from_toml(
-          (buffer_cmd, buffer_db_migrations),
-          &_toml_file_path(cli)?,
-          &rollback._versions,
-        )
+        .rollback_from_toml((buffer_cmd, buffer_db_migrations), &_toml_file_path(cli)?, &_versions)
         .await?;
     }
     #[cfg(feature = "sm-dev")]
-    cli::Commands::Seed(..) => {
+    cli::Commands::Seed {} => {
       let (_, seeds) = oapth::sm::utils::parse_root_toml(&_toml_file_path(cli)?)?;
       commands.seed_from_dir(buffer_cmd, _seeds_file_path(cli, seeds.as_deref())?).await?;
     }
-    cli::Commands::Validate(..) => {
+    cli::Commands::Validate {} => {
       commands
         .validate_from_toml((buffer_cmd, buffer_db_migrations), &_toml_file_path(cli)?)
         .await?;
