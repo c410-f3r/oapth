@@ -6,7 +6,7 @@ required-features = ["sm-cli", "tokio"]
 arrayvec = { default-features = false, version = "0.7" }
 chrono = { default-features = false, optional = true, version = "0.4" }
 cl-aux = { default-features = false, features = ["alloc"], version = "4.0" }
-clap = { default-features = false, features = ["derive", "help", "std"], optional = true, version = "4.0" }
+clap = { default-features = false, features = ["derive", "help", "std"], optional = true, version = "4.4" }
 dotenv = { default-features = false, optional = true, version = "0.15" }
 futures = { default-features = false, optional = true, version = "0.3" }
 proc-macro2 = { default-features = false, optional = true, version = "1.0" }
